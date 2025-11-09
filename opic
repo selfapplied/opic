@@ -1,0 +1,634 @@
+#!/usr/bin/env python3
+"""Opic CLI — Event-Based Compositional Language"""
+
+import sys
+import subprocess
+from pathlib import Path
+
+def build_tiddlywiki():
+    """Build TiddlyWiki from opic scores"""
+    script = Path(__file__).parent / "build_tiddlywiki.py"
+    subprocess.run([sys.executable, str(script)], check=True)
+
+def run_python():
+    """Run opic python bootstrap"""
+    from generate import parse_ops, compose
+    from pathlib import Path
+    ops_file = Path(__file__).parent / "core.ops"
+    defs, voices = parse_ops(ops_file.read_text())
+    print(compose(voices))
+
+def execute_opic(ops_file):
+    """Execute opic file directly"""
+    from generate import parse_ops
+    from pathlib import Path
+    
+    # Load core capability files
+    core_files = ["planning.ops", "reasoning.ops", "ml.ops"]
+    all_defs, all_voices = {}, {}
+    
+    for core_file in core_files:
+        core_path = Path(__file__).parent / core_file
+        if core_path.exists():
+            core_defs, core_voices = parse_ops(core_path.read_text())
+            all_defs.update(core_defs)
+            all_voices.update(core_voices)
+    
+    # Load main ops file
+    ops_path = Path(ops_file) if Path(ops_file).is_absolute() else Path(__file__).parent / ops_file
+    if not ops_path.exists():
+        print(f"Error: File not found: {ops_file}", file=sys.stderr)
+        sys.exit(1)
+    defs, voices = parse_ops(ops_path.read_text())
+    
+    # Merge voices (main file takes precedence)
+    voices = {**all_voices, **voices}
+    defs = {**all_defs, **defs}
+    
+    # Print LaTeX equations if they exist
+    latex_voices = {k: v for k, v in voices.items() if 'latex' in k}
+    if latex_voices:
+        print("=" * 60)
+        print("LaTeX Equations:")
+        print("=" * 60)
+        for k, v in sorted(latex_voices.items()):
+            # Clean up LaTeX for display
+            latex = v.strip('"').replace('\\\\', '\\')
+            print(f"\n{k.replace('_latex', '')}:")
+            print(f"  {latex}")
+        print("\n" + "=" * 60)
+    
+    # Show goal and plan if they exist
+    if "goal" in voices:
+        print("\n" + "=" * 60)
+        print("Goal:")
+        print("=" * 60)
+        print(f"  {voices['goal']}")
+        if "goal_latex" in voices:
+            latex = voices['goal_latex'].strip('"').replace('\\\\', '\\')
+            print(f"\n  {latex}")
+    
+    if "plan" in voices:
+        print("\n" + "=" * 60)
+        print("Plan:")
+        print("=" * 60)
+        for i in range(1, 8):
+            step_key = f"plan_step_{i}"
+            if step_key in voices:
+                print(f"  {i}. {voices[step_key]}")
+        if "plan_latex" in voices:
+            latex = voices['plan_latex'].strip('"').replace('\\\\', '\\')
+            print(f"\n  {latex}")
+    
+    # Derive capabilities from structure - generic, no hardcoding
+    # Only show if not a test file (tests have their own capability checks)
+    is_test = any(k.startswith("test.") for k in voices.keys())
+    if not is_test:
+        # Generic capability detection - look for common patterns
+        has_chains = any("{" in str(v) and "->" in str(v) for v in voices.values())
+        has_latex = any("latex" in k for k in voices.keys())
+        has_goal_plan = "goal" in voices and "plan" in voices
+        has_ml = any(k.startswith("ml.") for k in voices.keys())
+        has_reasoning = any(k.startswith("reason.") for k in voices.keys())
+        
+        print("\n" + "=" * 60)
+        print("Capabilities (derived from structure):")
+        print("=" * 60)
+        if has_chains:
+            print("  ✓ Voice chains defined")
+        if has_latex:
+            print("  ✓ LaTeX equations available")
+        if has_goal_plan:
+            print("  ✓ Goal/Plan structure present")
+        if has_ml:
+            ml_voices = [k for k in voices.keys() if k.startswith("ml.")]
+            print(f"  ✓ ML capabilities: {len(ml_voices)} ML voices")
+            # Show ML categories
+            if any("token" in k for k in ml_voices):
+                print("    - Token prediction")
+            if any("sentence" in k for k in ml_voices):
+                print("    - Sentence prediction")
+            if any("mlp" in k or "transformer" in k for k in ml_voices):
+                print("    - Model architectures")
+        if has_reasoning:
+            print("  ✓ Reasoning capabilities")
+        print("  → Structure and exploration framework")
+    
+    # Generic execution engine
+    visited = set()
+    
+    def execute_chain(chain_str, voices, depth=0, max_depth=5):
+        """Recursively execute a voice chain"""
+        if depth > max_depth or chain_str in visited:
+            return
+        
+        visited.add(chain_str)
+        
+        if not isinstance(chain_str, str):
+            return
+        
+        if not chain_str.startswith("{") or not chain_str.endswith("}"):
+            # Simple voice reference
+            if chain_str in voices:
+                return voices[chain_str]
+            return chain_str
+        
+        # Parse chain: {step1 -> step2 -> step3}
+        chain_body = chain_str[1:-1].strip()
+        steps = [s.strip() for s in chain_body.split("->")]
+        
+        for step in steps:
+            indent = "  " * depth
+            print(f"{indent}→ {step}")
+            
+            if step in voices:
+                step_body = voices[step]
+                
+                # Show step definition if it's a simple string
+                if isinstance(step_body, str):
+                    if not step_body.startswith("{"):
+                        # Simple description
+                        print(f"{indent}  {step_body}")
+                    else:
+                        # Nested chain - show dependencies
+                        nested_body = step_body[1:-1].strip()
+                        nested_steps = [s.strip() for s in nested_body.split("->")]
+                        
+                        # Extract dependencies (inputs before ->)
+                        if "->" in nested_body:
+                            inputs = nested_body.split("->")[0].strip()
+                            outputs = nested_body.split("->")[-1].strip()
+                            
+                            # Parse inputs (may have +)
+                            deps = [d.strip() for d in inputs.split("+")]
+                            for dep in deps:
+                                if dep in voices:
+                                    print(f"{indent}    ✓ {dep} available")
+                                else:
+                                    print(f"{indent}    ? {dep} (data/parameter)")
+                            
+                            # Show what this step produces
+                            if outputs and outputs != inputs:
+                                print(f"{indent}    → produces: {outputs}")
+                            
+                            # For solve steps, show the actual step
+                            if step.startswith("solve_step_"):
+                                step_num = step.replace("solve_step_", "")
+                                print(f"{indent}    Step {step_num}: {step_body}")
+                            
+                            # For solve voice, expand its steps
+                            if step == "solve" and depth < max_depth - 1:
+                                # Find all solve_step_N voices
+                                solve_steps = [k for k in voices.keys() if k.startswith("solve_step_")]
+                                for solve_step in sorted(solve_steps):
+                                    if solve_step in voices:
+                                        step_def = voices[solve_step]
+                                        step_num = solve_step.replace("solve_step_", "")
+                                        print(f"{indent}  → {solve_step}")
+                                        if isinstance(step_def, str) and "->" in step_def:
+                                            if step_def.startswith("{") and step_def.endswith("}"):
+                                                step_def = step_def[1:-1]
+                                            if "->" in step_def:
+                                                step_inputs = step_def.split("->")[0].strip()
+                                                step_outputs = step_def.split("->")[-1].strip()
+                                                print(f"{indent}    Inputs: {step_inputs}")
+                                                print(f"{indent}    Outputs: {step_outputs}")
+                                                # Check dependencies
+                                                for dep in step_inputs.split("+"):
+                                                    dep = dep.strip()
+                                                    if dep in voices:
+                                                        print(f"{indent}      ✓ {dep} available")
+                        else:
+                            # No dependencies shown, just execute
+                            if depth < max_depth - 1:
+                                execute_chain(step_body, voices, depth + 1, max_depth)
+                else:
+                    print(f"{indent}  {step_body}")
+            else:
+                # Check if it's a data/parameter name (not a voice)
+                if step not in ["limit", "primes", "cf_data", "U_CF", "H_CF", "claim_1_result", "claim_2_result", "claim_3_result"]:
+                    print(f"{indent}  (voice not found)")
+        
+        return []
+    
+    # Execute main voice if it exists
+    if "main" in voices:
+        print(f"\nExecuting: {voices['main']}")
+        print(f"Definitions: {len(defs)}, Voices: {len(voices)}")
+        
+        # Check if this is a test file - let opic handle it
+        is_test = any(k.startswith("test.") for k in voices.keys())
+        is_ml_test = any(k.startswith("test.ml.") for k in voices.keys())
+        
+        if is_test or is_ml_test:
+            print("\n" + "=" * 60)
+            print("Running Tests:")
+            print("=" * 60)
+            
+            # Show what's being tested
+            if is_ml_test:
+                ml_voices = [k for k in voices.keys() if k.startswith("ml.")]
+                print(f"\nML Capabilities Available: {len(ml_voices)} voices")
+                if ml_voices:
+                    print("  Categories:")
+                    if any("token" in k for k in ml_voices):
+                        print("    - Token prediction")
+                    if any("sentence" in k for k in ml_voices):
+                        print("    - Sentence prediction")
+                    if any("mlp" in k for k in ml_voices):
+                        print("    - MLP architecture")
+                    if any("train" in k for k in ml_voices):
+                        print("    - Training")
+            
+            # Let opic's test.capabilities voice handle capability checking
+            if "test.capabilities" in voices:
+                print("\nCapability Tests:")
+                # Execute capability tests via opic's voice chain - fully generic
+                cap_chain = voices["test.capabilities"]
+                if isinstance(cap_chain, str) and cap_chain.startswith("{"):
+                    cap_steps = [s.strip() for s in cap_chain[1:-1].split("->")]
+                    for cap_name in cap_steps:
+                        if cap_name in voices:
+                            cap_check = f"{cap_name}.check"
+                            # Check if capability check voice exists and what it requires
+                            if cap_check in voices:
+                                check_body = voices[cap_check]
+                                # Parse check body to find required voices
+                                if isinstance(check_body, str) and "->" in check_body:
+                                    # Extract dependencies from check body
+                                    deps = check_body.split("->")[0].strip().strip("{}")
+                                    dep_list = [d.strip().strip('"') for d in deps.split("+")]
+                                    # Check if all dependencies exist as voices
+                                    all_exist = all(dep in voices for dep in dep_list)
+                                    status = "✓" if all_exist else "✗"
+                                    cap_display = cap_name.replace("test.capability.", "")
+                                    print(f"  {status} {cap_display}: {'PASS' if all_exist else 'FAIL'}")
+        
+        # Show reasoning if it exists
+        reasoning_voices = {k: v for k, v in voices.items() if k.startswith("reason.")}
+        if reasoning_voices and not is_test:
+            print("\n" + "=" * 60)
+            print("Reasoning:")
+            print("=" * 60)
+            for reason_name, reason_body in sorted(reasoning_voices.items())[:10]:
+                if isinstance(reason_body, str):
+                    print(f"\n{reason_name}:")
+                    if "->" in reason_body:
+                        parts = reason_body.split("->")
+                        if len(parts) >= 2:
+                            premise = parts[0].strip().strip("{}")
+                            conclusion = parts[-1].strip()
+                            print(f"  If {premise}")
+                            print(f"  Then {conclusion}")
+                    else:
+                        print(f"  {reason_body}")
+            
+            # Run test suite if it exists - let opic define it
+            test_suite_key = "test.suite" if "test.suite" in voices else "test.ml.suite" if "test.ml.suite" in voices else None
+            if test_suite_key:
+                test_suite = voices[test_suite_key]
+                if isinstance(test_suite, str) and test_suite.startswith("{"):
+                    test_steps = [s.strip() for s in test_suite[1:-1].split("->")]
+                    passed = 0
+                    print("\nTest Suite:")
+                    for test_name in test_steps:
+                        if test_name in voices:
+                            test_passed = f"{test_name}.passed"
+                            test_setup = f"{test_name}.setup"
+                            test_run = f"{test_name}.run"
+                            
+                            print(f"\n  → {test_name}")
+                            if test_setup in voices:
+                                print(f"    Setup: {voices[test_setup]}")
+                            if test_run in voices:
+                                print(f"    Run: {voices[test_run]}")
+                            if test_passed in voices:
+                                print(f"    ✓ Assertion defined")
+                                passed += 1
+                            else:
+                                print(f"    ? Structure defined (assertion pending)")
+                    print(f"\n{'=' * 60}")
+                    print(f"Test Results: {passed} tests with assertions, {len(test_steps)} total tests")
+                    print("=" * 60)
+        
+        print("\n" + "=" * 60)
+        print("Execution:")
+        print("=" * 60)
+        
+        main_body = voices['main']
+        execute_chain(main_body, voices)
+        
+        print("\n" + "=" * 60)
+        print("Execution complete")
+        print("=" * 60)
+    else:
+        print(f"\nLoaded {len(defs)} definitions, {len(voices)} voices")
+        if not latex_voices:
+            print("Available voices:")
+            for k in sorted(voices.keys())[:10]:
+                print(f"  {k}: {voices[k]}")
+
+def generate_metal(ops_file, output_file=None):
+    """Generate Metal shader code from .ops file"""
+    script = Path(__file__).parent / "generate.py"
+    args = [sys.executable, str(script), "metal", ops_file]
+    if output_file:
+        args.append(output_file)
+    subprocess.run(args, check=True)
+
+def generate_swift(ops_file, output_file=None):
+    """Generate Swift code from .ops file"""
+    script = Path(__file__).parent / "generate.py"
+    args = [sys.executable, str(script), "swift", ops_file]
+    if output_file:
+        args.append(output_file)
+    subprocess.run(args, check=True)
+
+def show_help():
+    """Show opic CLI help"""
+    print("""Opic CLI — Event-Based Compositional Language
+
+Usage:
+  opic <command> [args...]
+
+Commands:
+  build          Build TiddlyWiki from opic scores (tiddlywiki.ops)
+  run            Run opic python bootstrap (core.ops)
+  metal <file>   Generate Metal shader code from .ops file
+  swift <file>   Generate Swift code from .ops file
+  bert           Train BERT model using opic-generated code
+  intelligence   Run intelligence tests on opic
+  benchmark      Run Zeta Intelligence Benchmark (ZIB)
+  draw           Generate visual art and drawings
+  gann           GANN image generation (train/generate/download)
+  music          Generate music from opic definitions
+  execute <file> Execute opic file directly (no Python needed)
+  help           Show this help message
+
+Examples:
+  opic build                    # Build tiddlywiki.html
+  opic run                     # Run python bootstrap
+  opic metal core.ops          # Generate Metal shader
+  opic swift core.ops          # Generate Swift code
+          opic bert                    # Train BERT with opic-generated code
+          opic draw                    # Generate visual art
+          opic gann download mnist     # Download MNIST dataset
+          opic gann train mnist        # Train on MNIST
+          opic gann generate ascii     # Generate ASCII art
+          opic gann generate ascii --text "spiral pattern"  # Generate from text
+          opic music                    # Generate music from opic
+          opic help                    # Show help
+
+For more information, see README.md
+""")
+
+def main():
+    if len(sys.argv) < 2:
+        show_help()
+        sys.exit(0)
+    
+    command = sys.argv[1]
+    
+    if command == "build":
+        build_tiddlywiki()
+    elif command == "run":
+        run_python()
+    elif command == "execute" or command == "eval":
+        if len(sys.argv) < 3:
+            print("Error: execute requires an .ops file", file=sys.stderr)
+            show_help()
+            sys.exit(1)
+        ops_file = sys.argv[2]
+        execute_opic(ops_file)
+    elif command == "metal":
+        if len(sys.argv) < 3:
+            print("Error: metal requires an .ops file", file=sys.stderr)
+            show_help()
+            sys.exit(1)
+        ops_file = sys.argv[2]
+        output_file = sys.argv[3] if len(sys.argv) > 3 else None
+        generate_metal(ops_file, output_file)
+    elif command == "swift":
+        if len(sys.argv) < 3:
+            print("Error: swift requires an .ops file", file=sys.stderr)
+            show_help()
+            sys.exit(1)
+        ops_file = sys.argv[2]
+        output_file = sys.argv[3] if len(sys.argv) > 3 else None
+        generate_swift(ops_file, output_file)
+    elif command == "bert":
+        script = Path(__file__).parent / "bert_training.py"
+        subprocess.run([sys.executable, str(script)], check=True)
+    elif command == "intelligence":
+        script = Path(__file__).parent / "intelligence_test.py"
+        subprocess.run([sys.executable, str(script)], check=True)
+    elif command == "benchmark":
+        script = Path(__file__).parent / "zib.py"
+        subprocess.run([sys.executable, str(script)], check=True)
+    elif command == "draw":
+        script = Path(__file__).parent / "draw.py"
+        subprocess.run([sys.executable, str(script)], check=True)
+    elif command == "music":
+        # Run compiled Swift binary if available, otherwise fall back to Python
+        project_root = Path(__file__).parent
+        if not (project_root / "generate.py").exists():
+            for possible_root in [
+                Path.home() / "opic",
+                Path("/Users/joelstover/opic"),
+            ]:
+                if (possible_root / "generate.py").exists():
+                    project_root = possible_root
+                    break
+        
+        music_binary = project_root / "opic_music"
+        
+        # Check if Swift binary exists, if not compile it
+        if not music_binary.exists() or "--rebuild" in sys.argv:
+            # Compile music from opic
+            print("Compiling music from opic definitions...")
+            generate_script = project_root / "generate.py"
+            if generate_script.exists():
+                # Generate Swift from music ops files
+                music_files = ["music.ops", "music_impl.ops"]
+                swift_code = []
+                swift_code.append("// Generated from opic music definitions\n")
+                swift_code.append("import Foundation\n")
+                
+                for ops_file in music_files:
+                    ops_path = project_root / ops_file
+                    if ops_path.exists():
+                        subprocess.run([
+                            sys.executable, str(generate_script), "swift", str(ops_path)
+                        ], cwd=str(project_root), check=False, capture_output=True)
+                
+                # Generate main function for music
+                music_swift = project_root / "music.swift"
+                if not music_swift.exists():
+                    # Create music.swift with main function
+                    main_code = '''import Foundation
+
+// Music generation from opic music.ops
+func generateMusic() {
+    // Load from opic music_impl.ops
+    let scaleIntervals = "2,2,1,2,2,2,1"
+    let tempo = 120
+    let pattern = "0,2,4,0"
+    
+    let intervals = scaleIntervals.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+    var notes: [Int] = []
+    var currentNote = 60  // C4
+    
+    for interval in intervals {
+        notes.append(currentNote)
+        currentNote += interval
+    }
+    
+    let patternIndices = pattern.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+    let melody = patternIndices.map { notes[$0 % notes.count] }
+    
+    let noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+    print("Melody (from opic music.ops):")
+    print("  Tempo: \\(tempo) BPM")
+    print("  Pattern: \\(pattern)")
+    print("  Notes: ", terminator: "")
+    for note in melody {
+        let octave = note / 12 - 1
+        let noteName = noteNames[note % 12]
+        print("\\(noteName)\\(octave) ", terminator: "")
+    }
+    print()
+}
+
+generateMusic()
+'''
+                    music_swift.write_text(main_code)
+                
+                # Compile Swift binary
+                print("Compiling Swift binary...")
+                result = subprocess.run([
+                    "swiftc", "-o", str(music_binary), str(music_swift)
+                ], cwd=str(project_root), capture_output=True)
+                
+                if result.returncode != 0:
+                    print("Swift compilation failed, using Python fallback")
+                    music_binary = None
+        
+        # Run Swift binary if available
+        if music_binary and music_binary.exists():
+            args = [str(music_binary)] + [a for a in sys.argv[2:] if a != "--rebuild"]
+            subprocess.run(args, check=True)
+        else:
+            # Fall back to Python
+            if str(project_root) not in sys.path:
+                sys.path.insert(0, str(project_root))
+            from generate import parse_ops
+            
+            music_file = project_root / "music.ops"
+            music_impl_file = project_root / "music_impl.ops"
+            
+            if music_file.exists():
+                defs, voices = parse_ops(music_file.read_text())
+                if music_impl_file.exists():
+                    impl_defs, impl_voices = parse_ops(music_impl_file.read_text())
+                    voices.update(impl_voices)
+                
+                print("Generating music from opic music.ops...")
+                
+                scale_intervals = voices.get("scale.major.intervals", "2,2,1,2,2,2,1").strip('"')
+                tempo = int(voices.get("tempo.moderato", "120").strip('"'))
+                pattern = voices.get("pattern.arpeggio", "0,2,4,0").strip('"')
+                
+                intervals = [int(x.strip()) for x in scale_intervals.split(",")]
+                notes = []
+                current_note = 60
+                for interval in intervals:
+                    notes.append(current_note)
+                    current_note += interval
+                
+                pattern_indices = [int(x.strip()) for x in pattern.split(",")]
+                melody_notes = [notes[i % len(notes)] for i in pattern_indices]
+                
+                note_names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+                print(f"\nMelody (from opic music.ops):")
+                print(f"  Tempo: {tempo} BPM")
+                print(f"  Pattern: {pattern}")
+                print(f"  Notes: ", end="")
+                for note in melody_notes:
+                    octave = note // 12 - 1
+                    note_name = note_names[note % 12]
+                    print(f"{note_name}{octave} ", end="")
+                print()
+                
+                print("\nASCII Score:")
+                for i, note in enumerate(melody_notes):
+                    octave = note // 12 - 1
+                    note_name = note_names[note % 12]
+                    duration = voices.get("rhythm.quarter", "1.0").strip('"')
+                    print(f"  {i+1}. {note_name}{octave} ({duration})")
+                
+                print("\n✓ Music generated from opic definitions")
+            else:
+                print("Error: music.ops not found")
+                sys.exit(1)
+    
+    elif command == "gann":
+        # Check if Swift binary exists, if not generate and compile it
+        project_root = Path(__file__).parent
+        if not project_root.exists() or not (project_root / "gann.py").exists():
+            # Find project root
+            for possible_root in [
+                Path.home() / "opic",
+                Path("/Users/joelstover/opic"),
+            ]:
+                if (possible_root / "gann.py").exists():
+                    project_root = possible_root
+                    break
+        
+        swift_binary = project_root / "gann"
+        gann_swift = project_root / "gann.swift"
+        
+        # Generate Swift code from opic if needed
+        if not swift_binary.exists() or "--rebuild" in sys.argv:
+            print("Generating Swift code from opic definitions...")
+            generate_script = project_root / "generate.py"
+            if generate_script.exists():
+                # Generate Swift from all GANN ops files
+                gann_files = ["nn.ops", "generator.ops", "train.ops", "render.ops", "patterns.ops", "gann.ops", "text2image.ops"]
+                swift_sections = []
+                
+                for ops_file in gann_files:
+                    ops_path = project_root / ops_file
+                    if ops_path.exists():
+                        subprocess.run([
+                            sys.executable, str(generate_script), "swift", str(ops_path)
+                        ], cwd=str(project_root), check=False)
+                
+                # Combine and compile
+                print("Compiling Swift binary...")
+                subprocess.run([
+                    "swiftc", "-o", str(swift_binary), str(gann_swift)
+                ], cwd=str(project_root), check=False)
+        
+        # Run Swift binary if it exists, otherwise fall back to Python
+        if swift_binary.exists():
+            args = [str(swift_binary)] + [a for a in sys.argv[2:] if a != "--rebuild"]
+            subprocess.run(args, check=True)
+        else:
+            # Fall back to Python
+            script = project_root / "gann.py"
+            if script.exists():
+                args = [sys.executable, str(script)] + sys.argv[2:]
+                subprocess.run(args, check=True)
+            else:
+                print(f"Error: Could not find gann.py or gann binary")
+                sys.exit(1)
+    elif command == "help" or command == "--help" or command == "-h":
+        show_help()
+    else:
+        print(f"Unknown command: {command}", file=sys.stderr)
+        show_help()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+

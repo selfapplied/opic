@@ -1,0 +1,54 @@
+;;; math.ops — Mathematical expression generation
+
+;; Math primitives
+def math_expression { symbols, operators, structure }
+def equation { left, right, relation }
+def formula { variables, expression, domain }
+
+;; LaTeX generation
+voice latex.math / {math_expression -> latex_string}
+voice latex.equation / {equation -> latex_equation}
+voice latex.formula / {formula -> latex_formula}
+
+;; Symbolic math
+voice math.symbol / {name -> symbol}
+voice math.operator / {operator_name -> operator_symbol}
+voice math.function / {function_name + arguments -> function_call}
+
+;; Common math expressions
+voice math.sum / {terms -> sum_expression}
+voice math.product / {factors -> product_expression}
+voice math.integral / {integrand + variable + bounds -> integral}
+voice math.derivative / {function + variable + order -> derivative}
+voice math.limit / {expression + variable + point -> limit}
+
+;; Operators
+voice math.plus / "+"
+voice math.minus / "-"
+voice math.times / "×"
+voice math.divide / "/"
+voice math.equals / "="
+voice math.approximately / "≈"
+voice math.proportional / "∝"
+
+;; Complex expressions
+voice math.complex / {real + imaginary -> complex_number}
+voice math.conjugate / {complex -> conjugate}
+voice math.abs / {number -> absolute_value}
+
+;; Set theory
+voice math.set / {elements -> set_notation}
+voice math.element_of / "∈"
+voice math.subset / "⊂"
+voice math.union / "∪"
+voice math.intersection / "∩"
+
+;; Logic
+voice math.implies / "⇒"
+voice math.iff / "⇔"
+voice math.forall / "∀"
+voice math.exists / "∃"
+
+target math / "mathematical_expressions"
+voice main / {math_expression -> math}
+
