@@ -17,3 +17,19 @@ __pycache__/
 *.swp
 *~
 
+# Data files
+data/
+*.png
+*.svg
+*.txt
+*.json
+*.wasm
+*.history
+.zib_history.json
+
+# Build artifacts
+build/
+*.swift
+*.metal
+*.generated
+
