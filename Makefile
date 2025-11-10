@@ -95,7 +95,7 @@ install: compile
 		echo "✓ Installed to /usr/local/bin/opic"; \
 		mkdir -p /usr/local/share/opic && \
 		cp *.ops /usr/local/share/opic/ 2>/dev/null || true && \
-		cp generate.py /usr/local/share/opic/ 2>/dev/null || true && \
+		cp scripts/generate.py /usr/local/share/opic/ 2>/dev/null || true && \
 		echo "✓ Kernel .ops files installed to /usr/local/share/opic/"; \
 		if [ -f .opicup ]; then \
 			cp .opicup /usr/local/share/opic/.opicup && \
@@ -106,7 +106,7 @@ install: compile
 		echo "✓ Installed to $$HOME/.local/bin/opic"; \
 		mkdir -p $$HOME/.local/share/opic && \
 		cp *.ops $$HOME/.local/share/opic/ 2>/dev/null || true && \
-		cp generate.py $$HOME/.local/share/opic/ 2>/dev/null || true && \
+		cp scripts/generate.py $$HOME/.local/share/opic/ 2>/dev/null || true && \
 		echo "✓ Kernel .ops files installed to $$HOME/.local/share/opic/"; \
 		if [ -f .opicup ]; then \
 			cp .opicup $$HOME/.opicup && \
