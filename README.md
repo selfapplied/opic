@@ -337,7 +337,13 @@ opic's dual structure opens several research frontiers:
 - **Field Coherence Dynamics**: simulate Φ(t) to locate the critical line (balanced oscillation)
 - **Cross-Disciplinary Exploration**: connects category theory, physics, and analytic number theory
 
-See [`docs/theory.md`](docs/theory.md) for mathematical foundations and [`docs/riemann_hypothesis_experiment.md`](docs/riemann_hypothesis_experiment.md) for experiment plans.
+**Quick Start Research**:
+```bash
+make riemann-experiment    # Run baseline simulation
+make riemann-visualize     # Generate coherence field heatmap (requires matplotlib)
+```
+
+See [`docs/theory.md`](docs/theory.md) for mathematical foundations, [`docs/riemann_whitepaper.md`](docs/riemann_whitepaper.md) for academic framing, and [`docs/riemann_hypothesis_experiment.md`](docs/riemann_hypothesis_experiment.md) for experiment plans.
 
 ---
 

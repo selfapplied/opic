@@ -6,11 +6,19 @@ Creates interactive visualizations of coherence symmetry field.
 Shows |Φ| vs Re(s) heatmap and critical line exploration.
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
+import sys
 from pathlib import Path
 import json
+
+try:
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as mcolors
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+    print("Warning: matplotlib not installed. Visualization will be limited.")
+    print("Install with: pip install matplotlib numpy")
 
 def compute_zeta_at_s(prime_voices, s):
     """Compute ζ_opic(s) for given s"""
@@ -50,6 +58,10 @@ def simulate_field_at_s(s, time_steps=100):
 
 def create_heatmap():
     """Create heatmap of |Φ| vs Re(s)"""
+    if not HAS_MATPLOTLIB:
+        print("matplotlib required for visualization. Install with: pip install matplotlib numpy")
+        return None
+    
     print("Generating coherence symmetry heatmap...")
     
     # Mock prime voices
