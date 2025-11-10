@@ -1,0 +1,36 @@
+;;; readiness_check.ops — verify opic is ready for install, agents, and repos
+
+include bootstrap.ops
+
+;; Readiness definitions
+def readiness_status { install_ready, agent_ready, repo_ready, issues }
+def readiness_issue { component, status, message }
+
+;; Check install readiness
+voice readiness.check_install / {project_root -> readiness.check_kernel_files + readiness.check_self_contained -> install_ready}
+voice readiness.check_kernel_files / {project_root -> check_bootstrap + check_generate -> kernel_files_exist}
+voice check_bootstrap / {project_root -> file_exists "bootstrap.ops" -> exists}
+voice check_generate / {project_root -> file_exists "generate.py" -> exists}
+voice readiness.check_self_contained / {project_root -> check_install_locations -> self_contained}
+
+;; Check agent readiness
+voice readiness.check_agent / {voices -> readiness.check_help_output + readiness.check_structured_output -> agent_ready}
+voice readiness.check_help_output / {voices -> check_help_agent_format + check_help_human_format -> help_ready}
+voice check_help_agent_format / {voices -> contains "help.agent_format" -> exists}
+voice check_help_human_format / {voices -> contains "help.human_format" -> exists}
+voice readiness.check_structured_output / {voices -> check_json_output -> structured_ready}
+voice check_json_output / {voices -> can_generate_json -> ready}
+
+;; Check repo readiness
+voice readiness.check_repo / {voices -> readiness.check_repo_extension + readiness.check_realm_discovery -> repo_ready}
+voice readiness.check_repo_extension / {voices -> check_repo_extensions -> extension_ready}
+voice check_repo_extensions / {voices -> contains_repo_loading -> ready}
+voice readiness.check_realm_discovery / {voices -> check_realm_discovery -> realm_ready}
+voice check_realm_discovery / {voices -> contains_realm_voices -> ready}
+
+;; Complete readiness check
+voice readiness.check_all / {project_root + voices -> readiness.check_install + readiness.check_agent + readiness.check_repo -> readiness_status}
+
+target readiness_check / "readiness_verification"
+voice main / {readiness.check_all -> readiness_check}
+

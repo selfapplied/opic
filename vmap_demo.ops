@@ -1,0 +1,34 @@
+;;; vmap_demo.ops — demonstration of vmap treating compressed blocks as geometry
+
+include vmap.ops
+include inflate_deflate.ops
+include bootstrap.ops
+
+;; Demo: create vmap from compressed file
+voice demo.create_vmap / {"compressed.zip" -> vmap.create -> demo_vmap}
+voice demo_vmap / {vmap -> "Created vmap with geometry" -> output}
+
+;; Demo: lazy decompression - only decompress accessed blocks
+voice demo.lazy_read / {vmap + offset_0 + length_1024 -> vmap.read -> demo_data}
+voice demo_data / {data -> "Decompressed block 0-1024 just-in-time" -> output}
+
+;; Demo: treat blocks as geometry
+voice demo.block_geometry / {block -> vmap.block_as_geometry -> geometry}
+voice geometry / {geo -> "Block geometry: offset, size, compression_ratio" -> output}
+
+;; Demo: spatial operations on compressed blocks
+voice demo.spatial_ops / {blocks -> vmap.block_operations -> transformed_blocks}
+voice transformed_blocks / {blocks -> "Transformed blocks geometrically" -> output}
+
+;; Demo: unzip just-in-time
+voice demo.unzip_jit / {"file.zip" + access_pattern -> vmap.unzip_jit -> decompressed_view}
+voice access_pattern / {["read_0_1024", "read_2048_1024"] -> pattern}
+voice decompressed_view / {view -> "Only accessed blocks decompressed" -> output}
+
+;; Demo: memory-mapped view
+voice demo.mmap_view / {"compressed.bin" -> vmap.mmap_view -> mmap}
+voice mmap / {view -> "Memory-mapped compressed file" -> output}
+
+target vmap_demo / "vmap_demonstration"
+voice main / {demo.create_vmap -> demo.lazy_read -> demo.block_geometry -> demo.unzip_jit -> vmap_demo}
+

@@ -1,6 +1,8 @@
 ;;; opic_plan.ops — opic suggests a plan for itself
 
 include repos.ops
+include planning_vfs.ops
+include vfs.ops
 include bootstrap.ops
 
 ;; Plan definitions
@@ -133,6 +135,10 @@ voice plan.main / {plan.generate -> plan.display -> plan}
 
 ;; Display plan
 voice plan.display / {plan -> format_plan_output -> displayed_plan}
+
+;; Plan using virtual filesystem: plan in memory, execute, validate, flush
+voice plan.execute_in_vfs / {plan -> planning.plan_in_vfs -> planning.execute_in_vfs -> planning.validate_execution -> planning.flush_validated -> result}
+voice plan.suggest_with_vfs / {directory -> plan.analyze -> plan.generate -> plan.execute_in_vfs -> result}
 
 target opic_plan / "opic_suggests_plan"
 voice main / {plan.main -> opic_plan}

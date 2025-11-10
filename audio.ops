@@ -1,66 +1,36 @@
-;;; audio.ops — Audio output and speech capabilities for opic
+;;; audio.ops — opic handles its own audio/say mode
 
-;; Audio structures
-def audio { sample_rate, channels, format }
-def speech { text, voice, rate, pitch }
-def sound { waveform, duration, frequency }
+include bootstrap.ops
 
-;; Text-to-speech
-voice audio.speak / {text -> speech_output}
-voice audio.speak_text / {text -> generate_speech -> play_audio}
-voice audio.tts / {text -> audio_waveform}
-voice audio.synthesize / {text + voice_params -> audio_data}
+;; Audio definitions
+def audio_request { text, voice, volume }
+def say_command { text, available }
 
-;; Voice selection
-voice audio.select_voice / {voice_name -> voice}
-voice audio.list_voices / {system -> available_voices}
-voice audio.default_voice / "system_default"
-voice audio.voice_params / {rate + pitch + volume -> parameters}
+;; Check if say command is available
+voice audio.check_say / {agent_realm + ca -> audio.find_say_command -> if_available}
+voice audio.find_say_command / {agent_realm + ca -> "say" -> check_command_exists -> say_available}
+voice audio.check_command_exists / {command_name -> system.which -> if_exists}
 
-;; Speech parameters
-voice audio.rate / {words_per_minute -> speech_rate}
-voice audio.pitch / {frequency_hz -> pitch_level}
-voice audio.volume / {level_0_to_1 -> volume_level}
+;; Speak text via say command
+voice audio.speak / {text + agent_realm + ca -> audio.check_say -> audio.format_text -> audio.execute_say -> spoken}
+voice audio.format_text / {text -> replace "_" " " -> replace "." " " -> strip_quotes -> formatted_text}
+voice audio.execute_say / {formatted_text + say_available -> system.run_say -> spoken}
 
-;; Audio output
-voice audio.play / {audio_data -> output_to_speakers}
-voice audio.output / {sound -> audio_out}
-voice audio.stream / {audio_stream -> continuous_output}
+;; Check if audio should be enabled for this execution
+voice audio.should_enable / {voices + agent_realm + ca -> audio.has_audio_voices -> if_yes_enable}
+voice audio.has_audio_voices / {voices -> filter "audio." -> if_any -> has_audio}
+voice audio.filter_audio_voices / {voices -> keys_starting_with "audio." -> audio_voices}
 
-;; Speaking opic voices
-voice audio.speak_voice / {voice_name -> get_voice_body -> speak_text}
-voice audio.speak_goal / {goal -> speak_text}
-voice audio.speak_plan / {plan -> speak_steps}
-voice audio.speak_reasoning / {reasoning -> speak_explanation}
+;; Main audio handler
+voice audio.handle / {voices + main_body + agent_realm + ca -> audio.should_enable -> if_enabled_handle -> audio_done}
+voice audio.if_enabled_handle / {has_audio + voices + main_body -> if_has_audio_speak -> audio_done}
+voice audio.if_has_audio_speak / {has_audio -> if_true -> audio.find_speak_voices -> audio.speak_selected -> spoken}
 
-;; Speaking chains
-voice audio.speak_chain / {chain -> speak_step_1 -> speak_step_2 -> ... -> speak_step_n}
-voice audio.speak_execution / {execution_step -> speak_status}
+;; Find speak voices
+voice audio.find_speak_voices / {voices -> filter "audio.speak_" -> speak_voices}
+voice audio.select_speak_voice / {speak_voices -> prefer "audio.speak_goal" -> selected_voice}
+voice audio.speak_selected / {selected_voice + voices -> audio.extract_text -> audio.speak -> spoken}
+voice audio.extract_text / {voice_chain + voices -> parse_chain -> extract_source -> get_voice_text -> text}
 
-;; Interactive speaking
-voice audio.speak_interactive / {user_input -> process -> speak_response}
-voice audio.speak_question / {question -> speak_text}
-voice audio.speak_answer / {answer -> speak_text}
-
-;; Speaking mathematical content
-voice audio.speak_latex / {latex_equation -> convert_to_speech -> speak}
-voice audio.speak_formula / {formula -> verbalize -> speak}
-
-;; Speaking test results
-voice audio.speak_test_results / {test_results -> summarize -> speak}
-voice audio.speak_capabilities / {capabilities -> list -> speak}
-
-;; Audio formats
-voice audio.format_wav / {audio_data -> wav_format}
-voice audio.format_mp3 / {audio_data -> mp3_format}
-voice audio.format_pcm / {audio_data -> pcm_format}
-
-;; Audio control
-voice audio.stop / {stop_playback}
-voice audio.pause / {pause_playback}
-voice audio.resume / {resume_playback}
-voice audio.volume_control / {level -> set_volume}
-
-target audio / "audio_output_capabilities"
-voice main / {audio.speak -> audio.play -> audio}
-
+target audio / "audio"
+voice main / {audio.handle -> audio}

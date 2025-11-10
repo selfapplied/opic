@@ -86,20 +86,28 @@ compile-gann:
 
 # Install opic (aligned with opic.self_install from opic_compile.ops)
 # Makes opic available between restarts (system-wide installation)
+# Self-contained: bundles kernel .ops files so repo not needed
 # opic.compile_install -> opic.self_compile -> opic.self_install -> opic.ready
 install: compile
-	@echo "Installing opic system-wide (persists between restarts)..."
+	@echo "Installing opic system-wide (self-contained, persists between restarts)..."
 	@if [ -w /usr/local/bin ] 2>/dev/null; then \
 		install -m 755 opic /usr/local/bin/opic && \
 		echo "✓ Installed to /usr/local/bin/opic"; \
+		mkdir -p /usr/local/share/opic && \
+		cp *.ops /usr/local/share/opic/ 2>/dev/null || true && \
+		cp generate.py /usr/local/share/opic/ 2>/dev/null || true && \
+		echo "✓ Kernel .ops files installed to /usr/local/share/opic/"; \
 		if [ -f .opicup ]; then \
-			mkdir -p /usr/local/share/opic && \
 			cp .opicup /usr/local/share/opic/.opicup && \
 			echo "✓ Witness checkpoint installed to /usr/local/share/opic/.opicup"; \
 		fi; \
 	elif [ -w $$HOME/.local/bin ] 2>/dev/null || mkdir -p $$HOME/.local/bin 2>/dev/null; then \
 		install -m 755 opic $$HOME/.local/bin/opic && \
 		echo "✓ Installed to $$HOME/.local/bin/opic"; \
+		mkdir -p $$HOME/.local/share/opic && \
+		cp *.ops $$HOME/.local/share/opic/ 2>/dev/null || true && \
+		cp generate.py $$HOME/.local/share/opic/ 2>/dev/null || true && \
+		echo "✓ Kernel .ops files installed to $$HOME/.local/share/opic/"; \
 		if [ -f .opicup ]; then \
 			cp .opicup $$HOME/.opicup && \
 			echo "✓ Witness checkpoint installed to $$HOME/.opicup"; \
@@ -108,6 +116,7 @@ install: compile
 		echo "⚠ Error: No writable installation directory found"; \
 		exit 1; \
 	fi
+	@echo "✓ opic is self-contained (kernel .ops files bundled)"
 	@echo "✓ opic will be available after restart (run 'opic' from anywhere)"
 
 compile: check-opic

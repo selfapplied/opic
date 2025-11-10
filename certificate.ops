@@ -1,7 +1,7 @@
 ;;; certificate.ops — certificate-based permission system for opic
 
-;; Certificate definitions (with legal terms)
-def certificate { issuer, subject, permissions, signature, expires, realm, ca, legal_terms, jurisdiction, fiduciary_duty }
+;; Certificate definitions (with legal terms and capability summary)
+def certificate { issuer, subject, permissions, signature, expires, realm, ca, legal_terms, jurisdiction, fiduciary_duty, capability_summary, tags, semantic_summary }
 def permission { resource, action, constraints, realm }
 def resource { type, path, pattern, realm }
 def action { read, write, execute, create, delete }

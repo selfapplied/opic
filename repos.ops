@@ -2,9 +2,10 @@
 
 ;; Include ML capabilities for summarization (auto-loaded via attention if ml.sentence_predict is referenced)
 ;; include ml.ops
+include repo_realm.ops
 
 ;; Repository state
-def repository { path, is_git, initialized }
+def repository { path, is_git, initialized, realm, structure }
 def repo_list { repositories }
 def directory_type { is_repo, contains_repos }
 
@@ -54,8 +55,8 @@ voice repos.format_with_summaries / {repos_with_summaries -> format_list -> outp
 voice format_list / {repos -> sort -> format -> output}
 voice display / {output -> print -> stdout}
 
-;; Main repository management chain
-voice repos.run / {repos.home -> repos.collect -> repos.list -> repos}
+;; Main repository management chain (with realm discovery)
+voice repos.run / {repos.home -> repos.collect -> repo.discover_each -> repo.create_realms -> repos.list -> repos}
 
 target repos / "opic_repos"
 voice main / {repos.run -> repos}

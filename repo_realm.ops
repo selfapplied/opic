@@ -1,0 +1,122 @@
+;;; repo_realm.ops — repository-aware realms and field discovery
+
+include certificate.ops
+include repos.ops
+include bootstrap.ops
+
+;; Repository field definitions (characteristics opic learns)
+def repo_field { name, value, confidence, discovered_at }
+def repo_structure { language, build_system, test_framework, conventions, patterns }
+def repo_conventions { naming, organization, documentation, dependencies }
+def repo_patterns { file_structure, import_patterns, test_patterns, build_patterns }
+
+;; Repository realm (each repo is its own realm)
+def repo_realm { repo_path, realm_name, ca, structure, fields, discovered_at, trust_level }
+def repo_discovery { repo_path, structure, fields, confidence }
+
+;; Discover repository structure
+voice repo.discover / {repo_path -> repo.scan_structure -> repo.analyze_language -> repo.analyze_build -> repo.analyze_tests -> repo.analyze_conventions -> repo_structure}
+voice repo.scan_structure / {repo_path -> list_files -> analyze_file_types -> file_structure}
+voice repo.analyze_language / {file_structure -> detect_languages -> primary_language}
+voice repo.analyze_build / {file_structure -> detect_build_files -> build_system}
+voice repo.analyze_tests / {file_structure -> detect_test_files -> test_framework}
+voice repo.analyze_conventions / {file_structure -> analyze_naming -> analyze_organization -> analyze_docs -> conventions}
+
+;; Detect languages from files
+voice repo.detect_languages / {files -> count_by_extension -> rank_languages -> primary_language}
+voice count_by_extension / {files -> group_by_ext -> count_each -> language_counts}
+voice rank_languages / {language_counts -> sort_by_count -> top_language}
+
+;; Detect build systems
+voice repo.detect_build_files / {files -> find_makefile + find_cmake + find_gradle + find_maven + find_npm + find_cargo + find_pip -> build_system}
+voice find_makefile / {files -> filter "Makefile" -> if_exists "make"}
+voice find_cmake / {files -> filter "CMakeLists.txt" -> if_exists "cmake"}
+voice find_gradle / {files -> filter "build.gradle" -> if_exists "gradle"}
+voice find_maven / {files -> filter "pom.xml" -> if_exists "maven"}
+voice find_npm / {files -> filter "package.json" -> if_exists "npm"}
+voice find_cargo / {files -> filter "Cargo.toml" -> if_exists "cargo"}
+voice find_pip / {files -> filter "requirements.txt" + filter "setup.py" + filter "pyproject.toml" -> if_exists "pip"}
+
+;; Detect test frameworks
+voice repo.detect_test_files / {files -> find_pytest + find_jest + find_junit + find_rspec + find_mocha -> test_framework}
+voice find_pytest / {files -> filter "test_*.py" + filter "*_test.py" -> if_exists "pytest"}
+voice find_jest / {files -> filter "*.test.js" + filter "*.spec.js" -> if_exists "jest"}
+voice find_junit / {files -> filter "*Test.java" -> if_exists "junit"}
+voice find_rspec / {files -> filter "*_spec.rb" -> if_exists "rspec"}
+voice find_mocha / {files -> filter "test/" -> if_exists "mocha"}
+
+;; Analyze conventions
+voice repo.analyze_naming / {files -> extract_names -> analyze_naming_pattern -> naming_convention}
+voice extract_names / {files -> parse_names -> names}
+voice analyze_naming_pattern / {names -> check_snake_case + check_camelCase + check_kebab-case + check_PascalCase -> naming_convention}
+voice repo.analyze_organization / {files -> analyze_directory_structure -> organization_pattern}
+voice analyze_directory_structure / {files -> group_by_directory -> analyze_hierarchy -> organization_pattern}
+voice repo.analyze_docs / {files -> find_readme + find_docs_dir + find_comments -> documentation_pattern}
+
+;; Create realm for repository
+voice repo.create_realm / {repo_path + repo_structure -> repo.generate_realm_name -> repo.create_ca -> repo.create_realm -> repo_realm}
+voice repo.generate_realm_name / {repo_path -> extract_repo_name -> sanitize_name -> realm_name}
+voice extract_repo_name / {path -> basename -> repo_name}
+voice sanitize_name / {name -> to_lowercase -> replace_spaces -> realm_name}
+voice repo.create_ca / {realm_name + repo_path -> cert.create_agent_ca -> repo_ca}
+voice repo.create_realm / {realm_name + repo_ca + repo_structure -> cert.create_realm -> repo_realm}
+
+;; Discover repository fields (characteristics)
+voice repo.discover_fields / {repo_structure -> repo.extract_fields -> repo.confidence_fields -> repo_fields}
+voice repo.extract_fields / {structure -> extract_language_field + extract_build_field + extract_test_field + extract_convention_fields -> fields}
+voice extract_language_field / {structure -> get_language -> repo_field "language"}
+voice extract_build_field / {structure -> get_build -> repo_field "build_system"}
+voice extract_test_field / {structure -> get_test -> repo_field "test_framework"}
+voice extract_convention_fields / {structure -> get_conventions -> map_to_fields -> convention_fields}
+voice repo.confidence_fields / {fields -> calculate_confidence -> update_confidence -> confident_fields}
+voice calculate_confidence / {field -> check_evidence_strength -> confidence_score}
+
+;; Learn repository patterns (for graceful adaptation)
+voice repo.learn_patterns / {repo_path + repo_structure -> repo.learn_imports -> repo.learn_file_structure -> repo.learn_test_patterns -> repo.learn_build_patterns -> learned_patterns}
+voice repo.learn_imports / {files -> extract_imports -> analyze_import_patterns -> import_patterns}
+voice extract_imports / {files -> parse_imports -> imports}
+voice analyze_import_patterns / {imports -> group_by_type -> find_patterns -> import_pattern}
+voice repo.learn_file_structure / {files -> analyze_hierarchy -> find_structure_pattern -> file_structure_pattern}
+voice repo.learn_test_patterns / {files -> find_tests -> analyze_test_structure -> test_pattern}
+voice repo.learn_build_patterns / {build_system -> analyze_build_steps -> build_pattern}
+
+;; Adapt to repository (use learned patterns)
+voice repo.adapt / {repo_realm + learned_patterns -> repo.create_adaptation_voices -> repo.register_adaptations -> adapted}
+voice repo.create_adaptation_voices / {patterns -> generate_voices -> adaptation_voices}
+voice generate_voices / {pattern -> create_voice_for_pattern -> voice}
+voice repo.register_adaptations / {voices + repo_realm -> register_in_realm -> registered}
+
+;; Graceful repository interaction
+voice repo.interact / {repo_path -> repo.discover -> repo.create_realm -> repo.learn_patterns -> repo.adapt -> repo.execute_with_context -> result}
+voice repo.execute_with_context / {repo_realm + learned_patterns + action -> repo.select_appropriate_voice -> repo.execute_in_context -> result}
+voice repo.select_appropriate_voice / {action + patterns -> match_pattern -> appropriate_voice}
+voice repo.execute_in_context / {voice + repo_realm + context -> cert.guard_execute -> execute -> result}
+
+;; Trust and cross-realm access
+voice repo.trust_repo / {repo_realm + agent_realm + ca -> cert.trust_realm -> trusted}
+voice repo.check_access / {repo_path + agent_realm + ca -> repo.find_repo_realm -> cert.check_realm_access -> access_granted}
+voice repo.find_repo_realm / {repo_path -> lookup_realm -> repo_realm}
+
+;; Repository field registry (learned characteristics)
+voice repo.register_fields / {repo_path + fields -> save_fields -> registered}
+voice repo.load_fields / {repo_path -> load_saved_fields -> fields}
+voice repo.update_fields / {repo_path + new_fields -> merge_fields -> update_confidence -> updated_fields}
+
+;; Field-based adaptation
+voice repo.adapt_to_language / {language_field + action -> select_language_specific_voice -> adapted_action}
+voice repo.adapt_to_build / {build_field + action -> select_build_specific_voice -> adapted_action}
+voice repo.adapt_to_tests / {test_field + action -> select_test_specific_voice -> adapted_action}
+voice repo.adapt_to_conventions / {convention_fields + action -> select_convention_specific_voice -> adapted_action}
+
+;; Multi-repository coordination
+voice repo.coordinate / {repos -> repo.discover_each -> repo.create_realms -> repo.establish_trust -> coordinated}
+voice repo.discover_each / {repos -> for_each -> repo.discover -> discovered_repos}
+voice repo.create_realms / {discovered_repos -> for_each -> repo.create_realm -> repo_realms}
+voice repo.establish_trust / {repo_realms + agent_realm -> for_each -> repo.trust_repo -> trusted_realms}
+
+;; Repository-aware execution
+voice repo.execute_aware / {repo_path + action + agent_realm + ca -> repo.discover -> repo.create_realm -> repo.learn_patterns -> repo.adapt -> repo.execute_with_context -> result}
+
+target repo_realm / "repository_realm_system"
+voice main / {repo.discover -> repo_realm}
+

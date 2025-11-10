@@ -1,0 +1,32 @@
+;;; opic_cli.ops — opic CLI command definitions (Typer/Textual integration)
+
+include bootstrap.ops
+
+;; CLI definitions
+def cli_command { name, description, ops_file, args }
+def cli_app { name, commands }
+
+;; Command registry
+voice cli.register_command / {name + description + ops_file + args -> add_to_registry -> registered}
+voice cli.find_command / {name + registry -> lookup -> command_def}
+voice cli.execute_command / {command_def + args -> load_ops_file -> execute_opic -> output}
+
+;; Commands
+voice cli.cmd_execute / {"execute" + "Execute an opic file" + "bootstrap.ops" + "file" -> cli.register_command}
+voice cli.cmd_repos / {"repos" + "List repositories" + "repos.ops" + "directory" -> cli.register_command}
+voice cli.cmd_help / {"help" + "Show help" + "opic_help.ops" + "" -> cli.register_command}
+voice cli.cmd_test / {"test" + "Run tests" + "runtime_test.ops" + "" -> cli.register_command}
+voice cli.cmd_compile / {"compile" + "Self-compile" + "opic_compile.ops" + "" -> cli.register_command}
+voice cli.cmd_plan / {"plan" + "Suggest plan" + "opic_plan.ops" + "" -> cli.register_command}
+voice cli.cmd_bootstrap / {"bootstrap" + "Bring opic up" + "bootstrap.ops" + "" -> cli.register_command}
+
+;; Register all commands
+voice cli.register_all / {cli.cmd_execute + cli.cmd_repos + cli.cmd_help + cli.cmd_test + cli.cmd_compile + cli.cmd_plan + cli.cmd_bootstrap -> registry}
+
+;; Typer integration (Python reads opic_cli.ops directly - no shim)
+voice cli.typer_app / {registry -> typer_app}
+voice cli.textual_ui / {registry -> textual_app}
+
+target opic_cli / "opic_cli"
+voice main / {cli.register_all -> cli.typer_app -> opic_cli}
+
