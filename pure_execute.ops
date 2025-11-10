@@ -1,0 +1,26 @@
+;;; pure_execute.ops — Pure opic execution without Python scaffolding
+
+;; Pure opic parser (defined in opic)
+voice pure.parse_ops / {ops_text -> defs + voices}
+voice pure.parse_line / {line -> def_or_voice}
+voice pure.parse_def / {def_line -> def_name + def_fields}
+voice pure.parse_voice / {voice_line -> voice_name + voice_body}
+
+;; Pure opic executor (defined in opic)
+voice pure.execute_chain / {chain_string -> parse_steps -> execute_steps -> result}
+voice pure.parse_steps / {chain -> step_list}
+voice pure.execute_steps / {steps -> for_each_step -> execute -> collect_results}
+voice pure.execute_step / {step_name -> find_voice -> resolve_body -> execute}
+
+;; Pure opic runtime (all in opic)
+voice pure.runtime / {ops_file -> parse_ops -> find_main -> execute_main -> output}
+voice pure.find_main / {voices -> main_voice}
+voice pure.execute_main / {main_voice -> execute_chain}
+
+;; Self-contained execution
+voice pure.self_execute / {pure.runtime -> run}
+voice pure.no_scaffolding / {ops_file -> pure.runtime -> result}
+
+target pure_execute / "pure_opic_execution"
+voice main / {pure.self_execute -> pure_execute}
+

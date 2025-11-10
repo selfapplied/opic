@@ -1,0 +1,25 @@
+;;; music.ops — Music generation in opic
+
+def note { pitch, duration, velocity }
+def chord { notes, root, quality }
+def scale { root, mode, intervals }
+def melody { notes, rhythm, tempo }
+def harmony { chords, progression, key }
+
+voice generate.note / {pitch + duration -> note}
+voice generate.chord / {root + quality -> chord}
+voice generate.scale / {root + mode -> scale}
+voice generate.melody / {scale + rhythm -> melody}
+voice generate.harmony / {key + progression -> harmony}
+
+voice play.note / {note -> sound}
+voice play.chord / {chord -> sound}
+voice play.melody / {melody -> music}
+voice play.harmony / {harmony -> music}
+
+voice compose.music / {melody + harmony -> composition}
+voice render.music / {composition + format -> audio}
+
+target music.output / "audio.file"
+voice main / {scale + rhythm -> music.output}
+

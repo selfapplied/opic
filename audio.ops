@@ -1,0 +1,66 @@
+;;; audio.ops — Audio output and speech capabilities for opic
+
+;; Audio structures
+def audio { sample_rate, channels, format }
+def speech { text, voice, rate, pitch }
+def sound { waveform, duration, frequency }
+
+;; Text-to-speech
+voice audio.speak / {text -> speech_output}
+voice audio.speak_text / {text -> generate_speech -> play_audio}
+voice audio.tts / {text -> audio_waveform}
+voice audio.synthesize / {text + voice_params -> audio_data}
+
+;; Voice selection
+voice audio.select_voice / {voice_name -> voice}
+voice audio.list_voices / {system -> available_voices}
+voice audio.default_voice / "system_default"
+voice audio.voice_params / {rate + pitch + volume -> parameters}
+
+;; Speech parameters
+voice audio.rate / {words_per_minute -> speech_rate}
+voice audio.pitch / {frequency_hz -> pitch_level}
+voice audio.volume / {level_0_to_1 -> volume_level}
+
+;; Audio output
+voice audio.play / {audio_data -> output_to_speakers}
+voice audio.output / {sound -> audio_out}
+voice audio.stream / {audio_stream -> continuous_output}
+
+;; Speaking opic voices
+voice audio.speak_voice / {voice_name -> get_voice_body -> speak_text}
+voice audio.speak_goal / {goal -> speak_text}
+voice audio.speak_plan / {plan -> speak_steps}
+voice audio.speak_reasoning / {reasoning -> speak_explanation}
+
+;; Speaking chains
+voice audio.speak_chain / {chain -> speak_step_1 -> speak_step_2 -> ... -> speak_step_n}
+voice audio.speak_execution / {execution_step -> speak_status}
+
+;; Interactive speaking
+voice audio.speak_interactive / {user_input -> process -> speak_response}
+voice audio.speak_question / {question -> speak_text}
+voice audio.speak_answer / {answer -> speak_text}
+
+;; Speaking mathematical content
+voice audio.speak_latex / {latex_equation -> convert_to_speech -> speak}
+voice audio.speak_formula / {formula -> verbalize -> speak}
+
+;; Speaking test results
+voice audio.speak_test_results / {test_results -> summarize -> speak}
+voice audio.speak_capabilities / {capabilities -> list -> speak}
+
+;; Audio formats
+voice audio.format_wav / {audio_data -> wav_format}
+voice audio.format_mp3 / {audio_data -> mp3_format}
+voice audio.format_pcm / {audio_data -> pcm_format}
+
+;; Audio control
+voice audio.stop / {stop_playback}
+voice audio.pause / {pause_playback}
+voice audio.resume / {resume_playback}
+voice audio.volume_control / {level -> set_volume}
+
+target audio / "audio_output_capabilities"
+voice main / {audio.speak -> audio.play -> audio}
+

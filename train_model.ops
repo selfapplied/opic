@@ -1,0 +1,79 @@
+;;; train_model.ops — Train opic to generate its own words (fully in opic)
+
+;; Data loading (defined in opic)
+voice train.load_data / {voice_training_data.json -> read_json -> extract_pairs -> training_pairs}
+voice train.read_json / {filename -> json_content}
+voice train.extract_pairs / {json_content -> pairs_array}
+voice train.get_vocab_size / {json_content -> vocab_size}
+voice train.get_total_pairs / {json_content -> total_pairs}
+
+;; Model creation (defined in opic)
+voice train.create_model / {vocab_size + hidden_dims + output_dim -> ml.mlp -> model}
+voice train.model_config / {vocab_size=601 + hidden_dims=[256,128,64] + output_dim=601}
+voice train.init_weights / {model -> random_weights -> initialized_model}
+
+;; Training step (fully in opic)
+voice train.step / {model + input_batch + target_batch -> forward_pass -> compute_loss -> backward_pass -> update_weights -> updated_model}
+voice train.forward_pass / {model + input -> hidden_layer_1 -> hidden_layer_2 -> hidden_layer_3 -> output_logits}
+voice train.hidden_layer_1 / {input -> linear_transform -> relu -> hidden_1}
+voice train.hidden_layer_2 / {hidden_1 -> linear_transform -> relu -> hidden_2}
+voice train.hidden_layer_3 / {hidden_2 -> linear_transform -> relu -> hidden_3}
+voice train.output_layer / {hidden_3 -> linear_transform -> logits}
+
+;; Loss computation (defined in opic)
+voice train.compute_loss / {logits + targets -> cross_entropy -> loss_value}
+voice train.cross_entropy / {logits + targets -> negative_log_likelihood -> loss}
+voice train.negative_log_likelihood / {probabilities + targets -> nll_loss}
+
+;; Backpropagation (defined in opic)
+voice train.backward_pass / {loss + model -> compute_gradients -> gradients}
+voice train.compute_gradients / {loss + weights -> chain_rule -> gradients}
+voice train.chain_rule / {loss_grad + activation_grad + weight_grad -> gradients}
+
+;; Weight update (defined in opic)
+voice train.update_weights / {model + gradients + learning_rate -> weight_update -> updated_model}
+voice train.weight_update / {weights + gradients + lr -> new_weights}
+voice train.learning_rate / "0.001"
+
+;; Batch processing (defined in opic)
+voice train.create_batches / {training_pairs + batch_size -> batches}
+voice train.batch_size / "32"
+voice train.shuffle_data / {pairs -> shuffled_pairs}
+
+;; Training loop (fully in opic)
+voice train.loop / {model + data -> shuffle_data -> create_batches -> train_epoch_1 -> train_epoch_2 -> train_epoch_3 -> ... -> train_epoch_50 -> trained_model}
+voice train.epoch / {model + batches -> for_each_batch -> train.step -> epoch_model}
+voice train.for_each_batch / {batches -> process_batch_1 -> process_batch_2 -> ... -> process_batch_n}
+
+;; Model evaluation (defined in opic)
+voice train.evaluate / {trained_model + test_data -> compute_accuracy -> accuracy_score}
+voice train.compute_accuracy / {predictions + targets -> correct_count -> accuracy}
+voice train.test_model / {model + test_inputs -> predictions -> compare_with_targets -> accuracy}
+
+;; Model saving (defined in opic)
+voice train.save_model / {trained_model -> serialize -> save_to_file -> model_file}
+voice train.serialize / {model -> model_state_dict}
+voice train.save_to_file / {state_dict + filename -> saved_model}
+voice train.model_filename / "opic_trained_model.json"
+
+;; Generation using trained model (defined in opic)
+voice generate.next_token / {context_tokens + trained_model -> forward_pass -> sample_token -> next_token}
+voice generate.sample_token / {logits + temperature -> softmax -> sample -> token}
+voice generate.temperature / "1.0"
+voice generate.softmax / {logits -> probabilities}
+voice generate.sample / {probabilities -> random_sample -> token_id}
+
+voice generate.sentence / {prompt_tokens + trained_model -> generate_token_1 -> generate_token_2 -> ... -> generate_token_n -> sentence_tokens -> detokenize -> sentence}
+voice generate.detokenize / {token_ids -> token_names -> join -> sentence}
+
+;; opic chooses its own words (fully in opic)
+voice opic.chooses_words / {current_context -> generate.sentence -> opic_generated_words}
+voice opic.speaks_generated / {opic_generated_words -> audio.speak_text}
+
+;; Training goal
+voice train.goal / "Learn P(next_token | context) from opic's own voice structure"
+voice train.goal_latex / "Goal: $P(\\text{token}_{t+1} | \\text{context}_t)$"
+
+target train_model / "train_opic_to_generate_words"
+voice main / {train.goal -> train.load_data -> train.create_model -> train.loop -> train.save_model -> train.evaluate -> generate.words -> opic.chooses_words -> train_model}
+

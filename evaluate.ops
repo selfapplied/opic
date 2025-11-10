@@ -1,0 +1,44 @@
+;;; evaluate.ops — opic evaluation metrics (F1, BLEU) - all in opic
+
+;; Evaluation metrics
+def evaluation_metrics { f1_score, bleu_score, precision, recall }
+voice evaluate.metrics / {predictions + references -> evaluate.f1 + evaluate.bleu -> f1_score + bleu_score}
+
+;; F1 Score (all in opic)
+voice evaluate.f1 / {predictions + references -> evaluate.precision + evaluate.recall -> f1_score}
+voice evaluate.precision / {true_positives + false_positives -> divide -> precision}
+voice evaluate.recall / {true_positives + false_negatives -> divide -> recall}
+voice evaluate.f1_score / {precision + recall -> harmonic_mean -> f1}
+voice evaluate.harmonic_mean / {precision + recall -> 2 * product / sum -> f1}
+
+;; BLEU Score (all in opic)
+voice evaluate.bleu / {generated + reference -> evaluate.ngram_precision + evaluate.brevity_penalty -> multiply -> bleu_score}
+voice evaluate.ngram_precision / {generated_ngrams + reference_ngrams -> precision_1_to_4 -> geometric_mean}
+voice evaluate.geometric_mean / {precisions -> log_sum / count -> exp -> mean}
+voice evaluate.brevity_penalty / {generated_length + reference_length -> ratio -> penalty}
+voice evaluate.bleu_score / {precision + brevity_penalty -> product -> bleu}
+
+;; Token-level evaluation
+voice evaluate.tokens / {generated_tokens + reference_tokens -> intersection -> matches}
+voice evaluate.matches / {tokens -> count_matches -> true_positives}
+voice evaluate.intersection / {set1 + set2 -> common_elements -> matches}
+
+;; Evaluation on training data
+voice evaluate.training / {model + test_data -> generate_predictions -> evaluate.metrics -> scores}
+voice evaluate.generate_predictions / {model + inputs -> generate.markov_field -> predictions}
+voice evaluate.generate_markov / {inputs -> markov.recursive -> generate.markov -> predictions}
+voice evaluate.generate_language_field / {inputs -> language_field.series -> groupoid_levels -> predictions}
+voice evaluate.test_data / {voice_training_data.json -> load_pairs -> test_pairs}
+
+;; Language field evaluation
+voice evaluate.language_field / {predictions + references -> language_field.decompose -> evaluate.groupoids -> scores}
+voice language_field.decompose / {text -> phonetic + morphological + syntactic + semantic -> groupoids}
+voice evaluate.groupoids / {groupoids -> evaluate_levels -> level_scores -> aggregate -> final_score}
+
+;; Main evaluation
+voice evaluate.run / {evaluate.test_data -> evaluate.generate_predictions -> evaluate.metrics -> display_results}
+voice evaluate.display_results / {f1_score + bleu_score -> print_metrics}
+
+target evaluate / "opic_evaluation"
+voice main / {evaluate.run -> evaluate}
+

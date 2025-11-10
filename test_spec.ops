@@ -1,0 +1,15 @@
+;;; test_spec.ops — Test specifications in opic
+
+def test_case { name, input_params, expected_output, assertion }
+
+voice test.mse / {prediction: 0.8, target: 1.0 -> loss: 0.04}
+voice test.crossentropy / {prediction: 0.9, target: 1.0 -> loss: ~0.105}
+voice test.optimization / {weight: 1.0, loss: 0.5, learning_rate: 0.01 -> updated: 0.995}
+voice test.synthesis / {quantum: "superposition", archetype: "collective" -> hybrid: ("superposition", "collective")}
+
+voice assert.equals / {actual + expected -> pass}
+voice assert.contains / {result + substring -> pass}
+
+target test.spec / "test.expectations"
+voice main / {test.name -> test.spec}
+

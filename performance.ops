@@ -1,0 +1,18 @@
+;;; performance.ops — performance test definitions
+
+def benchmark { name, iterations, size }
+
+def result { benchmark, time, throughput }
+
+voice compute.intensive / {data -> processed}
+
+voice parallel.compute / {data -> processed}
+
+voice measure.performance / {benchmark -> result}
+
+voice run.benchmark / {benchmark -> result}
+
+target performance / "benchmark.result"
+
+voice main / {benchmark -> performance}
+

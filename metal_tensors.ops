@@ -1,0 +1,40 @@
+;;; metal_tensors.ops — Use Metal shaders for tensor operations (all in opic)
+
+;; Metal device and library
+def metal_device { device, library, command_queue }
+def metal_buffer { buffer, length, data }
+def metal_kernel { function, pipeline_state }
+
+;; Load Metal shaders
+voice metal.load_device / {metal_create_device -> metal_device}
+voice metal.create_device / {system -> default_metal_device}
+voice metal.load_library / {tensor_operations.metal + metal_device -> compile_shaders -> metal_library}
+voice metal.compile_shaders / {metal_file + device -> new_library -> library}
+
+;; Create Metal buffers from embeddings
+voice metal.create_query_buffer / {query_embedding + device -> float32_buffer -> query_buffer}
+voice metal.create_embeddings_buffer / {embeddings_array + device -> float32_buffer -> embeddings_buffer}
+voice metal.create_output_buffer / {size + device -> uint32_buffer -> output_buffer}
+voice metal.float32_buffer / {data + device -> new_buffer -> buffer}
+voice metal.uint32_buffer / {size + device -> new_buffer -> buffer}
+
+;; Execute Metal kernels
+voice metal.execute_nearest_neighbor / {query_buffer + embeddings_buffer + device + library -> nearest_neighbor_kernel -> nearest_index}
+voice metal.execute_k_nearest / {query_buffer + embeddings_buffer + k + device + library -> k_nearest_kernel -> k_indices}
+voice metal.execute_topological_explore / {query_buffer + map_buffer + k + device + library -> topological_explore_kernel -> prediction}
+
+;; Kernel execution pipeline
+voice metal.setup_kernel / {kernel_name + library -> get_function -> create_pipeline -> kernel}
+voice metal.get_function / {name + library -> new_function -> function}
+voice metal.create_pipeline / {function + device -> new_pipeline -> pipeline}
+voice metal.encode_kernel / {kernel + buffers + command_encoder -> encode}
+voice metal.dispatch_kernel / {encoder + threadgroups -> dispatch}
+voice metal.read_result / {output_buffer -> contents -> read_uint32 -> index}
+
+;; Main: use Metal for topological exploration
+voice evaluate.with_metal_shaders / {test_data + embeddings + metal_device + metal_library -> metal.execute_topological_explore -> predictions -> evaluate.metrics -> scores}
+voice metal.topological_predict / {query + embeddings + device + library -> metal.execute_topological_explore -> prediction}
+
+target metal_tensors / "use_metal_shaders_for_tensors"
+voice main / {evaluate.with_metal_shaders -> metal_tensors}
+

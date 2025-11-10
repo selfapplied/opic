@@ -1,0 +1,67 @@
+;;; export_tensors.ops — Export PyTorch tensors using opic, generate Metal shaders
+
+;; Tensor export structure
+def tensor { data, shape, dtype, device }
+def embedding { tensor, input, target, metadata }
+def tensor_map { embeddings, metadata, format }
+
+;; Export tensors from PyTorch
+voice export.tensors / {training_data + bert_model -> export.compute_embeddings -> export.serialize -> tensor_map}
+voice export.compute_embeddings / {pairs + model -> bert.embed_all -> embeddings}
+voice export.bert_embed_all / {pair -> bert.tokenize -> bert.embed -> embedding}
+voice export.serialize / {embeddings -> export.to_json + export.to_numpy + export.to_metal -> tensor_map}
+
+;; Export formats
+voice export.to_json / {embeddings -> json_serialize -> json_file}
+voice export.to_numpy / {embeddings -> numpy_array -> npy_file}
+voice export.to_metal / {embeddings -> metal_buffer -> metal_shader}
+
+;; Metal shader generation for tensor operations
+voice metal.tensor_ops / {tensor_map -> metal.generate_kernels -> metal_shader_code}
+voice metal.generate_kernels / {cosine_similarity + nearest_neighbor + topological_explore -> kernels}
+
+;; Cosine similarity kernel (Metal)
+voice metal.cosine_similarity / {vec1 + vec2 -> dot_product + norms -> cosine}
+voice metal.dot_product / {vec1 + vec2 -> sum(vec1[i] * vec2[i]) -> dot}
+voice metal.norm / {vec -> sqrt(sum(vec[i]^2)) -> norm}
+voice metal.cosine / {dot + norm1 + norm2 -> dot / (norm1 * norm2) -> cosine}
+
+;; Nearest neighbor kernel (Metal)
+voice metal.nearest_neighbor / {query + embeddings -> cosine_similarity_all -> max_index -> nearest}
+voice metal.cosine_similarity_all / {query + embeddings -> for_each_embedding -> cosine_similarity -> similarities}
+voice metal.max_index / {similarities -> argmax -> index}
+
+;; Topological exploration kernel (Metal)
+voice metal.topological_explore / {query + map + k -> k_nearest_neighbors -> explore_paths -> predictions}
+voice metal.k_nearest_neighbors / {query + map + k -> cosine_similarity_all -> top_k -> neighbors}
+voice metal.explore_paths / {neighbors -> weighted_sample -> prediction}
+
+;; Loss minimization kernel (Metal)
+voice metal.minimize_loss / {candidates + target -> compute_losses -> min_loss_index -> best_prediction}
+voice metal.compute_losses / {candidates + target -> for_each_candidate -> loss -> losses}
+voice metal.loss / {candidate_emb + target_emb -> 1 - cosine_similarity -> loss}
+voice metal.min_loss_index / {losses -> argmin -> index}
+
+;; Metal kernel definitions (full shader code)
+voice metal.cosine_similarity_kernel / "kernel void cosine_similarity_kernel(device float* vec1 [[buffer(0)]], device float* vec2 [[buffer(1)]], device float* output [[buffer(2)]], uint id [[thread_position_in_grid]]) { float dot = 0.0; float norm1 = 0.0; float norm2 = 0.0; for(uint i = 0; i < 768; i++) { dot += vec1[id * 768 + i] * vec2[id * 768 + i]; norm1 += vec1[id * 768 + i] * vec1[id * 768 + i]; norm2 += vec2[id * 768 + i] * vec2[id * 768 + i]; } output[id] = dot / (sqrt(norm1) * sqrt(norm2)); }"
+
+voice metal.nearest_neighbor_kernel / "kernel void nearest_neighbor_kernel(device float* query [[buffer(0)]], device float* embeddings [[buffer(1)]], device float* similarities [[buffer(2)]], device uint* output [[buffer(3)]], uint id [[thread_position_in_grid]]) { float max_sim = -1.0; uint max_idx = 0; for(uint i = 0; i < 1089; i++) { float dot = 0.0; float norm_q = 0.0; float norm_e = 0.0; for(uint j = 0; j < 768; j++) { dot += query[j] * embeddings[i * 768 + j]; norm_q += query[j] * query[j]; norm_e += embeddings[i * 768 + j] * embeddings[i * 768 + j]; } float sim = dot / (sqrt(norm_q) * sqrt(norm_e)); if(sim > max_sim) { max_sim = sim; max_idx = i; } } output[id] = max_idx; }"
+
+voice metal.k_nearest_kernel / "kernel void k_nearest_kernel(device float* query [[buffer(0)]], device float* embeddings [[buffer(1)]], device float* similarities [[buffer(2)]], device uint* indices [[buffer(3)]], constant uint& k [[buffer(4)]], uint id [[thread_position_in_grid]]) { for(uint i = 0; i < 1089; i++) { float dot = 0.0; float norm_q = 0.0; float norm_e = 0.0; for(uint j = 0; j < 768; j++) { dot += query[j] * embeddings[i * 768 + j]; norm_q += query[j] * query[j]; norm_e += embeddings[i * 768 + j] * embeddings[i * 768 + j]; } similarities[i] = dot / (sqrt(norm_q) * sqrt(norm_e)); } for(uint i = 0; i < k; i++) { uint max_idx = 0; float max_sim = -1.0; for(uint j = 0; j < 1089; j++) { bool used = false; for(uint m = 0; m < i; m++) { if(indices[m] == j) { used = true; break; } } if(!used && similarities[j] > max_sim) { max_sim = similarities[j]; max_idx = j; } } indices[i] = max_idx; } }"
+
+voice metal.minimize_loss_kernel / "kernel void minimize_loss_kernel(device float* candidates [[buffer(0)]], device float* target [[buffer(1)]], device float* losses [[buffer(2)]], device uint* output [[buffer(3)]], constant uint& num_candidates [[buffer(4)]], uint id [[thread_position_in_grid]]) { float min_loss = 2.0; uint min_idx = 0; for(uint i = 0; i < num_candidates; i++) { float dot = 0.0; float norm_c = 0.0; float norm_t = 0.0; for(uint j = 0; j < 768; j++) { dot += candidates[i * 768 + j] * target[j]; norm_c += candidates[i * 768 + j] * candidates[i * 768 + j]; norm_t += target[j] * target[j]; } float similarity = dot / (sqrt(norm_c) * sqrt(norm_t)); float loss = 1.0 - similarity; losses[i] = loss; if(loss < min_loss) { min_loss = loss; min_idx = i; } } output[id] = min_idx; }"
+
+voice metal.topological_explore_kernel / "kernel void topological_explore_kernel(device float* query [[buffer(0)]], device float* map [[buffer(1)]], device float* weights [[buffer(2)]], device uint* neighbors [[buffer(3)]], device uint* output [[buffer(4)]], constant uint& k [[buffer(5)]], uint id [[thread_position_in_grid]]) { float similarities[5]; uint indices[5]; for(uint i = 0; i < 1089; i++) { float dot = 0.0; float norm_q = 0.0; float norm_m = 0.0; for(uint j = 0; j < 768; j++) { dot += query[j] * map[i * 768 + j]; norm_q += query[j] * query[j]; norm_m += map[i * 768 + j] * map[i * 768 + j]; } float sim = dot / (sqrt(norm_q) * sqrt(norm_m)); if(i < k) { similarities[i] = sim; indices[i] = i; } else { uint min_idx = 0; float min_sim = similarities[0]; for(uint m = 1; m < k; m++) { if(similarities[m] < min_sim) { min_sim = similarities[m]; min_idx = m; } } if(sim > min_sim) { similarities[min_idx] = sim; indices[min_idx] = i; } } } for(uint i = 0; i < k; i++) { neighbors[i] = indices[i]; weights[i] = similarities[i]; } output[id] = indices[0]; }"
+
+;; Generate complete Metal shader file
+voice metal.generate_complete_shader / {metal.cosine_similarity_kernel + metal.nearest_neighbor_kernel + metal.k_nearest_kernel + metal.minimize_loss_kernel + metal.topological_explore_kernel -> metal_shader_file}
+voice metal.shader_header / "#include <metal_stdlib>\nusing namespace metal;\n\n// Generated by Opic - Tensor Operations\n\n"
+voice metal.complete_shader / {metal.shader_header + metal.generate_complete_shader -> tensor_metal.metal}
+
+;; Main export process
+voice export.main / {voice_training_data.json -> export.tensors -> metal.tensor_ops -> exported_tensors + metal_shaders}
+voice export.with_metal / {export.main -> metal.complete_shader -> exported_tensors + tensor_metal.metal}
+
+target export_tensors / "export_tensors_for_metal"
+voice main / {export.with_metal -> export_tensors}
+

@@ -1,0 +1,78 @@
+;;; generate_impl.ops — Code generation implementations in opic
+
+def code_generator { language, template, translation_rules }
+def translation_rule { pattern, source_lang, target_lang, template }
+
+;;; Swift translation rules (from opic implementations.ops)
+voice translate.mse.to.swift / "let error = prediction - target; return error * error"
+voice translate.crossentropy.to.swift / "let epsilon = 1e-15; let clipped = max(epsilon, min(1.0 - epsilon, prediction)); return -target * log(clipped) - (1.0 - target) * log(1.0 - clipped)"
+voice translate.gradient.to.swift / "return loss * learningRate"
+voice translate.optimize.to.swift / "return weight - learningRate * gradient"
+
+;;; Neural network translations
+voice translate.matmul.to.swift / "var result = [Double](repeating: 0.0, count: input.count); vDSP_mmulD(input, 1, weights, 1, &result, 1, vDSP_Length(input.count), vDSP_Length(weights.count), vDSP_Length(1)); return result"
+voice translate.relu.to.swift / "input.map { max(0.0, $0) }"
+voice translate.tanh.to.swift / "input.map { tanh($0) }"
+voice translate.sigmoid.to.swift / "input.map { 1.0 / (1.0 + exp(-$0)) }"
+voice translate.leaky_relu.to.swift / "input.map { max(alpha * $0, $0) }"
+
+;;; Code generation templates
+voice swift.function.template / "func {name}({params}) -> {return_type} {{ {body} }}"
+voice swift.struct.template / "struct {name} {{ {fields} }}"
+voice swift.import.template / "import {module}"
+
+;;; Pattern matching rules (check these patterns in impl_code)
+voice match.mse.pattern / "error = prediction - target"
+voice match.mse.voice / "mse"
+voice match.crossentropy.pattern / "epsilon"
+voice match.crossentropy.voice / "crossentropy"
+voice match.gradient.pattern / "loss *"
+voice match.gradient.voice / "gradient.*compute"
+voice match.optimize.pattern / "weight - rate * gradient"
+voice match.optimize.voice / "optimize|update"
+voice match.matmul.pattern / "np.dot"
+voice match.matmul.voice / "matmul|forward.layer"
+voice match.relu.pattern / "np.maximum.*0"
+voice match.relu.voice / "relu"
+voice match.tanh.pattern / "np.tanh"
+voice match.tanh.voice / "tanh"
+voice match.sigmoid.pattern / "1 / (1 + np.exp"
+voice match.sigmoid.voice / "sigmoid"
+voice match.leaky_relu.pattern / "np.maximum.*alpha"
+voice match.leaky_relu.voice / "leaky_relu"
+
+;;; Parameter canonicalization (from opic alias.ops)
+voice alias.grad / "gradient"
+voice alias.lr / "learningRate"
+voice alias.learning_rate / "learningRate"
+
+;;; Type mappings
+voice map.python.numpy.to.swift / "Accelerate"
+voice map.python.double.to.swift / "Double"
+voice map.python.array.to.swift / "[Double]"
+
+;;; Default parameter types
+voice default.param.type / "Double"
+voice default.array.type / "[Double]"
+voice default.return.type / "Double"
+
+;;; Array operation detection (which operations use arrays)
+voice array.operation.matmul / "true"
+voice array.operation.relu / "true"
+voice array.operation.tanh / "true"
+voice array.operation.sigmoid / "true"
+voice array.operation.leaky_relu / "true"
+
+;;; Function name sanitization rules
+voice sanitize.remove.dots / "."
+voice sanitize.remove.slashes / "/"
+voice sanitize.remove.special / "[^a-zA-Z0-9]"
+
+;;; Struct name generation rules
+voice struct.capitalize.words / "true"
+voice struct.remove.dots / "."
+voice struct.split.on / "_"
+
+target code_generator.ready / "generator.config"
+voice main / {language + rules -> code_generator.ready}
+

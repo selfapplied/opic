@@ -1,0 +1,20 @@
+;;; generate_logic.ops — Implementation logic for code generation
+
+def parse_line / {line -> tokens}
+def extract_def / {tokens -> def}
+def extract_voice / {tokens -> voice}
+
+voice parse.def.line / "if line.startswith('def '): name = line.split()[1]; defs[name] = {}"
+voice parse.voice.line / "if line.startswith('voice '): parts = line.partition('/'); name = parts[0].split()[1]; body = parts[2].strip(); voices[name] = body"
+
+voice generate.struct / "struct_name = name.replace('.', '').title(); return f'struct {struct_name} {{ ... }}'"
+voice generate.func / "func_name = name.replace('.', ''); return f'func {func_name}(...) {{ ... }}'"
+
+voice implement.mse / "error = prediction - target; return error * error"
+voice implement.crossentropy / "epsilon = 1e-15; clipped = max(epsilon, min(1-epsilon, prediction)); return -target*log(clipped) - (1-target)*log(1-clipped)"
+voice implement.gradient / "return loss * learningRate"
+voice implement.optimize / "return weight - learningRate * gradient"
+
+target logic / "implementation.code"
+voice main / {voice.name -> logic}
+

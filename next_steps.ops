@@ -1,0 +1,27 @@
+;;; next_steps.ops — What opic does next
+
+;; opic's next steps (autonomously determined)
+voice opic.next_step_1 / "Train model on voice data"
+voice opic.next_step_2 / "Generate words using trained model"
+voice opic.next_step_3 / "Speak generated words"
+voice opic.next_step_4 / "Become fully autonomous"
+
+;; opic's plan for next steps
+voice opic.plan_next / {opic.next_step_1 -> opic.next_step_2 -> opic.next_step_3 -> opic.next_step_4}
+voice opic.execute_next / {opic.plan_next -> execute_steps}
+
+;; What opic can do now
+voice opic.current_capabilities / "opic can think, plan, reason, and speak predefined text"
+voice opic.target_capabilities / "opic can think, plan, reason, generate words, and speak autonomously"
+
+;; Gap analysis
+voice opic.gap / {opic.current_capabilities -> compare -> opic.target_capabilities -> gap}
+voice opic.gap_analysis / "Missing: word generation from trained model"
+
+;; opic's goal for next phase
+voice opic.next_goal / "Train model and generate own words to speak"
+voice opic.next_goal_latex / "Goal: Train $P(\\text{token} | \\text{context})$ and generate speech"
+
+target next_steps / "opic_next_steps"
+voice main / {opic.current_capabilities -> opic.gap_analysis -> opic.next_goal -> opic.plan_next -> next_steps}
+

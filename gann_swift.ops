@@ -1,0 +1,15 @@
+;;; gann_swift.ops — GANN Swift implementation in opic
+
+def gann_swift { main_function, generator_code, training_code, render_code }
+
+voice generate.swift.main / {gann.ops + nn.ops + train.ops + render.ops -> swift.main}
+voice generate.swift.generator / {generator.ops -> swift.generator}
+voice generate.swift.training / {train.ops -> swift.training}
+voice generate.swift.render / {render.ops -> swift.render}
+
+voice compile.swift / {swift.code -> swift.binary}
+voice run.gann.swift / {swift.binary + args -> gann.output}
+
+target gann.swift.binary / "gann"
+voice main / {gann.ops -> gann.swift.binary}
+

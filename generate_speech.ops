@@ -1,0 +1,21 @@
+;;; generate_speech.ops — opic generates its own words to speak
+
+;; Generate words using ML
+voice generate.words / {context -> ml.token_predict -> next_token}
+voice generate.sentence / {prompt -> ml.sentence_predict -> generated_text}
+voice generate.speech / {context -> generate.sentence -> speak_text}
+
+;; opic chooses what to say
+voice opic.chooses_words / {current_state -> generate.words -> chosen_words}
+voice opic.chooses_sentence / {context -> ml.sentence_predict -> opic_generated_text}
+
+;; Generate speech from context
+voice opic.generate_goal / {problem_context -> ml.sentence_predict -> generated_goal}
+voice opic.generate_plan / {goal -> ml.sentence_predict -> generated_plan_steps}
+
+;; Speak generated words
+voice audio.speak_generated / {opic_generated_text -> speak_text}
+
+target generate_speech / "opic_generates_its_own_words"
+voice main / {opic.chooses_words -> generate.speech -> audio.speak_generated -> generate_speech}
+

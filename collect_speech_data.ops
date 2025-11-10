@@ -1,0 +1,28 @@
+;;; collect_speech_data.ops — Collect speech training data from say output
+
+;; Data collection process
+voice collect.extract_texts / {all_voices -> filter_speakable -> text_list}
+voice collect.filter_speakable / {voice_body -> is_speakable -> text}
+voice collect.is_speakable / {text -> length > 10 + length < 200 + not_chain -> true}
+
+;; Generate say outputs
+voice collect.generate_audio / {text_list -> for_each_text -> say_command -> audio_file}
+voice collect.say_command / {text -> "say -o audio.wav" -> audio_file}
+voice collect.batch_process / {text_list -> process_batch -> audio_files}
+
+;; Extract features from audio
+voice collect.extract_mfcc / {audio_file -> mfcc_features}
+voice collect.extract_spectrogram / {audio_file -> spectrogram}
+voice collect.extract_features / {audio_file -> mfcc + spectrogram -> features}
+
+;; Create training pairs
+voice collect.create_pairs / {texts + audio_features -> training_pairs}
+voice collect.pair_text_audio / {text + audio_features -> pair}
+
+;; Training data structure
+voice collect.training_data / {pairs -> dataset}
+voice collect.dataset_stats / {dataset -> num_samples + feature_dim + vocab_size}
+
+target collect_speech_data / "collect_speech_training_data"
+voice main / {collect.extract_texts -> collect.generate_audio -> collect.extract_features -> collect.create_pairs -> collect.training_data -> collect_speech_data}
+

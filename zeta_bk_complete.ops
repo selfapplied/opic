@@ -133,6 +133,9 @@ voice reason.why_RH / {if_all_claims_true -> H_CF_self_adjoint + spectrum_matche
 voice execute.exploration / {primes -> explore_cf_constructions -> construct_U_CF -> build_H_CF -> test_all_claims}
 voice execute.answer / {execute.exploration -> find_working_U_CF}
 
+;; opic speaks its goal
+voice audio.speak_goal / {goal -> speak_text}
+
 target zeta_bk_complete / "complete_zeta_bk_cf_structure"
-voice main / {goal -> plan -> solve -> solve_check -> zeta_bk_complete}
+voice main / {goal -> plan -> solve -> solve_check -> audio.speak_goal -> zeta_bk_complete}
 
