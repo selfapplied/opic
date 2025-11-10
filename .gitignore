@@ -1,35 +1,112 @@
-# Build outputs
-tiddlywiki.html
-*.html
-
 # Python
 __pycache__/
-*.pyc
-*.pyo
-.python-version
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# macOS
-.DS_Store
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
 
-# Editor
-.vscode/
-.idea/
-*.swp
-*~
-
-# Data files
-data/
-*.png
-*.svg
-*.txt
-*.json
+# opic specific
+.opicup
+opic_boot.wasm
 *.wasm
-*.history
-.zib_history.json
 
 # Build artifacts
 build/
-*.swift
-*.metal
-*.generated
+*.o
+*.so
+*.dylib
+*.dll
 
+# Generated files
+*_generated.*
+*_generated_*
+
+# Test outputs
+test_output.txt
+*.test
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Data files (large)
+*.npy
+*.npz
+*.h5
+*.hdf5
+
+# Conversation history
+conversation_history.json
+
+# Art outputs (keep source, ignore generated)
+*.png
+*.svg
+!art*.png
+!art*.svg
+!heart*.svg
+!heart*.png
+
+# TiddlyWiki builds
+tiddlywiki.html
+opic.html
+
+# Compiled binaries
+opic_gann
+opic_music
+
+# Metal shaders (generated)
+*.metal
+!bootstrap.metal
+!core.metal
+!runtime.metal
+!nlp.metal
+!performance.metal
+!evaluate_shader.metal
+!tensor_operations.metal
+
+# Swift (generated)
+*_generated.swift
+!core.swift
+!gann.swift
+!music.swift
+!nlp.swift
+!tensor_metal_swift.swift
+!use_metal_swift.swift
+
+# Python scripts (keep core, ignore generated)
+!generate.py
+!draw.py
+!zib.py

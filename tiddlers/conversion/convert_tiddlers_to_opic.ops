@@ -1,0 +1,105 @@
+;;; convert_tiddlers_to_opic.ops — convert tiddlers to opic capabilities
+
+include tiddlywiki.ops
+
+convert.tiddlers_to_opic:
+  If tiddlers_exist
+  Then process_all_tiddlers
+  Then generate_capability_files
+
+process_all_tiddlers:
+  Scan tiddlers_directory
+  For each tiddler_file
+  Extract tiddler_content
+  Generate opic_capability
+
+scan tiddlers_directory:
+  List all .tid files
+  Filter system_tiddlers
+  Return tiddler_list
+
+filter system_tiddlers:
+  Exclude $__ prefix
+  Exclude system files
+  Keep content tiddlers
+
+extract tiddler_content:
+  Read tiddler_file
+  Parse header_fields
+  Parse body_content
+  Extract metadata
+
+parse header_fields:
+  Read title
+  Read tags
+  Read created
+  Read modified
+  Read custom_fields
+
+parse body_content:
+  Read text_content
+  Preserve structure
+  Extract semantic_elements
+
+generate opic_capability:
+  Create capability_name from title
+  Create capability_definition
+  Include content_reference
+  Include semantic_tags
+  Link to opic_reasoning
+
+create capability_name:
+  From tiddler_title
+  Convert to snake_case
+  Normalize characters
+  Ensure uniqueness
+
+create capability_definition:
+  Format: "{capability_name}.capability:"
+  Include activation_condition
+  Include execution_logic
+  Include content_access
+
+include activation_condition:
+  Define when_activates
+  Specify context_requirements
+  Set trigger_conditions
+
+include execution_logic:
+  Define what_capability_does
+  Reference tiddler_content
+  Apply transformations
+  Return results
+
+include content_access:
+  Provide tiddler_content
+  Provide tiddler_fields
+  Provide tiddler_metadata
+
+include semantic_tags:
+  Extract from tiddler_tags
+  Map to opic_tags
+  Link to field_theory
+
+link to opic_reasoning:
+  Connect to opic_reasoning_system
+  Enable capability_chaining
+  Support ml_integration
+
+generate_capability_files:
+  For each generated_capability
+  Format as ops_file
+  Write to output_directory
+  Name: "{capability_name}.ops"
+
+format as ops_file:
+  Use opic_syntax
+  Follow capability_pattern
+  Include all_definitions
+  Ensure valid_syntax
+
+write to output_directory:
+  Save to output/opic/
+  Preserve structure
+  Maintain references
+

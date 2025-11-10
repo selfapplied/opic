@@ -1,0 +1,112 @@
+;;; convert_markdown_to_tiddlers.ops — convert markdown files to tiddlers
+
+include tiddlywiki.ops
+
+convert.markdown_to_tiddlers:
+  If markdown_files_exist
+  Then process_all_markdown
+  Then generate_tiddler_files
+
+process_all_markdown:
+  Scan markdown_directory
+  For each markdown_file
+  Extract markdown_content
+  Parse markdown_structure
+  Generate tiddler_content
+
+scan markdown_directory:
+  List all .md files
+  Filter documentation_files
+  Return markdown_list
+
+filter documentation_files:
+  Include .md files
+  Exclude README.md if desired
+  Keep documentation_content
+
+extract markdown_content:
+  Read markdown_file
+  Parse frontmatter if present
+  Extract title
+  Extract body_content
+  Extract metadata
+
+parse frontmatter if present:
+  Check for yaml_frontmatter
+  Extract title from frontmatter
+  Extract tags from frontmatter
+  Extract created from frontmatter
+  Extract modified from frontmatter
+
+extract title:
+  From frontmatter_title
+  Or from first_h1_heading
+  Or from filename
+  Normalize format
+
+extract body_content:
+  Read markdown_body
+  Preserve structure
+  Convert markdown_syntax
+  Maintain formatting
+
+parse markdown_structure:
+  Identify headings
+  Identify code_blocks
+  Identify lists
+  Identify links
+  Preserve structure
+
+generate tiddler_content:
+  Create tiddler_title
+  Create tiddler_fields
+  Create tiddler_body
+  Format as tid_file
+
+create tiddler_title:
+  From markdown_title
+  Convert to readable_format
+  Preserve semantic_meaning
+
+create tiddler_fields:
+  Include title
+  Include tags from frontmatter or content
+  Include created from frontmatter or current_date
+  Include modified from frontmatter or current_date
+  Include source_file reference
+
+include source_file reference:
+  Field: "source-file"
+  Value: markdown_file_path
+  Link to original
+
+create tiddler_body:
+  Convert markdown_to_wikitext
+  Preserve structure
+  Include semantic_elements
+
+convert markdown_to_wikitext:
+  Convert headings
+  Convert code_blocks
+  Convert lists
+  Convert links
+  Convert emphasis
+  Preserve meaning
+
+generate_tiddler_files:
+  For each generated_tiddler
+  Format as tid_file
+  Write to tiddlers_directory
+  Name: "{tiddler_title}.tid"
+
+format as tid_file:
+  Use tiddler_format
+  Include header_fields
+  Include blank_line
+  Include body_content
+
+write to tiddlers_directory:
+  Save to tiddlers/
+  Preserve structure
+  Maintain references
+

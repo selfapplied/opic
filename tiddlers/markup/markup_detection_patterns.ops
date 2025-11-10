@@ -1,0 +1,73 @@
+;;; markup_detection_patterns.ops — detect markup types in tiddler content
+
+include tiddlywiki.ops
+
+detect.markup_patterns:
+  If content_has_pattern
+  Then identify_markup_type
+  Then record_pattern_location
+
+identify_markup_type:
+  Check wikitext_patterns
+  Check latex_patterns
+  Check html_patterns
+  Check svg_patterns
+  Check markdown_patterns
+  Check css_patterns
+  Return markup_inventory
+
+wikitext_patterns:
+  Headers: ^==+\s
+  Links: \[\[.*?\]\]
+  Widgets: <\$.*?>
+  Lists: ^[\*\#]\s
+  Bold: ''.*?''
+  Italic: //.*?//
+  Tables: \|.*\|
+
+latex_patterns:
+  Display_math: \\\[.*?\\\]
+  Inline_math: \\(.*?\\)
+  Block_math: \$\$.*?\$\$
+  Single_dollar: \$(?!\$).*?\$
+  Preserve_all_math_content
+
+html_patterns:
+  Raw_html_tags: <html>.*?</html>
+  Div_tags: <div.*?>.*?</div>
+  Span_tags: <span.*?>.*?</span>
+  Script_tags: <script.*?>.*?</script>
+  Style_tags: <style.*?>.*?</style>
+
+svg_patterns:
+  Svg_element: <svg.*?>.*?</svg>
+  Svg_with_style: <svg.*?<style>.*?</style>.*?</svg>
+  Svg_nested_html: <html>.*?<svg.*?</svg>.*?</html>
+  Detect_svg_size
+
+markdown_patterns:
+  Headers: ^#+\s
+  Links: \[.*?\]\(.*?\)
+  Code_blocks: ```.*?```
+  Inline_code: `.*?`
+  Bold: \*\*.*?\*\*
+  Italic: \*.*?\*
+  Lists: ^[\-\+]\s
+
+css_patterns:
+  Style_block: <style>.*?</style>
+  Inline_style: style=".*?"
+  Class_reference: \.\w+\s*\{
+  Id_reference: #\w+\s*\{
+
+detect_svg_size:
+  Count_svg_characters
+  If size > 2000
+  Then mark_for_extraction
+  Else keep_inline
+
+mark_for_extraction:
+  Set extraction_flag: true
+  Generate_unique_id
+  Create_transclusion_reference
+

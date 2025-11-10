@@ -1,0 +1,118 @@
+;;; export_tiddlers_from_ops.ops — export opic capabilities as tiddlers
+
+include tiddlywiki.ops
+
+export.tiddlers_from_ops:
+  If ops_capabilities_exist
+  Then process_all_capabilities
+  Then generate_tiddler_files
+
+process_all_capabilities:
+  Scan ops_directory
+  For each ops_file
+  Extract capability_definition
+  Generate tiddler_content
+
+scan ops_directory:
+  List all .ops files
+  Filter capability_files
+  Return capability_list
+
+filter capability_files:
+  Include capability_definitions
+  Exclude system_files
+  Keep content_capabilities
+
+extract capability_definition:
+  Read ops_file
+  Parse capability_name
+  Parse capability_content
+  Parse semantic_tags
+  Extract metadata
+
+parse capability_name:
+  Extract from capability_definition
+  Convert to tiddler_title
+  Normalize format
+
+parse capability_content:
+  Extract content_reference
+  Extract execution_logic
+  Convert to tiddler_text
+
+parse semantic_tags:
+  Extract opic_tags
+  Map to tiddler_tags
+  Preserve semantic_meaning
+
+extract metadata:
+  Read capability_metadata
+  Extract creation_info
+  Extract modification_info
+  Extract custom_fields
+
+generate tiddler_content:
+  Create tiddler_title
+  Create tiddler_fields
+  Create tiddler_body
+  Format as tid_file
+
+create tiddler_title:
+  From capability_name
+  Convert to readable_format
+  Preserve semantic_meaning
+
+create tiddler_fields:
+  Include title
+  Include tags
+  Include created
+  Include modified
+  Include opic_source
+
+include opic_source:
+  Field: "opic-source"
+  Value: ops_file_path
+  Link to capability_definition
+
+create tiddler_body:
+  Convert capability_content
+  Preserve structure
+  Include semantic_elements
+
+format as tid_file:
+  Use tiddler_format
+  Include header_fields
+  Include blank_line
+  Include body_content
+
+generate_tiddler_files:
+  For each generated_tiddler
+  Format as tid_file
+  Write to tiddlers_directory
+  Name: "{tiddler_title}.tid"
+
+write to tiddlers_directory:
+  Save to tiddlers/
+  Preserve structure
+  Maintain references
+
+round_trip_verification:
+  Compare original_tiddler
+  Compare regenerated_tiddler
+  Verify semantic_equivalence
+
+compare original_tiddler:
+  Load original_tid_file
+  Extract semantic_content
+  Extract semantic_structure
+
+compare regenerated_tiddler:
+  Load regenerated_tid_file
+  Extract semantic_content
+  Extract semantic_structure
+
+verify semantic_equivalence:
+  Compare content_meaning
+  Compare tag_semantics
+  Verify round_trip_integrity
+

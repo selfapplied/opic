@@ -2,6 +2,11 @@
 
 **Event-Based Compositional Language** — A self-hosting, self-compiling language where programs are voices and chains, backed by a cryptographic nervous system.
 
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
+
+---
+
 ## What is opic?
 
 opic is a compositional language where:
@@ -11,15 +16,40 @@ opic is a compositional language where:
 - **Cryptographic nervous system** — Certificate-based permissions, realms, and signed voices
 - **Generational ethics** — Seven-generation resonance functions and coherence tracking
 
+### Key Features
+
+✨ **Self-Hosting** — opic compiles and executes itself  
+🔐 **Cryptographic Trust** — Certificate-based permissions and realms  
+🌐 **Distributed** — Federated realms with witness chains  
+📊 **Field Theory** — Coherence tracking via field equations  
+🔄 **Compositional** — Elegant voice chaining  
+📚 **Wiki Integration** — Built-in TiddlyWiki composition
+
+---
+
 ## Quick Start
 
-### Interactive opic shell (default)
+### Prerequisites
+
+- Python 3.8 or higher
+- Make (optional, but recommended)
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/opic.git
+cd opic
+```
+
+### Interactive Shell (Default)
 
 ```bash
 make
 ```
 
-This gives you an interactive shell with opic available. Type opic commands or `.ops` files:
+This gives you an interactive shell with opic available:
 
 ```
 opic> bootstrap.ops
@@ -28,7 +58,7 @@ opic> plan.ops
 opic> exit
 ```
 
-### Bring opic up
+### Bring opic Up
 
 ```bash
 make bootstrap
@@ -36,7 +66,7 @@ make bootstrap
 
 Creates `.opicup` witness checkpoint (opic is self-hosting).
 
-### Install opic (persists between restarts)
+### Install System-Wide
 
 ```bash
 make install
@@ -44,23 +74,7 @@ make install
 
 Installs opic system-wide so it's available after restart. Run `opic` from anywhere.
 
-### Build your company seed
-
-```bash
-make seed
-```
-
-### Generate the technical bluepaper
-
-```bash
-make whitepaper
-```
-
-### Get a plan for your directory
-
-```bash
-make plan
-```
+---
 
 ## Core Concepts
 
@@ -86,40 +100,32 @@ opic defines itself in `.ops` files:
 - `bootstrap.ops` — Minimal kernel
 - `opic_parse.ops` — Self-parser
 - `opic_load.ops` — Self-loader
-- `opic_compile.ops` — Self-compiler
+- `opic_execute.ops` — Self-executor
 
-## Certificate System
+### Certificate System
 
 opic includes a cryptographic nervous system:
 
-### Realms
-
-Each agent has its own realm and certificate authority:
+**Realms** — Each agent has its own realm and certificate authority:
 
 ```ops
 def realm { name, ca, agents, boundaries }
 def certificate { issuer, subject, permissions, signature, realm, ca }
 ```
 
-### File Access
-
-Files are protected by certificates:
+**File Access** — Files are protected by certificates:
 
 ```ops
 voice opic.check_file_permission / {file_path + agent_realm + ca -> cert.check_file_read -> if_permitted}
 ```
 
-### Voice Execution
-
-Voices require permission to execute:
+**Voice Execution** — Voices require permission to execute:
 
 ```ops
 voice opic.check_voice_permission / {voice_name + agent_realm + ca -> cert.check_voice_execute -> if_permitted}
 ```
 
-### Signed Voices
-
-`.ops` files can include signed headers:
+**Signed Voices** — `.ops` files can include signed headers:
 
 ```ops
 ---
@@ -130,50 +136,38 @@ realm: opic_realm
 voice example / {input -> transform -> output}
 ```
 
-## Launch Components
+---
 
-### Field Equation Exchange (FEE)
+## Examples
 
-Learning-based currency system:
+### Simple Voice
 
-```bash
-make fee
+```ops
+voice add / {a + b -> a + b -> sum}
+voice main / {add 2 3 -> add}
 ```
 
-- **6-layer architecture**: Wiki nodes → Learning verification → Ledger → Blockchain → Pools → Exchange
-- **Field equation**: `f(∆t, ΔΦ, proof_of_care) → LEU`
-- **Resonance credits**: Minted from coherence growth
+### Chain Composition
 
-### Recursive Contract Theory (RCT)
-
-Self-referential smart contracts:
-
-```bash
-make rct
+```ops
+voice process / {input -> step1 -> step2 -> step3 -> output}
+voice main / {process "data" -> process}
 ```
 
-- Contracts that reference themselves
-- Recursive backing for tokens
-- Self-amending governance DAOs
+### Self-Hosting
 
-### Wild Sort Site
-
-Your company seed with:
-
-```bash
-make build-seed
+```ops
+voice opic.parse_ops / {ops_text -> split_lines -> parse_each -> defs + voices}
+voice opic.load_recursive / {file_path + agent_realm + ca -> opic.load_with_verification -> voices}
 ```
 
-- **Technical bluepaper** (`make whitepaper`)
-- **Getting started guide** (`make getting-started`)
-- **Art gallery** (`make gallery`)
-- **Wild Sort as a Service** (`make service`)
+---
 
 ## Make Targets
 
 **Default:** `make` → Interactive opic shell
 
-**Core verbs:**
+**Core Commands:**
 ```bash
 make bootstrap      # Bring opic up (creates .opicup witness checkpoint)
 make install        # Install opic system-wide (persists between restarts)
@@ -185,7 +179,7 @@ make plan           # opic suggests a plan for directory
 make repos          # List repositories
 ```
 
-**Launch components:**
+**Launch Components:**
 ```bash
 make whitepaper     # Generate FEE + RCT bluepaper
 make guide          # Generate getting started guide
@@ -193,27 +187,14 @@ make gallery        # Generate art gallery
 make service        # Generate Wild Sort service
 ```
 
-**System components:**
+**System Components:**
 ```bash
 make fee            # Field Equation Exchange
 make rct            # Recursive Contract Theory
 make pools          # Learning Pools
 ```
 
-## Witness Checkpoint System
-
-opic creates a `.opicup` file when it successfully self-hosts. This is the **memory bank** - persistent proof that opic is up.
-
-**Locations checked:**
-- `.opicup` (project root)
-- `$HOME/.opicup` (user home)
-- `/usr/local/share/opic/.opicup` (system-wide, after install)
-
-**Makefile as Memory Bank:**
-- Before opic is self-hosting: Make ensures opic is built and usable
-- After opic is self-hosting: Make checks `.opicup` as witness checkpoint
-- Default: Interactive shell with opic available
-- Install: Makes opic persist between restarts
+---
 
 ## System Architecture
 
@@ -224,6 +205,7 @@ opic creates a `.opicup` file when it successfully self-hosts. This is the **mem
 - **signed.ops** — Signed voice headers
 - **witness.ops** — Execution witnessing
 - **proof.ops** — Proof engine
+- **vfs.ops** — Virtual filesystem
 
 ### Launch Systems
 
@@ -247,28 +229,58 @@ opic creates a `.opicup` file when it successfully self-hosts. This is the **mem
 - **resonance_currency.ops** — Resonant currency
 - **land_stewardship.ops** — Land stewardship
 
-## Examples
+### Wiki/Documentation Layer
 
-### Simple voice
+- **tiddlywiki.ops** — Tiddler types and composition
+- **tiddlywiki_build.ops** — Wiki generation
+- **tiddlers/** — Conversion tools, markup handling, drive system
 
-```ops
-voice add / {a + b -> a + b -> sum}
-voice main / {add 2 3 -> add}
+---
+
+## Field Equation Exchange (FEE)
+
+Learning-based currency system:
+
+```bash
+make fee
 ```
 
-### Chain composition
+- **6-layer architecture**: Wiki nodes → Learning verification → Ledger → Blockchain → Pools → Exchange
+- **Field equation**: `f(∆t, ΔΦ, proof_of_care) → LEU`
+- **Resonance credits**: Minted from coherence growth
 
-```ops
-voice process / {input -> step1 -> step2 -> step3 -> output}
-voice main / {process "data" -> process}
+---
+
+## Recursive Contract Theory (RCT)
+
+Self-referential smart contracts:
+
+```bash
+make rct
 ```
 
-### Self-hosting
+- Contracts that reference themselves
+- Recursive backing for tokens
+- Self-amending governance DAOs
 
-```ops
-voice opic.parse_ops / {ops_text -> split_lines -> parse_each -> defs + voices}
-voice opic.load_recursive / {file_path + agent_realm + ca -> opic.load_with_verification -> voices}
-```
+---
+
+## Witness Checkpoint System
+
+opic creates a `.opicup` file when it successfully self-hosts. This is the **memory bank** - persistent proof that opic is up.
+
+**Locations checked:**
+- `.opicup` (project root)
+- `$HOME/.opicup` (user home)
+- `/usr/local/share/opic/.opicup` (system-wide, after install)
+
+**Makefile as Memory Bank:**
+- Before opic is self-hosting: Make ensures opic is built and usable
+- After opic is self-hosting: Make checks `.opicup` as witness checkpoint
+- Default: Interactive shell with opic available
+- Install: Makes opic persist between restarts
+
+---
 
 ## Environment Variables
 
@@ -278,16 +290,7 @@ export OPIC_CA="your_ca"            # Set your certificate authority (default: o
 export OPIC_REPOS_DIR="/path/to/repos"  # Set repos directory (default: $HOME)
 ```
 
-## Witness Checkpoint
-
-When opic successfully self-hosts, it creates `.opicup`:
-```
-opicup
-realm=opic_realm
-ca=opic_ca
-```
-
-This file is the **memory bank** - persistent proof that opic is self-hosting. The Makefile checks for this file as a witness checkpoint before running opic commands.
+---
 
 ## Philosophy
 
@@ -298,19 +301,50 @@ opic embodies:
 - **Generational ethics** — Seven-generation resonance
 - **Distributed cognition** — Federated realms
 
-## License
-
-[Your license here]
+---
 
 ## Contributing
 
 opic is self-hosting — contribute by extending `.ops` files!
 
-## Resources
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Add your `.ops` files following opic's pattern language
+4. Commit your changes (`git commit -m 'Add amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
+
+### Code Style
+
+- Follow opic's pattern language
+- Use `;;;` header comments for files
+- Use `include` statements for dependencies
+- Follow existing voice naming conventions
+
+---
+
+## Documentation
 
 - **Technical Bluepaper**: `make whitepaper`
 - **Getting Started**: `make getting-started`
 - **System Plan**: `python3 opic execute opic_plan.ops`
+- **Integration Paper**: See `tiddlers/INTEGRATION_PAPER.md`
+
+---
+
+## License
+
+This project is licensed under the Creative Commons Attribution 4.0 International License - see the [LICENSE](LICENSE) file for details.
+
+You are free to share and adapt this work for any purpose, including commercial use, as long as you provide appropriate attribution.
+
+---
+
+## Acknowledgments
+
+- Built with opic, by opic, for opic
+- Inspired by compositional programming and cryptographic trust systems
+- Thanks to all contributors who extend opic's capabilities
 
 ---
 

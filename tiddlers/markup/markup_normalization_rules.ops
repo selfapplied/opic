@@ -1,0 +1,141 @@
+;;; markup_normalization_rules.ops — normalize markup to tiddlywiki format
+
+include tiddlywiki.ops
+
+normalize.markup_rules:
+  Apply_wikitext_normalization
+  Apply_latex_normalization
+  Apply_html_normalization
+  Apply_svg_normalization
+  Apply_markdown_normalization
+  Verify_consistency
+
+apply_wikitext_normalization:
+  Ensure_type_field: text/vnd.tiddlywiki
+  Preserve_wikitext_structure
+  Maintain_heading_hierarchy
+  Maintain_link_structure
+
+apply_latex_normalization:
+  Convert_double_dollar_to_display: $$...$$ → \[...\]
+  Convert_single_dollar_to_inline: $...$ → \(...\)
+  Preserve_existing_latex: \[...\] and \(...\)
+  Ensure_katex_compatibility
+
+convert_double_dollar_to_display:
+  Pattern: \$\$(.+?)\$\$
+  Replacement: \\[\1\\]
+  Preserve_content
+  Maintain_spacing
+
+convert_single_dollar_to_inline:
+  Pattern: (?<!\\)\$(.+?)(?<!\\)\$
+  Replacement: \\(\1\\)
+  Avoid_double_conversion
+  Preserve_escaped_dollars
+
+apply_html_normalization:
+  Detect_unwrapped_html
+  Wrap_in_html_widget: <$html>...</$html>
+  Avoid_double_wrapping
+  Preserve_structure
+
+detect_unwrapped_html:
+  Find_html_tags_outside_widgets
+  Check_not_already_wrapped
+  Identify_wrap_boundaries
+
+wrap_in_html_widget:
+  Open_tag: <$html>
+  Content: [html_content]
+  Close_tag: </$html>
+  Preserve_indentation
+
+avoid_double_wrapping:
+  Check_existing_widgets
+  Skip_if_already_wrapped
+  Prevent_nested_widgets
+
+apply_svg_normalization:
+  Detect_svg_blocks
+  Check_svg_size
+  If large_then_extract
+  Else wrap_in_html_widget
+
+extract_large_svg:
+  Create_svg_tiddler
+  Set_type: text/html
+  Generate_title: $:/svg/{base}_{diagram_id}
+  Store_svg_content
+  Replace_with_transclusion: <$transclude tiddler="{svg_title}"/>
+
+create_svg_tiddler:
+  Generate_unique_title
+  Set_fields:
+    title: $:/svg/{name}
+    type: text/html
+  Store_content
+  Return_reference
+
+apply_markdown_normalization:
+  Convert_headers_to_wikitext
+  Convert_links_to_wikitext
+  Convert_code_blocks
+  Preserve_formatting
+
+convert_headers_to_wikitext:
+  # → =
+  ## → ==
+  ### → ===
+  #### → ====
+  Maintain_hierarchy
+
+convert_links_to_wikitext:
+  [text](url) → [[text|url]]
+  [text](#anchor) → [[text]]
+  Preserve_urls
+
+convert_code_blocks:
+  ```language → code block
+  `code` → `code`
+  Preserve_syntax_highlighting
+
+verify_consistency:
+  Check_all_markup_normalized
+  Check_widgets_properly_wrapped
+  Check_no_raw_html_outside_widgets
+  Check_math_properly_formatted
+  Check_links_valid
+  Check_type_field_set
+
+check_all_markup_normalized:
+  Scan_for_unwrapped_html
+  Scan_for_unwrapped_svg
+  Scan_for_markdown_patterns
+  Report_remaining_issues
+
+check_widgets_properly_wrapped:
+  Verify_html_widgets_closed
+  Verify_no_nested_widgets
+  Verify_proper_syntax
+
+check_no_raw_html_outside_widgets:
+  Find_html_tags
+  Verify_inside_widgets
+  Flag_violations
+
+check_math_properly_formatted:
+  Verify_latex_syntax
+  Check_katex_compatibility
+  Ensure_proper_escaping
+
+check_links_valid:
+  Verify_wikitext_link_syntax
+  Check_transclusion_references
+  Validate_urls
+
+check_type_field_set:
+  Ensure_type_exists
+  Verify_correct_type
+  Set_default_if_missing
+

@@ -1,0 +1,133 @@
+;;; fork_drive.ops — fork drive with new genesis and independent operation
+
+include vfs.ops
+include certificate.ops
+include witness.ops
+include voice_ledger.ops
+
+fork.drive:
+  If source_drive_mounted
+  Then clone_ledger_and_capabilities
+  Then create_new_genesis
+  Then link_to_parent
+  Then initialize_new_funding
+  Then copy_ops_registry
+  Then enable_independent_operation
+
+clone_ledger_and_capabilities:
+  Copy ledger_structure
+  Copy capabilities_directory
+  Copy ops_registry
+  Preserve witness_history
+
+copy ledger_structure:
+  Copy genesis_witness
+  Copy witness_blocks
+  Copy cert_chain
+  Preserve integrity
+
+copy capabilities_directory:
+  Copy all_ops_files
+  Preserve capability_definitions
+  Maintain execution_context
+
+copy ops_registry:
+  Copy registry_structure
+  Update file_paths
+  Preserve capability_metadata
+
+create_new_genesis:
+  Generate new_drive_id
+  Create new_genesis_witness
+  Sign with fork_creator
+  Initialize new_block_chain
+
+generate new_drive_id:
+  Create unique_hash
+  Include parent_drive_reference
+  Include fork_timestamp
+  Include creator_signature
+
+create new_genesis_witness:
+  Define fork_metadata
+  Include parent_reference
+  Include fork_reason
+  Sign witness
+
+link_to_parent:
+  Add parent_link_to_cert_chain
+  Create fork_certificate
+  Enable parent_verification
+  Set up lineage_tracking
+
+add parent_link_to_cert_chain:
+  Include parent_drive_id
+  Include parent_genesis_hash
+  Include fork_timestamp
+  Sign link
+
+create fork_certificate:
+  Define fork_metadata
+  Sign with creator_key
+  Link to parent_cert
+  Enable verification
+
+initialize_new_funding:
+  Create new_pool_structure
+  Initialize independent_tracking
+  Set up new_credit_system
+  Enable independent_contributions
+
+create new_pool_structure:
+  Create new_pool_json
+  Initialize empty_contributions
+  Set up new_credit_minting
+  Enable independent_operation
+
+initialize independent_tracking:
+  Set up new_contribution_log
+  Enable independent_witnessing
+  Track new_proof_of_care
+
+set up new_credit_system:
+  Initialize new_resonance_credits
+  Set up independent_minting
+  Enable new_economic_model
+
+copy_ops_registry:
+  Copy registry_structure
+  Update file_paths_for_fork
+  Preserve capability_definitions
+  Enable independent_execution
+
+update file_paths_for_fork:
+  Adjust paths_for_new_structure
+  Update capability_references
+  Maintain execution_context
+
+enable_independent_operation:
+  Set up independent_vfs
+  Enable independent_witnessing
+  Enable independent_funding
+  Enable independent_sync
+
+set up independent_vfs:
+  Initialize new_vfs_structure
+  Enable independent_writes
+  Set up new_permissions
+
+enable independent_witnessing:
+  Set up new_witness_chain
+  Enable independent_validation
+  Set up new_cert_chain
+
+enable independent_funding:
+  Set up independent_pool
+  Enable independent_contributions
+  Set up independent_credits
+
+enable independent_sync:
+  Set up independent_p2p
+  Enable independent_consensus
+  Set up independent_network
+
