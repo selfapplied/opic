@@ -30,8 +30,13 @@ jobs:
     
     - name: Run Riemann Experiment
       run: |
-        # Use Python implementation for CI (more reliable)
-        python3 scripts/riemann_experiment.py
+        # Try opic-native first (shows structure), then Python (computes results)
+        python3 opic execute examples/riemann_experiment.ops || true
+        # Ensure results file exists (Python script computes and saves)
+        if [ ! -f build/riemann_results.json ]; then
+          echo "opic execution completed (structure shown), running Python for computation..."
+          python3 scripts/riemann_experiment.py
+        fi
       continue-on-error: true
       timeout-minutes: 5
     
