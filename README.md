@@ -339,9 +339,11 @@ opic's dual structure opens several research frontiers:
 
 **Quick Start Research**:
 ```bash
-make riemann-experiment    # Run baseline simulation
+make riemann-experiment    # Run baseline simulation (runs in opic!)
 make riemann-visualize     # Generate coherence field heatmap (requires matplotlib)
 ```
+
+*The experiment runs in opic itself — demonstrating opic's self-hosting capability. See `examples/riemann_experiment.ops` for the opic-native implementation.*
 
 See [`docs/theory.md`](docs/theory.md) for mathematical foundations, [`docs/riemann_whitepaper.md`](docs/riemann_whitepaper.md) for academic framing, and [`docs/riemann_hypothesis_experiment.md`](docs/riemann_hypothesis_experiment.md) for experiment plans.
 
