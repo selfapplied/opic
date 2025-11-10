@@ -1,0 +1,22 @@
+;;; ambiance.ops — ambiance family tiddlers
+
+def theme { name, colors, fonts, mass:2 }
+
+def palette { name, swatches, mass:2 }
+
+def layout { name, structure, mass:2 }
+
+voice generate.theme / {theme -> tiddler}
+
+voice generate.palette / {palette -> tiddler}
+
+voice generate.layout / {layout -> tiddler}
+
+# Default ambiance
+
+theme default / { name: "Opic", colors: ["#111", "#0f0"], fonts: ["monospace"] }
+
+palette default / { name: "Opic", swatches: ["#000", "#111", "#0f0", "#fff"] }
+
+layout default / { name: "Opic", structure: "single-column" }
+

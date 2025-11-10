@@ -1,0 +1,56 @@
+;;; markov.ops — Recursive Markov chaining via opic
+
+;; Markov chain structure
+def markov_chain { states, transitions, probabilities }
+def markov_state { current, next_states, probabilities }
+
+;; Basic Markov chain
+voice markov.chain / {states -> transitions -> probabilities -> chain}
+voice markov.transition / {current_state -> next_state -> probability}
+voice markov.probability / {state_pair -> count -> normalize -> probability}
+
+;; Recursive Markov chain (nested/hierarchical)
+voice markov.recursive / {markov.chain -> nested_chains -> recursive_chain}
+voice markov.nested / {parent_chain -> child_chains -> recursive_structure}
+voice markov.hierarchical / {level_0 -> level_1 -> level_2 -> level_3 -> complete}
+
+;; Language field integration
+voice markov.language_field / {language_field.series -> markov.recursive -> generation}
+voice markov.groupoid_levels / {G_0 -> markov_chain_0 + G_1 -> markov_chain_1 + G_2 -> markov_chain_2 + G_3 -> markov_chain_3 -> recursive}
+
+;; Groupoid-level Markov chains
+voice markov.phonetic / {phonetic_groupoid -> markov.chain -> phonetic_transitions}
+voice markov.morphological / {morphological_groupoid -> markov.chain -> morphological_transitions}
+voice markov.syntactic / {syntactic_groupoid -> markov.chain -> syntactic_transitions}
+voice markov.semantic / {semantic_groupoid -> markov.chain -> semantic_transitions}
+
+;; Recursive generation
+voice markov.generate / {input -> markov.recursive -> sample -> output}
+voice markov.sample / {current_state -> transitions -> probabilities -> sample_next -> next_state}
+voice markov.recursive_sample / {level -> markov.sample -> nested_sample -> recursive_output}
+
+;; Training from data
+voice markov.train / {training_data -> count_transitions -> normalize -> markov.chain}
+voice markov.count_transitions / {pairs -> extract_transitions -> count -> transition_counts}
+voice markov.normalize / {transition_counts -> normalize -> probabilities}
+
+;; Training from all voices (in opic)
+voice markov.train_from_voices / {all_voices_comments -> extract_voice_chains -> build_transitions -> markov.chain}
+voice markov.extract_voice_chains / {voices -> parse_body -> extract_steps -> chains}
+voice markov.parse_body / {voice_body -> split_arrows -> steps}
+voice markov.extract_steps / {steps -> voice_names -> chain}
+
+;; BERT integration
+voice markov.bert_embeddings / {text -> bert.tokenize -> bert.embed -> embeddings}
+voice markov.bert_transitions / {embeddings -> similarity -> transition_probs}
+voice markov.bert_generate / {input -> bert.embeddings -> markov.bert_transitions -> sample -> output}
+voice bert.tokenize / {text -> bert_tokens}
+voice bert.embed / {bert_tokens -> bert_model -> embeddings}
+
+;; Integration with existing generation
+voice generate.markov / {input -> markov.generate -> output}
+voice generate.recursive_markov / {input -> markov.recursive -> markov.generate -> output}
+
+target markov / "recursive_markov_chains"
+voice main / {markov.chain -> markov.recursive -> markov.generate -> markov}
+

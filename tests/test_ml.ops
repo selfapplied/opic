@@ -1,0 +1,63 @@
+;;; test_ml.ops — Tests for ML capabilities
+
+;; Test: Token prediction
+voice test.ml.token_prediction / "Test token prediction"
+voice test.ml.token_prediction.setup / {create_model + create_context -> ready}
+voice test.ml.token_prediction.create_model / {ml.mlp -> test_model}
+voice test.ml.token_prediction.create_context / {"The quick brown" -> context_tokens}
+voice test.ml.token_prediction.run / {test_model + context_tokens -> ml.token_predict -> predicted_token}
+voice test.ml.token_prediction.expected / "predicted_token is valid token"
+voice test.ml.token_prediction.actual / {predicted_token -> is_valid_token}
+voice test.ml.token_prediction.passed / {actual == expected -> true}
+
+;; Test: Sentence prediction
+voice test.ml.sentence_prediction / "Test sentence completion"
+voice test.ml.sentence_prediction.setup / {create_model + create_prefix -> ready}
+voice test.ml.sentence_prediction.create_model / {ml.mlp -> test_model}
+voice test.ml.sentence_prediction.create_prefix / {"The cat sat on" -> prefix}
+voice test.ml.sentence_prediction.run / {test_model + prefix -> ml.sentence_predict -> completed_sentence}
+voice test.ml.sentence_prediction.expected / "completed_sentence is valid sentence"
+voice test.ml.sentence_prediction.actual / {completed_sentence -> is_valid_sentence}
+voice test.ml.sentence_prediction.passed / {actual == expected -> true}
+
+;; Test: Model training
+voice test.ml.training / "Test model training"
+voice test.ml.training.setup / {create_model + create_dataset -> ready}
+voice test.ml.training.create_model / {ml.mlp -> untrained_model}
+voice test.ml.training.create_dataset / {sample_data -> training_dataset}
+voice test.ml.training.run / {untrained_model + training_dataset -> ml.train -> trained_model}
+voice test.ml.training.expected / "trained_model has updated weights"
+voice test.ml.training.actual / {trained_model -> weights_changed}
+voice test.ml.training.passed / {actual == expected -> true}
+
+;; Test: Tokenization
+voice test.ml.tokenization / "Test text tokenization"
+voice test.ml.tokenization.input / "Hello world"
+voice test.ml.tokenization.run / {input -> ml.tokenize -> tokens}
+voice test.ml.tokenization.expected / "tokens is list of token_ids"
+voice test.ml.tokenization.actual / {tokens -> is_token_list}
+voice test.ml.tokenization.passed / {actual == expected -> true}
+
+;; Test: MLP architecture
+voice test.ml.mlp_architecture / "Test MLP model creation"
+voice test.ml.mlp_architecture.inputs / {input_dim=100 + hidden_dims=[64,32] + output_dim=10}
+voice test.ml.mlp_architecture.run / {inputs -> ml.mlp -> mlp_model}
+voice test.ml.mlp_architecture.expected / "mlp_model has correct architecture"
+voice test.ml.mlp_architecture.actual / {mlp_model -> verify_architecture}
+voice test.ml.mlp_architecture.passed / {actual == expected -> true}
+
+;; Test: Prediction accuracy
+voice test.ml.accuracy / "Test prediction accuracy"
+voice test.ml.accuracy.setup / {trained_model + test_data -> ready}
+voice test.ml.accuracy.run / {trained_model + test_data -> ml.evaluate -> accuracy_score}
+voice test.ml.accuracy.expected / "accuracy_score > 0.5"
+voice test.ml.accuracy.actual / {accuracy_score -> is_above_threshold}
+voice test.ml.accuracy.passed / {actual == expected -> true}
+
+;; Test suite
+voice test.ml.suite / {test.ml.token_prediction -> test.ml.sentence_prediction -> test.ml.training -> test.ml.tokenization -> test.ml.mlp_architecture -> test.ml.accuracy}
+voice test.ml.run_all / {test.ml.suite -> collect_results -> report}
+
+target test_ml / "ml_capability_tests"
+voice main / {test.ml.run_all -> test_ml}
+

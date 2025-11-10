@@ -1,0 +1,98 @@
+;;; certify_change.ops — certify state changes with unitary C operator
+
+include systems/certificate.ops
+include systems/witness.ops
+include systems/voice_ledger.ops
+
+certify.change:
+  If change_detected
+  Then take_current_state
+  Then apply_certificate_operator
+  Then create_certified_state
+  Then sign_with_key
+  Then add_to_ledger_sheaf
+
+take_current_state:
+  Capture state_vector
+  Read current_psi
+  Include state_metadata
+  Prepare for_transformation
+
+capture state_vector:
+  Read realm_state
+  Capture content_state
+  Capture structure_state
+  Capture coherence_state
+
+read current_psi:
+  Load state_representation
+  Include all_components
+  Preserve state_structure
+  Enable state_verification
+
+apply_certificate_operator:
+  Use C_operator
+  Act on state_vector
+  Transform to certified_state
+  Preserve unitarity
+
+use C_operator:
+  Load certificate_operator
+  Verify operator_properties
+  Ensure unitarity
+  Enable operator_application
+
+act on state_vector:
+  Calculate C_times_psi
+  Transform state_components
+  Preserve state_structure
+  Maintain coherence
+
+transform to certified_state:
+  Create certified_representation
+  Include certificate_metadata
+  Preserve state_information
+  Enable verification
+
+preserve unitarity:
+  Verify C_dagger_C_equals_I
+  Check operator_properties
+  Ensure unitarity_preserved
+  Validate transformation
+
+create_certified_state:
+  Generate certified_record
+  Include state_hash
+  Include certificate_signature
+  Enable verification
+
+sign_with_key:
+  Use cryptographic_key
+  Sign certified_state
+  Create signature_proof
+  Enable verification
+
+add_to_ledger_sheaf:
+  Add to ledger_structure
+  Update sheaf_elements
+  Maintain compatibility
+  Enable ledger_verification
+
+add to ledger_structure:
+  Append certificate_record
+  Update ledger_hash
+  Maintain ledger_integrity
+  Enable ledger_verification
+
+update sheaf_elements:
+  Update local_certificates
+  Update overlap_certificates
+  Maintain compatibility
+  Enable sheaf_verification
+
+maintain compatibility:
+  Check overlap_regions
+  Verify certificate_compatibility
+  Ensure coherence_preservation
+  Validate transitions
+

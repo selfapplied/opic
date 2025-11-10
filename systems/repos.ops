@@ -1,0 +1,63 @@
+;;; repos.ops — opic repository management system
+
+;; Include ML capabilities for summarization (auto-loaded via attention if ml.sentence_predict is referenced)
+;; include ml.ops
+include systems/repo_realm.ops
+
+;; Repository state
+def repository { path, is_git, initialized, realm, structure }
+def repo_list { repositories }
+def directory_type { is_repo, contains_repos }
+
+;; Find home directory
+voice repos.home / {home_dir -> resolve_path -> home_path}
+voice home_dir / "~"
+voice resolve_path / {path -> expand_user -> absolute_path}
+
+;; Determine directory type: repository or list of repositories
+voice repos.classify / {directory -> repos.check_self -> repos.check_contains -> directory_type}
+voice repos.check_self / {directory -> check_git_dir -> is_repo}
+voice repos.check_contains / {directory -> repos.scan_recursive -> find_repos -> contains_repos}
+voice check_git_dir / {path -> ".git" -> exists -> is_git}
+
+;; Recursive scan: check if directory contains repositories
+voice repos.scan_recursive / {directory -> list_subdirs -> repos.check_each -> found_repos}
+voice list_subdirs / {path -> filter_dirs -> subdirs}
+voice filter_dirs / {items -> exclude_hidden -> directories}
+voice repos.check_each / {subdirs -> for_each -> repos.classify -> results}
+voice find_repos / {results -> filter_repos -> has_repos}
+
+;; If directory is not a repo and contains repos, it's a list
+voice repos.is_list / {directory_type -> not_repo + has_repos -> is_list}
+voice repos.is_repo / {directory_type -> is_repo -> is_repository}
+
+;; Process directory: classify and handle accordingly
+voice repos.process / {directory -> repos.classify -> repos.handle -> result}
+voice repos.handle / {directory_type -> if_repo -> mark_repo -> if_list -> repos.scan_recursive -> if_neither -> skip}
+
+;; Collect all repositories (recursive)
+voice repos.collect / {directory -> repos.classify -> repos.collect_repos -> repositories}
+voice repos.collect_repos / {directory_type -> if_repo -> add_repo -> if_list -> repos.scan_recursive -> collect_all}
+
+;; Summarize repository
+voice repos.summarize / {repository -> repos.read_files -> repos.extract_text -> repos.summarize_text -> summary}
+voice repos.read_files / {path -> find_readme + find_code_files -> file_contents}
+voice repos.find_readme / {path -> "README*" -> glob -> readme_files}
+voice repos.find_code_files / {path -> code_patterns -> glob -> code_files}
+voice repos.extract_text / {file_contents -> read_text -> combined_text}
+voice repos.summarize_text / {combined_text -> ml.sentence_predict -> summary_text}
+voice repos.summarize_with_nlp / {text -> nlp.summarize -> summary}
+
+;; List repositories with summaries
+voice repos.list / {repositories -> repos.summarize_each -> repos.format_with_summaries -> display}
+voice repos.summarize_each / {repos -> for_each -> repos.summarize -> repos_with_summaries}
+voice repos.format_with_summaries / {repos_with_summaries -> format_list -> output}
+voice format_list / {repos -> sort -> format -> output}
+voice display / {output -> print -> stdout}
+
+;; Main repository management chain (with realm discovery)
+voice repos.run / {repos.home -> repos.collect -> repo.discover_each -> repo.create_realms -> repos.list -> repos}
+
+target repos / "opic_repos"
+voice main / {repos.run -> repos}
+

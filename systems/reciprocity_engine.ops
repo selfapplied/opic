@@ -1,0 +1,31 @@
+;;; reciprocity_engine.ops — semantic energy balance and resonance scoring
+
+include systems/opic_peer.ops
+include systems/certificate.ops
+
+;; Reciprocity engine definitions
+def resonance_score { upload_score, download_score, balance, phase_credit }
+def semantic_energy_balance { node, upload_energy, download_energy, net_energy, phase_credit }
+
+;; Compute resonance score (not byte count)
+voice reciprocity.compute_resonance / {upload_content + download_content + network_state -> reciprocity.measure_semantic_value -> reciprocity.compute_coherence_contribution -> resonance_score}
+voice reciprocity.measure_semantic_value / {content + network -> peer.compute_value -> semantic_value}
+voice reciprocity.compute_coherence_contribution / {content + network -> peer.compute_coherence -> coherence_contribution}
+
+;; Balance semantic energy
+voice reciprocity.balance_energy / {node + time_window -> peer.semantic_balance -> reciprocity.adjust_credit -> balanced}
+voice reciprocity.adjust_credit / {balance + resonance -> peer.adjust_phase_credit -> adjusted_credit}
+
+;; Tit-for-tat with resonance
+voice reciprocity.tit_for_tat / {node_a + node_b + exchange + agent_realm + ca -> reciprocity.compute_resonance -> reciprocity.check_balance -> reciprocity.enforce_reciprocity -> reciprocated}
+voice reciprocity.check_balance / {resonance_a + resonance_b -> compare -> balanced}
+voice reciprocity.enforce_reciprocity / {balanced + threshold -> if_balanced -> allow_exchange -> if_imbalanced -> require_balance}
+
+;; Harmonic resonance equilibrium
+voice reciprocity.harmonic_equilibrium / {network + nodes -> reciprocity.compute_all_resonances -> reciprocity.find_equilibrium -> equilibrium_state}
+voice reciprocity.compute_all_resonances / {nodes + network -> for_each -> reciprocity.compute_resonance -> all_resonances}
+voice reciprocity.find_equilibrium / {all_resonances -> compute_equilibrium -> equilibrium}
+
+target reciprocity_engine / "opic_semantic_energy_balance"
+voice main / {reciprocity.balance_energy -> reciprocity_engine}
+

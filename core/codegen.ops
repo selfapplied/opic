@@ -1,0 +1,16 @@
+;;; codegen.ops — Code generator defined in opic
+
+def template { language, pattern, variables }
+def code { language, structure, implementation }
+
+voice select.template / {target + language -> template}
+voice fill.template / {template + defs + voices -> code}
+voice generate.metal / {defs + voices -> metal.code}
+voice generate.swift / {defs + voices -> swift.code}
+voice write.code / {code + path -> file}
+
+voice generate / {ops.file + target -> code.file}
+
+target generated / "code.file"
+voice main / {ops.file + target -> generated}
+

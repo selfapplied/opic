@@ -1,0 +1,15 @@
+;;; parser.ops — Parser defined in opic
+
+def line { text, number }
+def token { type, value }
+def def { name, fields }
+def voice { name, input, output, body }
+
+voice parse.line / {line -> token}
+voice parse.def / {tokens -> def}
+voice parse.voice / {tokens -> voice}
+voice parse.file / {file -> defs + voices}
+
+target parsed / "defs + voices"
+voice main / {file -> parsed}
+

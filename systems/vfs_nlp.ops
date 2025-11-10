@@ -1,0 +1,36 @@
+;;; vfs_nlp.ops — VFS integration with NLP capability layer
+;; Note: This is included by vfs.ops, so we don't include vfs.ops here to avoid circular dependency
+
+include systems/nlp_capability.ops
+include systems/certificate.ops
+include core/bootstrap.ops
+
+;; Capture intent with NLP before certification
+voice vfs.capture_intent / {operation + path + agent + context -> nlp.describe_capability -> nlp.tag_semantics -> capability_description}
+voice capability_description / {description + tags -> intent_captured}
+
+;; Enhanced certificate creation with capability summary
+voice cert.create_certificate_with_capability / {change + capability_description + agent_realm + ca -> cert.create_certificate -> cert.add_capability_field -> certificate}
+voice cert.add_capability_field / {certificate + capability_description -> add_field -> enhanced_certificate}
+voice add_field / {certificate + field -> update_certificate -> updated}
+
+;; Enhanced witness creation with capability summary
+voice witness.create_witness_with_capability / {change + capability_description + agent_realm + ca -> witness.create_witness -> witness.add_capability_summary -> enhanced_witness}
+voice witness.add_capability_summary / {witness + capability_description -> add_summary -> enhanced}
+
+;; VFS plan with NLP intent capture
+voice vfs.plan_with_nlp / {vfs + changes + agent_realm + ca -> for_each_change -> vfs.capture_intent -> vfs.plan -> vfs_plan}
+voice for_each_change / {changes -> map -> vfs.capture_intent -> captured_changes}
+
+;; Complete workflow: capture intent -> describe capability -> certify -> witness -> plan
+voice vfs.plan_vfs_with_nlp / {vfs + changes + agent_realm + ca -> 
+  vfs.capture_intent -> 
+  nlp.describe_capability -> 
+  cert.create_certificate_with_capability -> 
+  witness.create_witness_with_capability -> 
+  vfs.plan_vfs -> 
+  nlp_enhanced_plan}
+
+target vfs_nlp / "vfs_nlp_integration"
+voice main / {vfs.plan_vfs_with_nlp -> vfs_nlp}
+

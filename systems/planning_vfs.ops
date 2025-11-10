@@ -1,0 +1,46 @@
+;;; planning_vfs.ops — planning and executing in virtual filesystem, flush after validation
+
+include systems/vfs.ops
+include core/bootstrap.ops
+
+;; Planning workflow: plan in virtual memory (with certificates)
+voice planning.plan_in_vfs / {plan_request + agent_realm + ca -> planning.create_vfs -> planning.plan_changes -> plan}
+voice planning.create_vfs / {request -> vfs.create -> planning_vfs}
+voice planning.plan_changes / {vfs + request + agent_realm + ca -> analyze_request -> generate_changes -> plan}
+
+;; Execution workflow: execute in virtual memory (with witnessing)
+voice planning.execute_in_vfs / {plan + agent_realm + ca -> planning.execute_changes -> execution_result}
+voice planning.execute_changes / {plan + agent_realm + ca -> for_each_change -> vfs.execute -> results}
+
+;; Validation workflow: validate before flush (includes certificate and witness verification)
+voice planning.validate_execution / {execution + agent_realm + ca -> planning.verify_certificates + planning.verify_witnesses + planning.run_tests + planning.check_invariants -> validation}
+voice planning.verify_certificates / {execution + agent_realm + ca -> vfs.verify_certificates -> certificates_valid}
+voice planning.verify_witnesses / {execution + agent_realm + ca -> vfs.verify_witnesses -> witnesses_valid}
+voice planning.run_tests / {execution -> execute_tests -> test_results}
+voice planning.check_invariants / {execution -> verify_invariants -> invariant_results}
+
+;; Flush workflow: flush validated changes to disk (only if certificates and witnesses valid)
+voice planning.flush_validated / {execution + validation + agent_realm + ca -> if_validated -> vfs.flush -> flushed}
+
+;; Complete planning-execution cycle (with certificates and witnessing)
+voice planning.plan_execute_flush / {request + agent_realm + ca -> planning.plan_in_vfs -> planning.execute_in_vfs -> planning.validate_execution -> planning.flush_validated -> result}
+
+;; Example: plan code changes in virtual memory
+voice planning.plan_code_changes / {code_files + modifications -> planning.create_vfs -> planning.plan_file_changes -> plan}
+voice planning.plan_file_changes / {vfs + files + modifications -> for_each_file -> planning.plan_modify -> changes}
+
+;; Example: execute code changes in virtual memory
+voice planning.execute_code_changes / {plan -> planning.execute_in_vfs -> execution}
+
+;; Example: validate code changes (syntax, tests, invariants)
+voice planning.validate_code_changes / {execution -> planning.check_syntax + planning.run_tests + planning.check_type_safety -> validation}
+
+;; Example: flush code changes after validation
+voice planning.flush_code_changes / {execution + validation -> planning.flush_validated -> flushed}
+
+;; Complete code change workflow
+voice planning.change_code / {files + modifications -> planning.plan_code_changes -> planning.execute_code_changes -> planning.validate_code_changes -> planning.flush_code_changes -> result}
+
+target planning_vfs / "planning_virtual_filesystem"
+voice main / {planning.plan_execute_flush -> planning_vfs}
+

@@ -1,0 +1,16 @@
+;;; compile_opic.ops — Opic self-compilation definitions
+
+def compilation_target { language, entry_point, output_binary }
+def source_file { ops_file, dependencies }
+
+voice compile.to.swift / {ops_files -> swift.binary}
+voice compile.to.metal / {ops_files -> metal.shader}
+voice link.binaries / {binaries -> executable}
+
+voice compile.music / {music.ops + music_impl.ops -> music.swift}
+voice compile.gann / {gann.ops + nn.ops + generator.ops + train.ops + render.ops -> gann.swift}
+voice compile.generate / {generate_impl.ops + implementations.ops -> generate.swift}
+
+target compiled.opic / "opic.binary"
+voice main / {all.ops -> compiled.opic}
+

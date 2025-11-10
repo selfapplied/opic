@@ -1,0 +1,20 @@
+;;; self_execute.ops — opic executes itself without Python scaffolding
+
+;; Self-execution: opic runs its own structure
+voice self.execute / {load_voices -> parse_chains -> execute_chain -> output}
+voice self.load_voices / {ops_files -> parse -> voices}
+voice self.parse_chains / {voices -> extract_chains}
+voice self.execute_chain / {chain -> follow_steps -> result}
+voice self.output / {result -> display}
+
+;; Bootstrap: opic runs itself
+voice bootstrap / {core.ops -> self.execute}
+voice bootstrap.execute / {self.execute -> run}
+
+;; Pure opic execution (no Python)
+voice pure.execute / {voices -> execute}
+voice pure.chain / {chain -> execute_steps}
+
+target self_execute / "opic_executes_itself"
+voice main / {bootstrap -> self_execute}
+

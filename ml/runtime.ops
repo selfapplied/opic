@@ -1,0 +1,27 @@
+;;; runtime.ops — declares available diffeomorphic bootstraps
+
+target python / "generate.py"
+
+target wasm   / "opic_boot.wasm"
+
+target html   / "opic.html"
+
+target macos  / "opic.workflow"
+
+target tiddlywiki / "build_tiddlywiki.py"
+
+target metal  / "metal.metal"
+
+target swift  / "swift.swift"
+
+voice build / {src -> target}
+
+voice run   / {target -> exec}
+
+voice build.tiddlywiki / {tiddlywiki.ops -> tiddlywiki.html}
+
+voice generate.metal / {ops -> metal.metal}
+
+voice generate.swift / {ops -> swift.swift}
+
+voice preference / [python, wasm, html, macos, tiddlywiki, metal, swift]

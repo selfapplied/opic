@@ -28,7 +28,7 @@ check-opic:
 # Once opic is self-hosting, these are witness checkpoints
 bootstrap:
 	@echo "Bringing opic up..."
-	@python3 opic execute bootstrap.ops
+	@python3 opic execute core/bootstrap.ops
 
 # Default: give user a shell with opic available
 shell: check-opic
@@ -44,7 +44,7 @@ shell: check-opic
 
 build: check-opic
 	@echo "Building TiddlyWiki..."
-	@python3 opic execute tiddlywiki_build.ops
+	@python3 opic execute wiki/tiddlywiki_build.ops
 
 seed: check-opic
 	@echo "Building Wild Sort company seed..."
@@ -121,19 +121,19 @@ install: compile
 
 compile: check-opic
 	@echo "Self-compiling opic via opic_compile.ops..."
-	@python3 opic execute opic_compile.ops
+	@python3 opic execute systems/opic_compile.ops
 
 test: check-opic
 	@echo "Running opic runtime interface tests..."
-	@python3 opic execute runtime_test.ops
+	@python3 opic execute tests/runtime_test.ops
 
 plan: check-opic
 	@echo "opic suggests a plan..."
-	@python3 opic execute opic_plan.ops
+	@python3 opic execute systems/opic_plan.ops
 
 repos: check-opic
 	@echo "Listing repositories..."
-	@python3 opic execute repos.ops
+	@python3 opic execute systems/repos.ops
 
 perf:
 	@echo "Running opic performance tests..."
@@ -268,15 +268,15 @@ service: check-opic
 # Entry points: witness checkpoints that opic works
 fee: check-opic
 	@echo "Field Equation Exchange..."
-	@python3 opic execute fee.ops
+	@python3 opic execute systems/fee.ops
 
 rct: check-opic
 	@echo "Recursive Contract Theory..."
-	@python3 opic execute recursive_contract_theory.ops
+	@python3 opic execute systems/recursive_contract_theory.ops
 
 pools: check-opic
 	@echo "Learning Pools..."
-	@python3 opic execute learning_pools.ops
+	@python3 opic execute systems/learning_pools.ops
 
 # Default: give user a shell with opic available
 default: shell

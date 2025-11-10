@@ -1,0 +1,48 @@
+;;; vfs_constitutional_demo.ops — demonstration of VFS as constitutional medium
+
+include systems/vfs.ops
+include systems/vfs_audit.ops
+include core/bootstrap.ops
+
+;; Demo: Complete constitutional workflow
+voice demo.constitutional_commit / {vfs + changes + agent_realm + ca -> 
+  vfs.plan ->                    ;; 1. Intention (Plan) — proposed change + signature
+  vfs.execute ->                 ;; 2. Action (Execute) — observed transformation, witnessed
+  vfs.validate ->                ;; 3. Judgment (Validate) — verification of truth + coherence
+  vfs.commit_ethics ->           ;; 4. Ethical scoring — generational resonance
+  audit.complete_audit ->         ;; 5. Audit trail — ledger of coherence
+  vfs.flush ->                   ;; 6. Memory (Flush) — committing only that which passes all checks
+  constitutional_result}
+
+;; Demo: Quorum-based flush
+voice demo.quorum_flush / {execution + validation + ["core", "legal", "audit"] + agent_realm + ca -> 
+  vfs.flush_quorum -> 
+  quorum_result}
+
+;; Demo: Chain of custody
+voice demo.custody_chain / {execution + previous_digest -> 
+  vfs.chain_custody -> 
+  vfs.verify_chain -> 
+  chain_valid}
+
+;; Demo: Ethical audit
+voice demo.ethical_audit / {execution + ethical_score + resonance + agent_realm + ca -> 
+  audit.record_entry -> 
+  audit.compute_resonance_metrics -> 
+  audit.export_for_observers -> 
+  observer_report}
+
+;; Demo: Regenerative rollback (apology as correction)
+voice demo.regenerative_rollback / {invalid_execution + original_commit + agent_realm + ca -> 
+  audit.generate_rollback_proof -> 
+  vfs.rollback -> 
+  rollback_proof}
+
+;; Demo: Narrative generation
+voice demo.narrative / {ledger -> 
+  audit.format_narrative -> 
+  narrative_text}
+
+target vfs_constitutional_demo / "constitutional_medium_demonstration"
+voice main / {demo.constitutional_commit -> vfs_constitutional_demo}
+

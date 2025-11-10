@@ -1,0 +1,3 @@
+import Foundation
+func main() { let scale="2,2,1,2,2,2,1"; let tempo=120; let pattern="0,2,4,0"; let intervals=scale.split(separator:",").compactMap{Int($0.trimmingCharacters(in:.whitespaces))}; var notes=[Int](); var n=60; for i in intervals { notes.append(n); n+=i }; let p=pattern.split(separator:",").compactMap{Int($0.trimmingCharacters(in:.whitespaces))}; let melody=p.map{notes[$0%notes.count]}; let names=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"]; print("Melody (from opic):"); print("  Tempo: \(tempo) BPM"); print("  Notes: ", terminator:""); for note in melody { let o=note/12-1; print("\(names[note%12])\(o) ", terminator:"") }; print() }
+main()

@@ -1,0 +1,19 @@
+;;; loss.ops — Loss functions and optimization
+
+def prediction { value, confidence }
+def target { value, label }
+def loss { type, value, gradient }
+
+def mse / {prediction + target -> loss}
+def crossentropy / {prediction + target -> loss}
+def huber / {prediction + target -> loss}
+
+voice compute.mse / {prediction + target -> loss}
+voice compute.crossentropy / {prediction + target -> loss}
+voice compute.gradient / {loss -> gradient}
+
+voice optimize / {loss + gradient -> updated.weights}
+
+target optimized / "trained.model"
+voice main / {prediction + target -> optimized}
+

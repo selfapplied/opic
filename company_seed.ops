@@ -1,9 +1,9 @@
 ;;; company_seed.ops — Wild Sort company seed with launch components
 
 include seed_template.ops
-include tiddlywiki.ops
-include tiddlywiki_network.ops
-include viral_resonance.ops
+include wiki/tiddlywiki.ops
+include wiki/tiddlywiki_network.ops
+include systems/viral_resonance.ops
 include whitepaper.ops
 include getting_started.ops
 include art_gallery.ops

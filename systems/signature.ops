@@ -1,0 +1,24 @@
+;;; signature.ops — Signature reconciliation defined in opic
+
+def parameter { name, canonical, alias }
+def signature { parameters, return_type, body }
+def alias_map { from, to }
+
+def parse / {voice.body -> signature}
+def canonicalize / {parameter + alias_map -> canonical.parameter}
+def generate / {signature + target -> function.code}
+
+voice parse.voice.body / {body -> parameters + return_type}
+voice extract.parameters / {input.part -> parameter.list}
+voice normalize.parameter / {parameter -> canonical.name}
+
+voice map.alias / {parameter.name -> canonical.name}
+voice convert.snake_case / {snake_case -> camelCase}
+voice build.function.signature / {parameters + return_type -> swift.signature}
+
+voice reconcile.signature / {voice + alias_map -> reconciled.signature}
+voice generate.function / {reconciled.signature + implementation -> swift.code}
+
+target reconciled / "reconciled.signature"
+voice main / {voice + alias_map -> reconciled}
+

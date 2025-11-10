@@ -1,0 +1,12 @@
+;;; content.ops — content tiddler family
+
+def content { title, text, tags, mass:2 }
+
+voice generate.content / {content -> tiddler}
+
+# Example content
+
+content welcome / { title: "Welcome", text: "Welcome to Opic-composed TiddlyWiki", tags: ["family/tiddlers"] }
+
+content about / { title: "About Opic", text: "Opic is an event-based compositional language.", tags: ["family/tiddlers", "opic"] }
+

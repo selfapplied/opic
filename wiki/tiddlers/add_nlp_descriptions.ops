@@ -1,0 +1,106 @@
+;;; add_nlp_descriptions.ops — add semantic descriptions and tags to tiddlers
+
+include wiki/tiddlywiki.ops
+include systems/nlp_capability.ops
+
+add.nlp_descriptions:
+  If tiddler_processed
+  Then generate_semantic_summary
+  Then extract_semantic_tags
+  Then update_tiddler_fields
+
+generate_semantic_summary:
+  Use nlp.describe_capability
+  Generate human_description
+  Extract key_concepts
+  Create summary_text
+
+use nlp.describe_capability:
+  Input: tiddler_content
+  Process with nlp_voices
+  Generate description
+  Return semantic_summary
+
+generate human_description:
+  Create concise_summary
+  Include purpose
+  Include key_concepts
+  Include relationships
+
+extract key_concepts:
+  Identify main_topics
+  Identify relationships
+  Identify semantic_clusters
+
+create summary_text:
+  Format as readable_description
+  Include context
+  Include purpose
+
+extract_semantic_tags:
+  Use nlp.tag_semantics
+  Extract realm_tags
+  Extract purpose_tags
+  Extract coherence_tags
+
+use nlp.tag_semantics:
+  Input: tiddler_content
+  Process with semantic_analysis
+  Generate tags
+  Return tag_list
+
+extract realm_tags:
+  Identify domain_classification
+  Map to opic_realms
+  Create realm_tags
+
+extract purpose_tags:
+  Identify purpose_classification
+  Map to opic_purposes
+  Create purpose_tags
+
+extract coherence_tags:
+  Calculate coherence_metrics
+  Link to field_theory
+  Create coherence_tags
+
+update_tiddler_fields:
+  Add description_field
+  Add semantic_tags_field
+  Add nlp_metadata_field
+
+add description_field:
+  Field: "description"
+  Value: semantic_summary
+  Source: nlp_generated
+
+add semantic_tags_field:
+  Field: "semantic-tags"
+  Value: tag_list
+  Source: nlp_analysis
+
+add nlp_metadata_field:
+  Field: "nlp-processed"
+  Value: timestamp
+  Source: nlp_system
+
+self_indexing:
+  Use generated_tags
+  Create index_entries
+  Enable semantic_search
+
+use generated_tags:
+  Extract from tiddler_fields
+  Create tag_index
+  Link tiddlers_by_tag
+
+create index_entries:
+  Group by realm_tags
+  Group by purpose_tags
+  Group by coherence_tags
+
+enable semantic_search:
+  Use tag_index
+  Enable filtering
+  Enable discovery
+

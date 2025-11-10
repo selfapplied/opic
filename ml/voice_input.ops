@@ -1,0 +1,13 @@
+;;; voice_input.ops — opic listens to user voice
+
+;; Voice input
+voice audio.listen / {microphone -> capture_audio -> audio_data}
+voice audio.transcribe / {audio_data -> speech_to_text -> text}
+voice audio.input / {audio.listen -> audio.transcribe -> user_text}
+
+;; Text input (fallback)
+voice text.input / {stdin -> read_line -> user_text}
+
+;; Input handler
+voice input.get / {audio.input + text.input -> user_input}
+

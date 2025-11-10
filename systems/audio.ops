@@ -1,0 +1,36 @@
+;;; audio.ops — opic handles its own audio/say mode
+
+include core/bootstrap.ops
+
+;; Audio definitions
+def audio_request { text, voice, volume }
+def say_command { text, available }
+
+;; Check if say command is available
+voice audio.check_say / {agent_realm + ca -> audio.find_say_command -> if_available}
+voice audio.find_say_command / {agent_realm + ca -> "say" -> check_command_exists -> say_available}
+voice audio.check_command_exists / {command_name -> system.which -> if_exists}
+
+;; Speak text via say command
+voice audio.speak / {text + agent_realm + ca -> audio.check_say -> audio.format_text -> audio.execute_say -> spoken}
+voice audio.format_text / {text -> replace "_" " " -> replace "." " " -> strip_quotes -> formatted_text}
+voice audio.execute_say / {formatted_text + say_available -> system.run_say -> spoken}
+
+;; Check if audio should be enabled for this execution
+voice audio.should_enable / {voices + agent_realm + ca -> audio.has_audio_voices -> if_yes_enable}
+voice audio.has_audio_voices / {voices -> filter "audio." -> if_any -> has_audio}
+voice audio.filter_audio_voices / {voices -> keys_starting_with "audio." -> audio_voices}
+
+;; Main audio handler
+voice audio.handle / {voices + main_body + agent_realm + ca -> audio.should_enable -> if_enabled_handle -> audio_done}
+voice audio.if_enabled_handle / {has_audio + voices + main_body -> if_has_audio_speak -> audio_done}
+voice audio.if_has_audio_speak / {has_audio -> if_true -> audio.find_speak_voices -> audio.speak_selected -> spoken}
+
+;; Find speak voices
+voice audio.find_speak_voices / {voices -> filter "audio.speak_" -> speak_voices}
+voice audio.select_speak_voice / {speak_voices -> prefer "audio.speak_goal" -> selected_voice}
+voice audio.speak_selected / {selected_voice + voices -> audio.extract_text -> audio.speak -> spoken}
+voice audio.extract_text / {voice_chain + voices -> parse_chain -> extract_source -> get_voice_text -> text}
+
+target audio / "audio"
+voice main / {audio.handle -> audio}

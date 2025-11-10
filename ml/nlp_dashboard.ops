@@ -1,0 +1,53 @@
+;;; nlp_dashboard.ops — dashboard display layer for NLP-enhanced audit trail
+
+include systems/vfs_audit.ops
+include systems/nlp_capability.ops
+include core/bootstrap.ops
+
+;; Dashboard definitions
+def dashboard_feed { entries, tags, aggregations, filters }
+def feed_entry { timestamp, capability_summary, agent, tags, resonance, link_to_full_log }
+
+;; Generate dashboard feed
+voice dashboard.generate_feed / {ledger -> dashboard.extract_recent_entries -> dashboard.format_entries -> dashboard_feed}
+voice dashboard.extract_recent_entries / {ledger -> filter_recent -> sort_by_timestamp -> recent_entries}
+voice filter_recent / {ledger + limit -> take_recent -> entries}
+voice dashboard.format_entries / {entries -> for_each -> dashboard.format_entry -> formatted_entries}
+voice dashboard.format_entry / {entry -> extract_capability_summary + extract_tags + extract_resonance -> feed_entry}
+
+;; Aggregate by tags
+voice dashboard.aggregate_by_tags / {ledger -> dashboard.extract_tags -> dashboard.group_by_tag -> aggregations}
+voice dashboard.extract_tags / {ledger -> get_all_tags -> unique_tags}
+voice dashboard.group_by_tag / {ledger + tags -> for_each_tag -> filter_by_tag -> grouped}
+voice filter_by_tag / {ledger + tag -> filter_entries -> entries}
+
+;; Visualize knowledge ecosystem
+voice dashboard.visualize_ecosystem / {ledger -> dashboard.aggregate_by_tags -> dashboard.compute_statistics -> dashboard.render -> visualization}
+voice dashboard.compute_statistics / {grouped -> count_entries + compute_resonance_average -> statistics}
+voice dashboard.render / {statistics -> format_for_display -> visualization}
+
+;; Filter and search
+voice dashboard.filter_by_category / {ledger + category -> filter_by_category -> filtered_entries}
+voice filter_by_category / {ledger + category -> match_category -> entries}
+voice dashboard.search / {ledger + query -> search_capability_descriptions -> matching_entries}
+voice search_capability_descriptions / {ledger + query -> text_search -> matches}
+
+;; Expand entry to full log
+voice dashboard.expand_entry / {entry_id + ledger -> dashboard.find_entry -> dashboard.get_full_log -> full_log}
+voice dashboard.find_entry / {entry_id + ledger -> lookup -> entry}
+voice dashboard.get_full_log / {entry -> extract_full_details -> log}
+voice extract_full_details / {entry -> get_certificates + get_witnesses + get_ethical_score -> details}
+
+;; TiddlyWiki integration
+voice dashboard.generate_tiddlywiki_feed / {ledger -> dashboard.generate_feed -> dashboard.format_as_tiddlers -> tiddlywiki_feed}
+voice dashboard.format_as_tiddlers / {feed -> for_each_entry -> create_tiddler -> tiddlers}
+voice create_tiddler / {entry -> format_as_tiddler -> tiddler}
+
+;; Category dashboards
+voice dashboard.education_dashboard / {ledger -> dashboard.filter_by_category "education" -> dashboard.generate_feed -> education_feed}
+voice dashboard.governance_dashboard / {ledger -> dashboard.filter_by_category "governance" -> dashboard.generate_feed -> governance_feed}
+voice dashboard.ethics_dashboard / {ledger -> dashboard.filter_by_category "ethics" -> dashboard.generate_feed -> ethics_feed}
+
+target nlp_dashboard / "nlp_dashboard_display"
+voice main / {dashboard.generate_feed -> nlp_dashboard}
+

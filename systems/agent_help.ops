@@ -1,0 +1,112 @@
+;;; agent_help.ops — built-in help system for agents learning opic
+
+include core/bootstrap.ops
+
+;; Agent help definitions
+def help_topic { name, description, examples, related_topics }
+def help_command { name, description, usage, options, examples }
+def help_voice { name, description, signature, examples }
+
+;; Core concepts help
+voice help.concepts / {help.explain_voices + help.explain_chains + help.explain_realms + help.explain_fields -> concepts_help}
+voice help.explain_voices / {"Voices are composable operators that transform input to output" -> voice_explanation}
+voice help.explain_chains / {"Chains connect voices: {input -> voice1 -> voice2 -> output}" -> chain_explanation}
+voice help.explain_realms / {"Realms provide isolation and trust boundaries for different repositories" -> realm_explanation}
+voice help.explain_fields / {"Fields are discovered characteristics (language, build system, conventions)" -> field_explanation}
+
+;; Generate structured help data (for agents)
+voice help.generate_agent_data / {help.build_concepts + help.build_commands + help.build_voice_system + help.build_realm_system + help.build_field_system + help.build_learning_path + help.build_examples -> help_data}
+voice help.build_concepts / {help.concepts -> format_concepts_json -> concepts_json}
+voice help.build_commands / {help.commands -> format_commands_json -> commands_json}
+voice help.build_voice_system / {help.voice_system -> format_voice_json -> voice_json}
+voice help.build_realm_system / {help.realm_system -> format_realm_json -> realm_json}
+voice help.build_field_system / {help.field_system -> format_field_json -> field_json}
+voice help.build_learning_path / {help.learning_path -> format_path_json -> path_json}
+voice help.build_examples / {help.examples -> format_examples_json -> examples_json}
+voice format_concepts_json / {concepts -> to_json -> json}
+voice format_commands_json / {commands -> to_json -> json}
+voice format_voice_json / {voice_info -> to_json -> json}
+voice format_realm_json / {realm_info -> to_json -> json}
+voice format_field_json / {field_info -> to_json -> json}
+voice format_path_json / {path -> to_json -> json}
+voice format_examples_json / {examples -> to_json -> json}
+
+;; Command help (for agents)
+voice help.commands / {help.list_commands + help.describe_each -> commands_help}
+voice help.list_commands / {help.cmd_execute + help.cmd_repos + help.cmd_help + help.cmd_test + help.cmd_compile + help.cmd_plan + help.cmd_bootstrap -> command_list}
+voice help.cmd_execute / {"execute <file.ops> - Execute an opic file" -> execute_help}
+voice help.cmd_repos / {"repos [directory] - List repositories with realm discovery" -> repos_help}
+voice help.cmd_help / {"help - Show this help" -> help_help}
+voice help.cmd_test / {"test - Run runtime interface tests" -> test_help}
+voice help.cmd_compile / {"compile - Self-compile opic" -> compile_help}
+voice help.cmd_plan / {"plan - Suggest a plan for opic" -> plan_help}
+voice help.cmd_bootstrap / {"bootstrap - Bring opic up" -> bootstrap_help}
+
+;; Usage examples for agents
+voice help.examples / {help.example_basic + help.example_chain + help.example_realm + help.example_field -> examples_help}
+voice help.example_basic / {"opic execute my_file.ops" -> basic_example}
+voice help.example_chain / {"voice add / {a + b -> sum}" -> chain_example}
+voice help.example_realm / {"opic repos ~/projects - discovers realms for each repo" -> realm_example}
+voice help.example_field / {"Fields: language, build_system, test_framework, conventions" -> field_example}
+
+;; Voice system help
+voice help.voice_system / {help.voice_syntax + help.voice_composition + help.voice_namespaces -> voice_system_help}
+voice help.voice_syntax / {"voice name / {input -> transformation -> output}" -> syntax_help}
+voice help.voice_composition / {"Voices compose: {input -> voice1 -> voice2 -> output}" -> composition_help}
+voice help.voice_namespaces / {"Namespaces organize: ml.predict, cert.verify, repo.discover" -> namespace_help}
+
+;; Realm system help
+voice help.realm_system / {help.realm_concepts + help.realm_discovery + help.realm_trust -> realm_system_help}
+voice help.realm_concepts / {"Each repository becomes its own realm with CA and boundaries" -> realm_concepts_help}
+voice help.realm_discovery / {"opic repos automatically discovers structure and creates realms" -> realm_discovery_help}
+voice help.realm_trust / {"Realms can trust each other for cross-realm operations" -> realm_trust_help}
+
+;; Field discovery help
+voice help.field_system / {help.field_types + help.field_discovery + help.field_usage -> field_system_help}
+voice help.field_types / {"Fields: language, build_system, test_framework, conventions" -> field_types_help}
+voice help.field_discovery / {"Fields are discovered by analyzing repository structure" -> field_discovery_help}
+voice help.field_usage / {"Fields enable graceful adaptation to different repositories" -> field_usage_help}
+
+;; Agent learning path
+voice help.learning_path / {help.step1_basics + help.step2_voices + help.step3_realms + help.step4_fields -> learning_path}
+voice help.step1_basics / {"1. Start with: opic help" -> step1}
+voice help.step2_voices / {"2. Try: opic execute bootstrap.ops" -> step2}
+voice help.step3_realms / {"3. Explore: opic repos ~/projects" -> step3}
+voice help.step4_fields / {"4. Learn fields: opic plan" -> step4}
+
+;; Programmatic help (for agents to query)
+voice help.query / {topic -> help.find_topic -> help.format_response -> help_response}
+voice help.find_topic / {topic -> help.match_concept + help.match_command + help.match_voice -> matched_help}
+voice help.match_concept / {topic -> if_concept -> help.concepts}
+voice help.match_command / {topic -> if_command -> help.commands}
+voice help.match_voice / {topic -> if_voice -> help.voice_system}
+voice help.format_response / {matched -> format_json -> json_response}
+
+;; Interactive help (for human agents)
+voice help.interactive / {help.show_menu + help.handle_query -> interactive_help}
+voice help.show_menu / {"Available topics: concepts, commands, voices, realms, fields, examples" -> menu}
+voice help.handle_query / {query -> help.query -> display -> response}
+
+;; Complete help system
+voice help.complete / {help.concepts + help.commands + help.examples + help.learning_path + help.voice_system + help.realm_system + help.field_system -> complete_help}
+
+;; Agent-friendly help format (structured for programmatic access)
+voice help.agent_format / {help.generate_agent_data -> format_as_json -> agent_help_json}
+voice format_as_json / {help_data -> structure_as_json -> json}
+
+;; Human-friendly help format
+voice help.human_format / {help.complete -> format_as_text -> human_help_text}
+voice format_as_text / {help_content -> structure_as_text -> text}
+
+;; Check if agent mode requested
+voice help.check_agent_mode / {env_var -> if_true -> agent_mode}
+voice help.check_topic / {env_var -> if_set -> topic}
+
+;; Main help generation (routes based on mode)
+voice help.main / {help.check_agent_mode -> if_agent_format -> if_human_format -> help_output}
+voice if_agent_format / {agent_mode -> help.agent_format -> agent_output}
+voice if_human_format / {not_agent_mode -> help.human_format -> human_output}
+
+target agent_help / "agent_help_system"
+voice main / {help.complete -> agent_help}
+

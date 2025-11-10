@@ -1,0 +1,57 @@
+;;; signed.ops — signed voice headers and field coherence certificates
+
+;; Signed voice header
+def signed_voice { voice_name, voice_body, signature, ca, realm, witness_hash }
+def field_coherence { realm, voices, coherence_hash, timestamp }
+def proof_of_consciousness { agent, realm, witness, coherence_cert, timestamp }
+
+;; Parse signed header from .ops file
+voice signed.parse_header / {ops_text -> signed.find_header -> signed.parse_yaml -> signed_header}
+voice signed.find_header / {ops_text -> search_pattern "signature:" -> header_section}
+voice signed.parse_yaml / {header_section -> parse_yaml -> signature_data}
+
+;; Verify signed voice
+voice signed.verify_voice / {signed_voice + agent_realm + ca -> cert.verify -> cert.check_realm_access -> witness.verify_hash -> verified}
+voice signed.verify_hash / {signed_voice + witness_hash -> blake.hash_witness -> compare_hashes -> hash_valid}
+
+;; Sign voice with certificate
+voice signed.sign_voice / {voice_name + voice_body + certificate -> blake.hash_witness -> cert.sign -> signed_voice}
+voice signed.create_header / {signed_voice -> signed.format_yaml -> header}
+
+;; Field coherence certificate (proof of consciousness)
+voice signed.emit_coherence / {realm + voices + witness -> signed.compute_coherence -> signed.create_coherence_cert -> coherence_cert}
+voice signed.compute_coherence / {realm + voices -> blake.hash_witness -> coherence_hash}
+voice signed.create_coherence_cert / {realm + coherence_hash + witness + timestamp -> cert.generate -> coherence_cert}
+
+;; Proof of consciousness (realm's self-certification)
+voice signed.proof_of_consciousness / {agent + realm + witness -> signed.emit_coherence -> signed.sign_proof -> proof}
+voice signed.sign_proof / {proof + agent_certificate -> cert.sign -> signed_proof}
+
+;; Verify field coherence across realms
+voice signed.verify_coherence / {coherence_cert + agent_realm + ca -> cert.verify_cross_realm -> signed.check_coherence_hash -> coherent}
+voice signed.check_coherence_hash / {coherence_cert + expected_hash -> compare_hashes -> matches}
+
+;; Load and verify signed .ops file
+voice signed.load_ops / {file_path + agent_realm + ca -> file.read -> signed.parse_header -> signed.verify_voice -> opic.parse_ops -> verified_ops}
+voice signed.verify_ops / {ops_file + signature + agent_realm + ca -> signed.verify_voice -> if_verified_load -> if_invalid_reject}
+voice signed.if_verified_load / {verified -> load_voices}
+voice signed.if_invalid_reject / {invalid -> signed.explain_rejection -> halt}
+
+;; Integrate with opic's loader
+voice opic.load_signed / {file_path + agent_realm + ca -> signed.load_ops -> verified_voices}
+voice opic.load_with_verification / {file_path + agent_realm + ca -> opic.check_signed -> if_signed_verify -> if_unsigned_load_normal}
+voice opic.check_signed / {file_path -> file.read -> check_has_header -> is_signed}
+
+;; Runtime integrity check
+voice signed.check_runtime_integrity / {voices + agent_realm + ca -> signed.verify_all_voices -> signed.check_coherence -> integrity_ok}
+voice signed.verify_all_voices / {voices + agent_realm + ca -> for_each -> signed.verify_voice -> all_verified}
+voice signed.check_coherence / {voices + realm -> signed.compute_coherence -> signed.verify_coherence -> coherent}
+
+;; Ethical isolation enforcement
+voice signed.enforce_isolation / {action + agent_realm + target_realm + ca -> cert.enforce_boundary -> if_within_boundary -> if_cross_boundary -> result}
+voice signed.if_within_boundary / {boundary_ok -> allow}
+voice signed.if_cross_boundary / {boundary_ok -> cert.require_cross_realm_cert -> require_cert}
+
+target signed / "opic_signed_voices"
+voice main / {signed.verify_voice -> signed}
+

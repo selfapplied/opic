@@ -1,9 +1,9 @@
 ;;; getting_started.ops — Getting started guide for opic
 
-include bootstrap.ops
-include opic_parse.ops
-include opic_load.ops
-include opic_compile.ops
+include core/bootstrap.ops
+include core/opic_parse.ops
+include core/opic_load.ops
+include systems/opic_compile.ops
 
 ;; Guide definitions
 def guide_section { title, content, code_examples, next_steps }

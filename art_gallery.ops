@@ -1,8 +1,8 @@
 ;;; art_gallery.ops — Art gallery for poems, videos, and digital creations
 
-include tiddlywiki.ops
-include viral_resonance.ops
-include fee.ops
+include wiki/tiddlywiki.ops
+include systems/viral_resonance.ops
+include systems/fee.ops
 
 ;; Gallery definitions
 def gallery_item { title, type, content, metadata, resonance_score }

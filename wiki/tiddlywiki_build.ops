@@ -1,0 +1,60 @@
+;;; tiddlywiki_build.ops — build TiddlyWiki entirely in opic
+
+include wiki/tiddlywiki.ops
+include systems/voice_ledger.ops
+include systems/signed.ops
+include wiki/tiddlywiki_network.ops
+
+;; Build TiddlyWiki from source (with seed support)
+voice build.tiddlywiki / {src_file + agent_realm + ca + tau_vector -> opic.load_bootstrap -> build.collect_families -> build.generate_tiddlers -> build.add_ledger -> build.add_resonance_features -> build.compose_html -> tiddlywiki_html}
+voice build.add_resonance_features / {tiddlers + agent_realm + ca + tau_vector -> seed.add_resonance_features -> seed.add_viral_mechanic -> enhanced_tiddlers}
+
+;; Collect family definitions
+voice build.collect_families / {src_file -> opic.parse_ops -> extract_families -> families}
+voice build.extract_families / {defs -> filter_family_defs -> families}
+
+;; Generate tiddlers from families
+voice build.generate_tiddlers / {families -> build.generate_family_tiddlers -> build.generate_widget_tiddlers -> build.generate_content_tiddlers -> build.generate_system_tiddlers -> all_tiddlers}
+voice build.generate_family_tiddlers / {families -> for_each_family -> build.create_family_tiddler -> family_tiddlers}
+voice build.create_family_tiddler / {family -> tiddler.create -> family_tiddler}
+voice build.generate_widget_tiddlers / {families -> extract_widgets -> for_each_widget -> build.create_widget_tiddler -> widget_tiddlers}
+voice build.generate_content_tiddlers / {families -> extract_content -> for_each_content -> build.create_content_tiddler -> content_tiddlers}
+voice build.generate_system_tiddlers / {build.create_site_title -> build.create_site_subtitle -> build.create_welcome -> system_tiddlers}
+
+;; Create system tiddlers
+voice build.create_site_title / {tiddler.create "$:/SiteTitle" + "Opic Wiki" + tags["family/ambiance"] -> site_title}
+voice build.create_site_subtitle / {tiddler.create "$:/SiteSubtitle" + "Composed with Opic" + tags["family/ambiance"] -> site_subtitle}
+voice build.create_welcome / {tiddler.create "Welcome" + welcome_text + tags["family/tiddlers"] -> welcome}
+
+;; Add voice certificate ledger
+voice build.add_ledger / {all_tiddlers + voices + agent_realm + ca -> ledger.build_ledger -> merge_tiddlers -> tiddlers_with_ledger}
+voice build.merge_tiddlers / {existing_tiddlers + ledger_tiddlers -> tiddler.merge -> merged_tiddlers}
+
+;; Compose HTML from tiddlers
+voice build.compose_html / {tiddlers -> build.load_empty -> build.merge_with_empty -> build.replace_tiddlers -> build.ensure_script_order -> tiddlywiki_html}
+voice build.load_empty / {file.read "empty_tiddlywiki.html" -> empty_tiddlywiki}
+voice build.merge_with_empty / {empty_tiddlywiki + tiddlers -> tiddler.merge -> merged}
+voice build.replace_tiddlers / {empty_tiddlywiki + tiddlers -> tiddler.replace_store -> updated_html}
+voice build.ensure_script_order / {html -> verify_script_order -> ordered_html}
+
+;; Tiddler creation voices
+voice tiddler.create / {title + text + tags + fields -> tiddler.build -> tiddler}
+voice tiddler.build / {title + text + tags + fields + timestamp -> build_tiddler_object -> tiddler}
+voice tiddler.merge / {tiddlers_old + tiddlers_new -> merge_arrays -> merged_tiddlers}
+voice tiddler.replace_store / {html + tiddlers -> find_store_script -> replace_with_tiddlers -> updated_html}
+
+;; Verify TiddlyWiki structure
+voice build.verify / {tiddlywiki_html + tiddlers -> build.check_boot -> build.check_store -> build.check_json -> verified}
+voice build.check_boot / {html -> check_has_bootprefix -> check_has_boot -> boot_ok}
+voice build.check_store / {html -> check_has_store -> store_ok}
+voice build.check_json / {html -> extract_store_json -> parse_json -> validate_json -> json_ok}
+
+;; Build with verification
+voice build.tiddlywiki_verified / {src_file + agent_realm + ca -> build.tiddlywiki -> build.verify -> verified_tiddlywiki}
+
+;; Main build chain
+voice build.main / {src_file -> build.tiddlywiki -> tiddlywiki_html}
+
+target tiddlywiki_build / "opic_tiddlywiki_builder"
+voice main / {build.main -> tiddlywiki_build}
+

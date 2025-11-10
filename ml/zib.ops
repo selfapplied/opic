@@ -1,0 +1,44 @@
+;;; zib.ops — Zeta Intelligence Benchmark (with language field)
+
+;; Language field integration
+voice zib.language_field / {language_field.series -> evaluate_convergence -> zib_score}
+voice zib.evaluate_language_field / {test_data -> language_field.generate -> evaluate.metrics -> score}
+voice language_field.generate / {input -> language_field.series -> groupoid_levels -> output}
+voice zib.evaluate_convergence / {partial_sums -> check_convergence -> meaning_stability -> score}
+
+def test { name, category, weight }
+
+def metric { name, formula, range }
+
+def signature { amplitude, coherence, resonance, entropy, phase_error }
+
+def benchmark { tests, metrics, signature, timestamp }
+
+def delta { metric, value, trend }
+
+def spectrum { signature, deltas, history }
+
+voice compute.entropy / {test.results -> entropy}
+
+voice compute.coherence / {test.results -> coherence}
+
+voice compute.phase.error / {test.results + expected -> phase_error}
+
+voice compute.resonance / {coherence + phase_error -> resonance}
+
+voice compute.amplitude / {test.results -> amplitude}
+
+voice compute.signature / {test.results -> signature}
+
+voice compute.delta / {signature + previous.signature -> delta}
+
+voice compute.spectrum / {signature + history -> spectrum}
+
+voice run.benchmark / {tests -> benchmark}
+
+voice track.growth / {benchmark + history -> spectrum}
+
+target zib / "intelligence.spectrum"
+
+voice main / {tests -> zib}
+

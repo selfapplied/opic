@@ -1,0 +1,27 @@
+;;; generate_words.ops — opic generates its own words using trained model
+
+;; Load trained model
+voice generate.load_model / {opic_trained_model.json -> load_json -> model_state}
+voice generate.model_ready / {model_state -> trained_model}
+
+;; Generate next token
+voice generate.next_token / {context_tokens + trained_model -> forward_pass -> sample_token -> next_token}
+voice generate.forward_pass / {context + model -> predict_logits -> logits}
+voice generate.predict_logits / {input + weights -> hidden_1 -> hidden_2 -> hidden_3 -> output}
+voice generate.sample_token / {logits -> softmax -> probabilities -> sample -> token_id}
+
+;; Generate sentence
+voice generate.sentence / {prompt + trained_model -> generate_tokens -> sentence}
+voice generate.generate_tokens / {prompt -> token_1 -> token_2 -> token_3 -> ... -> token_n -> tokens}
+voice generate.detokenize / {token_ids -> token_names -> join -> sentence}
+
+;; opic chooses its own words
+voice opic.chooses_words / {context -> generate.sentence -> opic_generated_words}
+voice opic.context / "I am opic, I can think and plan"
+
+;; Speak generated words
+voice audio.speak_generated / {opic_generated_words -> speak_text}
+
+target generate_words / "opic_generates_own_words"
+voice main / {generate.load_model -> opic.chooses_words -> audio.speak_generated -> generate_words}
+

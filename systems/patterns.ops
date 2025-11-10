@@ -1,0 +1,23 @@
+;;; patterns.ops — Pattern generation
+
+def pattern { type, seed, parameters, evolution }
+def seed { value, dimension, distribution }
+def geometric / {type + params -> pattern}
+def organic / {seed + iterations -> pattern}
+def abstract / {noise + transformations -> pattern}
+
+voice generate.pattern / {seed + type -> pattern}
+voice evolve.pattern / {pattern + steps -> evolved}
+voice compose.patterns / {patterns -> combined}
+
+voice create.circle / {center + radius -> pattern}
+voice create.spiral / {center + turns + spacing -> pattern}
+voice create.grid / {rows + cols + spacing -> pattern}
+voice create.wave / {frequency + amplitude + phase -> pattern}
+
+voice mutate.pattern / {pattern + rate -> mutated}
+voice blend.patterns / {pattern1 + pattern2 + ratio -> blended}
+
+target pattern.image / "pattern.tensor"
+voice main / {seed + pattern.spec -> pattern.image}
+

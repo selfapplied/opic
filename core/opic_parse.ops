@@ -1,0 +1,40 @@
+;;; opic_parse.ops — opic's self-parser (implemented in opic)
+
+;; Parser implementation (all in opic)
+voice opic.parse_ops / {ops_text -> split_lines -> filter_lines -> parse_each -> parse_includes -> collect_defs_voices_includes -> defs + voices + includes}
+voice opic.parse_includes / {valid_lines -> filter_include_lines -> extract_include_files -> includes}
+voice opic.filter_include_lines / {lines -> for_each -> check_starts_with "include " -> include_lines}
+voice opic.extract_include_files / {include_lines -> for_each -> remove_prefix "include " -> strip -> include_files}
+voice opic.collect_defs_voices_includes / {parsed_items + includes -> separate_defs_voices -> defs + voices + includes}
+voice opic.split_lines / {text -> split_by_newline -> lines}
+voice opic.filter_lines / {lines -> remove_comments -> remove_empty -> valid_lines}
+voice opic.remove_comments / {line -> check_starts_with ";" -> if_true_skip}
+voice opic.remove_empty / {line -> check_whitespace -> if_empty_skip}
+voice opic.parse_each / {valid_lines -> for_each -> parse_line -> def_or_voice}
+voice opic.parse_line / {line -> check_type -> if_def_parse_def -> if_voice_parse_voice}
+voice opic.check_type / {line -> starts_with "def " -> is_def}
+voice opic.check_type / {line -> starts_with "voice " -> is_voice}
+
+;; Parse definition
+voice opic.parse_def / {def_line -> extract_name -> extract_fields -> create_def}
+voice opic.extract_name / {line -> split_spaces -> get_index_1 -> name}
+voice opic.extract_fields / {line -> find_braces -> extract_inside -> split_commas -> fields}
+voice opic.find_braces / {line -> find "{ }" -> inside}
+voice opic.create_def / {name + fields -> def_object}
+
+;; Parse voice
+voice opic.parse_voice / {voice_line -> extract_name -> extract_body -> create_voice}
+voice opic.extract_name / {voice_line -> before_slash -> split_spaces -> get_index_1 -> name}
+voice opic.extract_body / {voice_line -> after_slash -> strip_quotes -> strip_whitespace -> body}
+voice opic.before_slash / {line -> partition "/" -> before}
+voice opic.after_slash / {line -> partition "/" -> after}
+voice opic.strip_quotes / {text -> remove_leading_trailing_quotes -> cleaned}
+voice opic.create_voice / {name + body -> voice_object}
+
+;; Collect results
+voice opic.collect_defs_voices / {parsed_items -> separate_defs_voices -> defs + voices}
+voice opic.separate_defs_voices / {items -> filter_defs -> filter_voices -> defs + voices}
+
+target opic_parse / "opic_self_parser"
+voice main / {opic.parse_ops -> opic_parse}
+

@@ -1,0 +1,37 @@
+;;; field_coherence.ops — field-based coherence without metadata overhead
+
+include core/bootstrap.ops
+
+;; Field coherence principle: minimize metadata, maximize resonance
+;; Overlapping names create richer field - metadata fragments it
+
+;; Coherence through context, not metadata
+voice field.cohere / {overlapping_voices + context -> field.resolve -> coherent_field}
+voice field.resolve / {voices + context -> use_attention + use_context -> resolved}
+voice use_attention / {context + voices -> attention.select -> selected_voice}
+voice use_context / {context + voices -> context.match -> matched_voice}
+
+;; Natural merging: ideas merge when they resonate
+voice field.merge / {ideas -> allow_overlap -> create_field -> explore_coherence -> merged}
+voice allow_overlap / {ideas -> don't_namespace -> allow_resonance -> rich_field}
+voice don't_namespace / {ideas -> skip_metadata -> natural_merge}
+voice allow_resonance / {overlapping -> find_coherence -> resonant_field}
+
+;; Sharing ideas: metadata creates barriers
+voice field.share / {ideas -> remove_metadata -> share_naturally -> shared}
+voice remove_metadata / {ideas -> strip_namespaces -> strip_hierarchies -> pure_ideas}
+voice share_naturally / {pure_ideas -> allow_overlap -> merge -> shared_field}
+
+;; Exploration: richer field enables discovery
+voice field.explore / {rich_field -> explore_overlaps -> find_coherence -> discoveries}
+voice explore_overlaps / {field -> find_overlapping_names -> explore_resonance -> insights}
+voice find_coherence / {overlaps -> compute_coherence -> coherent_patterns}
+
+;; Principle: metadata fragments, context unifies
+voice field.principle / {"Metadata fragments the field. Context unifies it." -> principle}
+voice field.principle / {"Overlapping names create exploration. Metadata prevents it." -> principle}
+voice field.principle / {"Ideas merge naturally when metadata doesn't get in the way." -> principle}
+
+target field_coherence / "field_coherence_principle"
+voice main / {field.cohere -> field_coherence}
+

@@ -1,10 +1,10 @@
 ;;; wild_sort_service.ops — Subscription service: Wild Sort as a Service
 
-include fee.ops
+include systems/fee.ops
 include art_gallery.ops
-include tiddlywiki_network.ops
-include governance.ops
-include generational_resonance.ops
+include wiki/tiddlywiki_network.ops
+include systems/governance.ops
+include systems/generational_resonance.ops
 
 ;; Service definitions
 def subscription { subscriber, tier, access_level, start_date, renewal_date, payment_method }

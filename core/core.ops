@@ -1,0 +1,63 @@
+;;; core.ops — the seed of Opic
+
+def type   { name, fields, mass }
+
+def voice  { input, output, charge, ratio }
+
+def target { name, head }
+
+def flow   { source, sink }
+
+def reaction { reagents, products, delta }
+
+voice compose / {input -> output}
+
+voice emit    / {output -> target}
+
+voice reflect / {flow -> type}
+
+# Primitive field types
+
+def str  { bytes, mass:1 }
+
+def int  { value, mass:1 }
+
+def file { path, mass:4 }
+
+voice void / ""
+
+# Stoichiometry: conservation rule
+
+voice stoichiometry / "Σ(input.mass×input.charge) = Σ(output.mass×output.charge)"
+
+voice balance / {reaction -> bool}
+
+# Error handling
+
+def error { type, message, context, mass:2 }
+
+def error.template / { template: str, issue: str, mass:2 }
+
+voice handle.error / {error -> str}
+
+voice escape.template / {str -> str}
+
+voice escape.json / {json -> str}
+
+voice escape.json.html / {json -> html.safe}
+
+voice escape.format / {str -> str}
+
+voice fix.template / {error.template -> str}
+
+# Template composition voices
+
+voice compose.template / {template + data -> html}
+
+voice safe.format / {template + data -> str}
+
+# Default target
+
+target default / "str"
+
+voice main / {input -> default}

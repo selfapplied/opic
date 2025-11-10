@@ -1,0 +1,43 @@
+;;; attention_field.ops — Attention as directional field expansion
+
+;; Attention field structure
+def attention_field { direction, amplitude, context, expansion }
+def attention_direction { source, target, weight }
+
+;; Attention as field
+voice attention.field / {context -> directions -> amplitudes -> attention_field}
+voice attention.directions / {source -> target -> weight -> direction}
+voice attention.amplitudes / {direction -> |ψ(direction)|² -> amplitude}
+
+;; Field expansion
+voice attention.expand / {attention_field + direction -> expanded_field}
+voice attention.expand_direction / {field + direction -> expand_amplitude -> expanded}
+voice attention.expand_amplitude / {current_amplitude + direction_weight -> new_amplitude}
+
+;; Voice-to-voice attention
+voice attention.voice_to_voice / {source_voice -> target_voice -> attention_weight}
+voice attention.comment_to_voice / {comment -> voice -> attention_weight}
+voice attention.voice_to_comment / {voice -> comment -> attention_weight}
+
+;; Training from all voices
+voice train.all_voices / {all_ops_files -> extract_voices_comments -> training_pairs}
+voice train.extract_voices / {ops_content -> voices + comments -> voice_comment_pairs}
+voice train.voice_comment_pairs / {voice_name + comment + body -> training_pair}
+
+;; Extract voices from .ops files (in opic)
+voice extract.from_ops / {ops_file -> parse.ops_file -> voices_comments}
+voice extract.voices / {voices_comments -> filter_voices -> voices}
+voice extract.comments / {voices_comments -> filter_comments -> comments}
+voice extract.pair_voice_comment / {voice + preceding_comment -> training_pair}
+
+;; Attention-based generation
+voice generate.attention_field / {input -> attention.field -> expand_directions -> output}
+voice generate.expand_directions / {attention_field -> sample_direction -> expand -> output}
+
+;; Integration with language field
+voice attention.language_field / {language_field.series -> attention.directions -> expanded_field}
+voice attention.groupoid_expansion / {G_n -> attention.expand -> G_{n+1}}
+
+target attention_field / "attention_as_directional_field"
+voice main / {attention.field -> attention.expand -> attention_field}
+

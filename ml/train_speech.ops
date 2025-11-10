@@ -1,0 +1,53 @@
+;;; train_speech.ops — Train opic to speak using say output as training data
+
+;; Speech training structures
+def speech_sample { text, audio_waveform, features }
+def training_pair_speech { text_input, audio_target }
+
+;; Record say output for training
+voice train_speech.record_say / {text -> say_command -> record_audio -> audio_waveform}
+voice train_speech.extract_features / {audio_waveform -> mfcc_features + spectrogram}
+voice train_speech.create_pairs / {text_samples + audio_samples -> training_pairs}
+
+;; Training setup
+voice train_speech.setup / {create_model + load_data -> ready}
+voice train_speech.create_model / {vocab_size=601 + audio_dim=80 + hidden_dims=[256,128] -> ml.mlp -> speech_model}
+voice train_speech.load_data / {record_say_outputs -> training_data}
+
+;; Training process
+voice train_speech.epoch / {model + batch -> forward_pass -> loss -> backprop -> update}
+voice train_speech.forward_pass / {model + text_features -> predicted_audio_features}
+voice train_speech.compute_loss / {predicted_features + target_features -> loss}
+voice train_speech.backward / {loss + model -> gradients}
+voice train_speech.update / {model + gradients -> updated_model}
+
+;; Text-to-speech training
+voice train_speech.text_to_speech / {text -> model -> audio_features -> waveform}
+voice train_speech.synthesize / {text + trained_model -> speech_audio}
+
+;; Training loop
+voice train_speech.loop / {model + data + epochs=20 -> train_epoch_1 -> train_epoch_2 -> ... -> train_epoch_20 -> trained_model}
+voice train_speech.epoch_step / {model + batch -> train_speech.epoch -> updated_model}
+
+;; Evaluation
+voice train_speech.evaluate / {trained_model + test_text -> generated_audio -> compare_with_say}
+voice train_speech.test_synthesis / {model + text -> synthesized_speech}
+voice train_speech.check_quality / {synthesized + reference -> quality_score}
+
+;; Recording say output
+voice train_speech.record_texts / {voice_names + voice_bodies -> text_samples}
+voice train_speech.generate_say_outputs / {text_samples -> say_command -> audio_files}
+voice train_speech.process_audio / {audio_files -> extract_features -> feature_vectors}
+
+;; Training goal
+voice train_speech.goal / "Learn to generate speech from text using say output as training data"
+voice train_speech.goal_latex / "Goal: $P(\\text{audio} | \\text{text})$ using say outputs"
+
+;; Training data collection
+voice train_speech.collect_data / {all_voices -> extract_texts -> record_with_say -> process_audio -> training_data}
+voice train_speech.extract_texts / {voices -> text_samples}
+voice train_speech.record_with_say / {text_samples -> say_command -> audio_recordings}
+
+target train_speech / "speech_training"
+voice main / {train_speech.goal -> train_speech.collect_data -> train_speech.setup -> train_speech.loop -> train_speech.evaluate -> train_speech}
+

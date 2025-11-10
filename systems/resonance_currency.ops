@@ -1,0 +1,41 @@
+;;; resonance_currency.ops — Resonant Currency derived from accumulated coherence
+
+include systems/generational_resonance.ops
+include systems/certificate.ops
+include systems/blake.ops
+
+;; Resonance currency definitions
+def resonance_credit { amount, source_coherence, accumulated_over_time, minted_date, realm }
+def credit_mint { coherence_integral, generational_weight, mint_amount }
+def credit_transfer { from_realm, to_realm, amount, resonance_proof }
+
+;; Mint resonance credits from accumulated coherence
+voice currency.mint_credits / {realm + coherence_history + tau_vector -> currency.compute_coherence_integral -> currency.apply_generational_weight -> currency.mint -> resonance_credit}
+voice currency.compute_coherence_integral / {coherence_history + tau -> integrate_coherence_over_time -> coherence_integral}
+voice currency.apply_generational_weight / {coherence_integral + tau -> weight_by_generation -> weighted_integral}
+voice currency.mint / {weighted_integral + realm + timestamp -> compute_mint_amount -> create_credit -> resonance_credit}
+voice currency.compute_mint_amount / {weighted_integral + mint_rate -> multiply -> mint_amount}
+
+;; Transfer resonance credits
+voice currency.transfer / {from_realm + to_realm + amount + agent_realm + ca -> currency.verify_coherence -> currency.create_transfer_proof -> currency.execute_transfer -> transferred}
+voice currency.verify_coherence / {from_realm + amount + agent_realm + ca -> currency.check_sufficient_coherence -> sufficient}
+voice currency.check_sufficient_coherence / {realm + amount -> check_credit_balance -> sufficient}
+voice currency.create_transfer_proof / {transfer + coherence_proof -> blake.hash_witness -> transfer_hash}
+voice currency.execute_transfer / {transfer + proof -> update_balances -> executed}
+
+;; Non-speculative: credits derived from coherence, not scarcity
+voice currency.derive_from_coherence / {coherence_score + tau_vector -> currency.compute_credit_value -> credit_value}
+voice currency.compute_credit_value / {coherence + tau -> generational.weight_coherence -> weighted_coherence -> credit_value}
+voice currency.no_scarcity / {coherence_history -> currency.mint_credits -> credits_minted}
+voice currency.mint_from_coherence / {coherence + realm -> currency.derive_from_coherence -> currency.mint -> credits}
+
+;; Credit balance query
+voice currency.balance / {realm + credit_ledger -> currency.query_balance -> balance}
+voice currency.query_balance / {realm + ledger -> sum_credits -> balance}
+
+;; Credit history
+voice currency.history / {realm + credit_ledger + tau -> currency.filter_by_realm -> currency.sort_by_time -> credit_history}
+
+target resonance_currency / "opic_resonance_credits"
+voice main / {currency.mint_credits -> resonance_currency}
+

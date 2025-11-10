@@ -1,0 +1,18 @@
+;;; alias.ops — Parameter alias mappings
+
+def alias { from, to }
+
+voice map.grad / "grad -> gradient"
+voice map.lr / "lr -> learningRate"
+voice map.rate / "rate -> learningRate"
+voice map.learning_rate / "learning_rate -> learningRate"
+voice map.w / "w -> weight"
+voice map.wt / "wt -> weight"
+voice map.pred / "pred -> prediction"
+voice map.tgt / "tgt -> target"
+voice map.loss_val / "loss_val -> loss"
+voice map.err / "err -> error"
+
+target aliases / "alias.map"
+voice main / {parameter.name -> aliases}
+

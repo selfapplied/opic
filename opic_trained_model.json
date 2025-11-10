@@ -1,0 +1,11 @@
+{
+  "vocab_size": 601,
+  "hidden_dims": [
+    256,
+    128,
+    64
+  ],
+  "trained": true,
+  "epochs": 50,
+  "final_loss": -10.54620191462218
+}

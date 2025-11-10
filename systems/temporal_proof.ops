@@ -1,0 +1,41 @@
+;;; temporal_proof.ops — temporal checksums for chronological integrity
+
+include systems/voice_ledger.ops
+include systems/blake.ops
+
+;; Temporal proof definitions
+def temporal_block { hash, previous_hash, timestamp, difficulty, temporal_checksum }
+def temporal_checksum { block_hash, timestamp, difficulty, computed_hash }
+
+;; Compute temporal checksum (ensures chronological integrity)
+voice temporal.compute_checksum / {block_hash + timestamp + difficulty -> temporal.hash -> temporal_checksum}
+voice temporal.hash / {block_hash + timestamp + difficulty -> blake.hash_witness -> checksum_hash}
+
+;; Verify temporal integrity
+voice temporal.verify / {temporal_block + previous_block -> temporal.check_timestamp -> temporal.check_difficulty -> temporal.verify_checksum -> temporal_valid}
+voice temporal.check_timestamp / {current_timestamp + previous_timestamp -> compare_timestamps -> chronologically_valid}
+voice temporal.compare_timestamps / {current + previous -> current_greater_than_previous -> valid}
+voice temporal.check_difficulty / {difficulty + expected_difficulty -> compare_difficulty -> difficulty_valid}
+voice temporal.verify_checksum / {temporal_block -> temporal.recompute_checksum -> compare_checksums -> checksum_valid}
+voice temporal.recompute_checksum / {block_hash + timestamp + difficulty -> temporal.compute_checksum -> computed_checksum}
+
+;; Add temporal proof to ledger block
+voice temporal.add_proof / {voice_cert_tiddler + previous_block -> temporal.compute_timestamp -> temporal.compute_difficulty -> temporal.compute_checksum -> temporal_block}
+voice temporal.compute_timestamp / {current_time -> timestamp}
+voice temporal.compute_difficulty / {previous_difficulty + chain_length -> adjust_difficulty -> difficulty}
+voice temporal.adjust_difficulty / {previous_difficulty + chain_length -> if_long_chain_increase -> if_short_chain_decrease -> adjusted}
+
+;; Verify entire temporal chain
+voice temporal.verify_chain / {tiddlers -> ledger.filter_certificates -> ledger.sort_by_timestamp -> temporal.verify_each_block -> temporal.verify_chronology -> temporal_valid}
+voice temporal.verify_each_block / {sorted_certificates -> for_each_pair -> temporal.verify -> all_valid}
+voice temporal.verify_chronology / {sorted_certificates -> check_timestamps_monotonic -> chronologically_valid}
+
+;; Temporal proof in distributed sync
+voice temporal.verify_distributed / {local_chain + remote_chain -> temporal.find_common_timestamp -> temporal.verify_both_chains -> temporal.merge_if_consistent -> merged_chain}
+voice temporal.find_common_timestamp / {local_chain + remote_chain -> find_common_timestamp -> common_time}
+voice temporal.verify_both_chains / {local_chain + remote_chain + common_time -> verify_after_common_time -> both_valid}
+voice temporal.merge_if_consistent / {local_chain + remote_chain + both_valid -> merge_chains -> merged_chain}
+
+target temporal_proof / "opic_temporal_integrity"
+voice main / {temporal.verify_chain -> temporal_proof}
+

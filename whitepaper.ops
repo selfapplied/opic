@@ -1,10 +1,10 @@
 ;;; whitepaper.ops — Technical bluepaper/whitepaper generator for FEE and RCT
 
-include fee.ops
-include recursive_contract_theory.ops
-include generational_resonance.ops
-include opic_peer.ops
-include governance.ops
+include systems/fee.ops
+include systems/recursive_contract_theory.ops
+include systems/generational_resonance.ops
+include systems/opic_peer.ops
+include systems/governance.ops
 
 ;; Whitepaper definitions
 def whitepaper_section { title, content, subsections, references }

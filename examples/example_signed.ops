@@ -1,0 +1,15 @@
+;;; example_signed.ops — example of signed voice file
+
+signature:
+  ca: opic_ca
+  realm: opic_realm
+  witness: blake512:abcd1234...
+  coherence: field_coherence_cert
+
+;;; Actual opic voices below
+
+voice example.voice / {input -> transform -> output}
+
+target example / "example_signed"
+voice main / {example.voice -> example}
+
