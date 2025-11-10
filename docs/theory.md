@@ -23,14 +23,9 @@ f: A → B  (voice f transforms type A to type B)
 ```
 
 <details>
-<summary><strong>What is a morphism?</strong></summary>
+<summary><strong>→ Morphism in opic terms</strong></summary>
 
-A morphism is a structure-preserving map between objects. In opic:
-- **Objects** are types (like `int`, `string`, or custom types)
-- **Morphisms** are voices that transform one type to another
-- **Composition** is chaining voices together
-
-Think of it like this: if you have a voice that converts `int → string` and another that converts `string → bool`, you can chain them to get `int → bool`.
+*A structure-preserving map between types. In opic, objects are types and morphisms are voices — chain `int → string` with `string → bool` to get `int → bool`.* **Voices preserve structure, composition preserves meaning.**
 </details>
 
 Chains compose naturally:
@@ -46,39 +41,17 @@ g ∘ f: A → C  where  f: A → B,  g: B → C
 ```
 
 <details>
-<summary><strong>Why associativity matters</strong></summary>
+<summary><strong>→ Why associativity matters</strong></summary>
 
-**Associativity**: `(f ∘ g) ∘ h = f ∘ (g ∘ h)`
-
-This means the order of grouping doesn't matter — only the order of execution. In opic:
-
-```ops
-voice chain1 / {input -> f -> g -> h -> output}
-voice chain2 / {input -> (f -> g) -> h -> output}  ;; Same result!
-```
-
-Both produce the same output because composition is associative. This enables:
-- **Optimization**: Reorder operations safely
-- **Parallelization**: Execute independent chains in parallel
-- **Reasoning**: Prove properties about chains mathematically
+*Grouping order doesn't matter — `(f ∘ g) ∘ h` equals `f ∘ (g ∘ h)` — so opic chains can be optimized and parallelized without changing meaning.* **Composition flows, structure holds.**
 </details>
 
 **Category Properties:**
 
 <details>
-<summary><strong>Mathematical formulation</strong></summary>
+<summary><strong>→ Category axioms</strong></summary>
 
-A category **C** consists of:
-1. **Objects**: `Ob(C) = {A, B, C, ...}` (types in opic)
-2. **Morphisms**: `Hom(A, B) = {f: A → B}` (voices in opic)
-3. **Composition**: `∘: Hom(B, C) × Hom(A, B) → Hom(A, C)`
-4. **Identity**: `id_A: A → A` for each object
-
-**Axioms:**
-- **Associativity**: `(f ∘ g) ∘ h = f ∘ (g ∘ h)`
-- **Identity**: `f ∘ id_A = f = id_B ∘ f`
-
-In opic, these axioms are enforced by the language semantics.
+*A category has objects (types), morphisms (voices), composition, and identity — with associativity and identity axioms enforced by opic's semantics.* **Structure emerges from composition, meaning from structure.**
 </details>
 
 **Connection**: opic voices form a category where:
@@ -100,26 +73,9 @@ def voice { input, output, charge, ratio }
 ```
 
 <details>
-<summary><strong>Structural vs Nominal Typing</strong></summary>
+<summary><strong>→ Structural vs nominal</strong></summary>
 
-**Nominal typing** (like Java, C++): Types are identified by name.
-```java
-class Point { int x, y; }
-class Coordinate { int x, y; }
-// Point ≠ Coordinate, even though structure is identical
-```
-
-**Structural typing** (like opic, TypeScript): Types are identified by structure.
-```ops
-def point { x: int, y: int }
-def coordinate { x: int, y: int }
-;; point ≡ coordinate (same structure)
-```
-
-This enables:
-- **Flexibility**: Use any type with matching structure
-- **Composition**: Types compose naturally
-- **Polymorphism**: Functions work on any matching structure
+*Nominal typing identifies types by name; structural typing (opic) identifies by structure — so `{x: int, y: int}` matches any type with that shape.* **Structure defines type, names are labels.**
 </details>
 
 Types are defined by their structure, not names. Voices are typed transformations:
@@ -129,27 +85,9 @@ voice add / {a: int + b: int -> sum: int}
 ```
 
 <details>
-<summary><strong>Type inference and checking</strong></summary>
+<summary><strong>→ Type inference</strong></summary>
 
-opic performs **type inference** during compilation:
-
-```
-Given: voice f / {x -> x + 1}
-Infer: f: int → int  (since + requires numeric types)
-
-Given: voice g / {x -> f x}
-Infer: g: int → int  (composition preserves types)
-```
-
-**Type checking** ensures:
-- **Type safety**: No runtime type errors
-- **Composition**: Types must match at chain boundaries
-- **Verification**: Types are part of the certificate
-
-Mathematically, this is **type checking in a simply-typed lambda calculus**:
-```
-Γ ⊢ e: τ  (expression e has type τ in context Γ)
-```
+*opic infers types from usage — `x + 1` implies `int → int` — and checks composition preserves types at chain boundaries.* **Types flow through voices, certificates verify flow.**
 </details>
 
 **Connection**: opic's type system aligns with:
@@ -170,23 +108,9 @@ dΦ/dt = div J + S
 ```
 
 <details>
-<summary><strong>Understanding the field equation</strong></summary>
+<summary><strong>→ Continuity equation</strong></summary>
 
-This is a **continuity equation** adapted from physics. Let's break it down:
-
-**Left side**: `dΦ/dt` — Rate of change of coherence over time
-- How fast is coherence increasing or decreasing?
-
-**Right side**: `div J + S` — Two sources of change
-- `div J` — Divergence of flow (how much coherence flows in/out)
-- `S` — Sources and sinks (coherence created or destroyed)
-
-**Intuition**: Coherence changes because:
-1. It flows from one place to another (`div J`)
-2. It's created or destroyed (`S`)
-
-Think of it like water in a pipe:
-- Water level changes (`dΦ/dt`) because water flows (`div J`) and taps add/remove water (`S`)
+*Coherence changes (`dΦ/dt`) from flow (`div J`) and creation/destruction (`S`) — like water level changing from flow and taps.* **Coherence flows, sources create, sinks destroy.**
 </details>
 
 Where:
@@ -195,35 +119,9 @@ Where:
 - **S** — Sources and sinks (value creation/destruction)
 
 <details>
-<summary><strong>Mathematical details</strong></summary>
+<summary><strong>→ Field components</strong></summary>
 
-**Field components:**
-
-```
-Φ(x, t): ℝⁿ × ℝ → ℝ  (scalar field)
-J(x, t): ℝⁿ × ℝ → ℝⁿ  (vector field)
-S(x, t): ℝⁿ × ℝ → ℝ  (scalar field)
-```
-
-**Divergence operator:**
-
-```
-div J = ∇ · J = ∂J₁/∂x₁ + ∂J₂/∂x₂ + ... + ∂Jₙ/∂xₙ
-```
-
-In discrete form (for computation):
-
-```
-div J ≈ Σᵢ (Jᵢ₊₁ - Jᵢ) / Δx
-```
-
-**Discrete evolution:**
-
-```
-Φ(t+Δt) = Φ(t) + Δt · (div J + S)
-```
-
-This is the **Euler method** for solving the differential equation.
+*Φ is scalar, J is vector, S is scalar — divergence `∇·J` sums partial derivatives, discretized as `Σ(Jᵢ₊₁ - Jᵢ)/Δx` for computation.* **Fields evolve discretely, coherence evolves continuously.**
 </details>
 
 **Conservation Law:**
@@ -233,28 +131,9 @@ This is the **Euler method** for solving the differential equation.
 ```
 
 <details>
-<summary><strong>Why conservation matters</strong></summary>
+<summary><strong>→ Conservation via divergence theorem</strong></summary>
 
-Using the **divergence theorem**:
-
-```
-∫ div J dV = ∮ J · n dS  (surface integral)
-```
-
-So the conservation law becomes:
-
-```
-∫ (dΦ/dt) dV = ∮ J · n dS + ∫ S dV
-```
-
-**Interpretation**:
-- **Left**: Total coherence change in volume
-- **Right**: Coherence flowing through boundary + coherence created/destroyed
-
-**In opic**: This ensures coherence is **accounted for** — we can track where it comes from and where it goes. This enables:
-- **Auditability**: Trace coherence flow
-- **Verification**: Ensure coherence conservation
-- **Debugging**: Find where coherence is lost
+*Volume change equals boundary flow plus sources — `∫(dΦ/dt)dV = ∮J·ndS + ∫SdV` — so opic can trace coherence flow and verify conservation.* **Coherence is accounted for, never lost.**
 </details>
 
 This ensures coherence is conserved (or tracked) across the system.
@@ -277,22 +156,9 @@ L = Σ (-1)^n G_n
 ```
 
 <details>
-<summary><strong>What is a groupoid?</strong></summary>
+<summary><strong>→ Groupoid structure</strong></summary>
 
-A **groupoid** is a category where every morphism is an **isomorphism** (has an inverse).
-
-**Key property**: For any morphism `f: A → B`, there exists `f⁻¹: B → A` such that:
-```
-f ∘ f⁻¹ = id_B
-f⁻¹ ∘ f = id_A
-```
-
-**Why groupoids for language?**
-- **Reversibility**: Language transformations can be undone
-- **Equivalence**: Different expressions can mean the same thing
-- **Symmetry**: Language has inherent symmetries
-
-**Example**: In opic, a voice chain can be "reversed" by verifying its inverse transformation.
+*A category where every morphism has an inverse — `f ∘ f⁻¹ = id` — enabling reversible transformations and equivalence classes.* **Language is reversible, meaning is symmetric.**
 </details>
 
 Where G_n are groupoids at different levels:
@@ -302,32 +168,9 @@ Where G_n are groupoids at different levels:
 - G₃: Semantic groupoid
 
 <details>
-<summary><strong>The alternating series structure</strong></summary>
+<summary><strong>→ Alternating cancellation</strong></summary>
 
-**Why alternating?** The `(-1)^n` term creates **cancellation** between levels:
-
-```
-L = G₀ - G₁ + G₂ - G₃ + ...
-```
-
-**Intuition**: 
-- **Even levels** (G₀, G₂, ...) add structure
-- **Odd levels** (G₁, G₃, ...) subtract structure
-- **Net result**: Stable meaning emerges from cancellation
-
-**Mathematical form**:
-
-```
-L = lim_{N→∞} Σ_{n=0}^N (-1)^n G_n
-```
-
-**Partial sums**:
-
-```
-S_N = Σ_{n=0}^N (-1)^n G_n
-```
-
-**Convergence**: Meaning is stable when `S_N` converges as `N → ∞`.
+*Even levels add structure, odd levels subtract — `L = G₀ - G₁ + G₂ - G₃ + ...` — so meaning stabilizes as partial sums converge.* **Structure alternates, meaning converges.**
 </details>
 
 **Convergence Condition:**
@@ -337,26 +180,9 @@ meaning(L) stable ⇔ partial sums converge
 ```
 
 <details>
-<summary><strong>Convergence criteria</strong></summary>
+<summary><strong>→ Leibniz convergence</strong></summary>
 
-**Leibniz test for alternating series**:
-
-An alternating series `Σ (-1)^n a_n` converges if:
-1. `a_n ≥ a_{n+1}` (monotone decreasing)
-2. `lim_{n→∞} a_n = 0` (terms go to zero)
-
-**Applied to language**:
-
-```
-meaning(L) stable ⇔ |G_n| → 0 as n → ∞
-```
-
-**Interpretation**: Higher-level groupoids contribute less to meaning, so the series converges.
-
-**In opic**: This means:
-- **Low-level** (phonetic, morphological) structure matters most
-- **High-level** (semantic) structure refines but doesn't dominate
-- **Stability**: Meaning emerges from the balance
+*Alternating series converge when terms decrease and vanish — `|G_n| → 0` — so low-level structure dominates, high-level refines.* **Foundation shapes meaning, abstraction refines it.**
 </details>
 
 **Connection**: This connects to:
@@ -412,25 +238,9 @@ C†C = I  (unitarity)
 ```
 
 <details>
-<summary><strong>What does "unitary" mean?</strong></summary>
+<summary><strong>→ Unitary preservation</strong></summary>
 
-A **unitary operator** preserves:
-- **Inner products**: `⟨Cx, Cy⟩ = ⟨x, y⟩`
-- **Norms**: `||Cx|| = ||x||`
-- **Information**: No information is lost
-
-**Matrix form**: If C is a matrix, then `C†C = I` means:
-- **C†** is the conjugate transpose (adjoint)
-- **I** is the identity matrix
-- **C** is invertible: `C⁻¹ = C†`
-
-**Quantum analogy**: In quantum mechanics, unitary operators preserve probability:
-```
-|ψ⟩ → C|ψ⟩  (state evolution)
-⟨ψ|ψ⟩ = ⟨Cψ|Cψ⟩  (probability conserved)
-```
-
-**In opic**: Certificates preserve computational state — nothing is lost or corrupted.
+*Unitary operators preserve inner products, norms, and information — `C†C = I` means invertible and lossless, like quantum state evolution.* **Certificates preserve state, nothing is lost.**
 </details>
 
 This ensures:
@@ -439,28 +249,9 @@ This ensures:
 - **Composability**: Certificate chains compose
 
 <details>
-<summary><strong>Mathematical proof of preservation</strong></summary>
+<summary><strong>→ Trace preservation proof</strong></summary>
 
-**Trace preservation**:
-
-```
-tr(C ρ C†) = tr(C† C ρ)  (cyclic property of trace)
-           = tr(I ρ)      (unitarity: C†C = I)
-           = tr(ρ)        (identity property)
-```
-
-**Composition**:
-
-```
-(C₂ C₁)† (C₂ C₁) = C₁† C₂† C₂ C₁
-                  = C₁† I C₁
-                  = C₁† C₁
-                  = I
-```
-
-So `C₂ C₁` is also unitary — certificates compose!
-
-**In opic**: This means certificate chains preserve information and can be verified.
+*Trace is preserved: `tr(CρC†) = tr(ρ)` via cyclic property and unitarity; composition `(C₂C₁)†(C₂C₁) = I` shows certificates compose.* **Chains preserve, composition verifies.**
 </details>
 
 **In opic:**
@@ -481,22 +272,9 @@ W₁ ∘ W₂ = W₁₂  (witness composition)
 ```
 
 <details>
-<summary><strong>What is a monoid?</strong></summary>
+<summary><strong>→ Monoid structure</strong></summary>
 
-A **monoid** is a set with:
-1. **Binary operation** `∘` (composition)
-2. **Identity element** `e` such that `e ∘ x = x = x ∘ e`
-3. **Associativity**: `(x ∘ y) ∘ z = x ∘ (y ∘ z)`
-
-**Examples**:
-- **Integers under addition**: `(ℤ, +, 0)`
-- **Strings under concatenation**: `(String, ++, "")`
-- **Witnesses under composition**: `(Witness, ∘, empty_witness)`
-
-**Why monoids?**
-- **Composability**: Can combine witnesses
-- **Associativity**: Order of grouping doesn't matter
-- **Identity**: Empty witness is neutral
+*A set with associative composition and identity — like integers under addition or strings under concatenation — so witnesses compose associatively with empty witness as identity.* **Composition composes, identity neutralizes.**
 </details>
 
 **Properties:**
@@ -505,33 +283,9 @@ A **monoid** is a set with:
 - **Composability**: Witness chains form execution proofs
 
 <details>
-<summary><strong>Witness composition in detail</strong></summary>
+<summary><strong>→ Witness composition</strong></summary>
 
-**Witness structure**:
-
-```
-W = {step, input_hash, output_hash, certificate, timestamp}
-```
-
-**Composition**:
-
-```
-W₁₂ = W₁ ∘ W₂ = {
-  steps: [W₁.step, W₂.step],
-  input_hash: W₁.input_hash,
-  output_hash: W₂.output_hash,
-  certificates: [W₁.certificate, W₂.certificate],
-  timestamp: max(W₁.timestamp, W₂.timestamp)
-}
-```
-
-**Verification**:
-
-```
-verify(W₁₂) = verify(W₁) ∧ verify(W₂) ∧ (W₁.output_hash = W₂.input_hash)
-```
-
-**In opic**: This enables building execution proofs from individual step witnesses.
+*Witnesses combine steps, hashes, certificates, and timestamps — verification requires both witnesses valid and hash chain intact.* **Witnesses chain, hashes verify.**
 </details>
 
 ---
@@ -547,31 +301,9 @@ dΦ/dt = div J + S
 ```
 
 <details>
-<summary><strong>Numerical solution methods</strong></summary>
+<summary><strong>→ Numerical methods</strong></summary>
 
-**Euler method** (first-order):
-
-```
-Φ(t+Δt) = Φ(t) + Δt · f(t, Φ(t))
-```
-
-where `f(t, Φ) = div J + S`.
-
-**Error**: `O(Δt)` — first-order accurate.
-
-**Runge-Kutta 4** (fourth-order):
-
-```
-k₁ = Δt · f(t, Φ)
-k₂ = Δt · f(t + Δt/2, Φ + k₁/2)
-k₃ = Δt · f(t + Δt/2, Φ + k₂/2)
-k₄ = Δt · f(t + Δt, Φ + k₃)
-Φ(t+Δt) = Φ(t) + (k₁ + 2k₂ + 2k₃ + k₄)/6
-```
-
-**Error**: `O(Δt⁴)` — much more accurate.
-
-**In opic**: Choose method based on accuracy vs. performance tradeoff.
+*Euler is first-order `O(Δt)`, Runge-Kutta 4 is fourth-order `O(Δt⁴)` — opic chooses based on accuracy vs. performance.* **Precision costs, coherence benefits.**
 </details>
 
 **Discrete Form:**
@@ -581,33 +313,9 @@ k₄ = Δt · f(t + Δt, Φ + k₃)
 ```
 
 <details>
-<summary><strong>Stability analysis</strong></summary>
+<summary><strong>→ Stability condition</strong></summary>
 
-**Stability condition** (for explicit Euler):
-
-```
-Δt < 2 / |λ_max|
-```
-
-where `λ_max` is the largest eigenvalue of the system.
-
-**Intuition**: If time step is too large, the solution explodes.
-
-**Stability regions**:
-
-```
-Stable: |1 + Δt·λ| < 1
-Unstable: |1 + Δt·λ| > 1
-```
-
-**In opic**: Adaptive time stepping ensures stability:
-
-```ops
-field.evolution:
-  calculate_max_eigenvalue
-  choose_stable_timestep
-  evolve_field
-```
+*Time step must satisfy `Δt < 2/|λ_max|` to prevent explosion — opic adapts timesteps based on eigenvalues.* **Stability constrains, adaptation enables.**
 </details>
 
 **In opic:**
@@ -628,29 +336,9 @@ R(t) = ∫₀ᵗ Φ(τ) dτ
 ```
 
 <details>
-<summary><strong>Why integrate coherence?</strong></summary>
+<summary><strong>→ Integration rationale</strong></summary>
 
-**Integration** accumulates coherence over time:
-
-```
-R(t) = ∫₀ᵗ Φ(τ) dτ
-```
-
-**Intuition**: 
-- **Coherence** (`Φ`) is instantaneous — how coherent is the system *now*?
-- **Resonance** (`R`) is cumulative — how coherent has the system been *over time*?
-
-**Analogy**: 
-- **Coherence** = speed (instantaneous)
-- **Resonance** = distance traveled (cumulative)
-
-**Discrete form**:
-
-```
-R(n) = Σ_{i=0}^n Φ(i) · Δt
-```
-
-**In opic**: Resonance tracks long-term system health, not just momentary state.
+*Coherence is instantaneous (speed), resonance is cumulative (distance) — `R(t) = ∫Φ(τ)dτ` tracks long-term health, not momentary state.* **Coherence measures now, resonance measures history.**
 </details>
 
 **Seven-Generation Ethics:**
@@ -660,45 +348,9 @@ Consider: R(t + 7g) - R(t)
 ```
 
 <details>
-<summary><strong>Mathematical formulation</strong></summary>
+<summary><strong>→ Seven-generation optimization</strong></summary>
 
-**Seven-generation impact**:
-
-```
-ΔR = R(t + 7g) - R(t)
-   = ∫_t^{t+7g} Φ(τ) dτ
-```
-
-**Interpretation**: How much resonance accumulates over 7 generations?
-
-**Decision criterion**:
-
-```
-Make decision if: ΔR > threshold
-```
-
-**Optimization**:
-
-```
-maximize: R(t + 7g)
-subject to: constraints
-```
-
-**In opic**: Decisions optimize for long-term resonance, not short-term gain.
-
-**Connection to discounting**:
-
-Traditional economics uses exponential discounting:
-```
-V(t) = ∫₀^∞ e^{-ρτ} u(τ) dτ
-```
-
-opic uses **generational discounting**:
-```
-R(t) = ∫₀^t Φ(τ) dτ  (no discounting within horizon)
-```
-
-This ensures all generations within the horizon are valued equally.
+*Impact `ΔR = ∫_t^{t+7g}Φ(τ)dτ` accumulates over 7 generations — opic optimizes `R(t+7g)` with no discounting, valuing all generations equally.* **Long-term resonance guides, short-term gain fades.**
 </details>
 
 Where `g` is a generation. This ensures decisions consider long-term impact.
