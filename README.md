@@ -339,11 +339,12 @@ opic's dual structure opens several research frontiers:
 
 **Quick Start Research**:
 ```bash
-make riemann-experiment    # Run baseline simulation (runs in opic!)
+make phase1                # Phase 1: Identify prime voices (opic-native!)
+make riemann-experiment    # Run baseline simulation (uses Phase 1 results)
 make riemann-visualize     # Generate coherence field heatmap (requires matplotlib)
 ```
 
-*The experiment runs in opic itself — demonstrating opic's self-hosting capability. See `examples/riemann_experiment.ops` for the opic-native implementation.*
+*The experiment runs in opic itself — demonstrating opic's self-hosting capability. Phase 1 complete: identified 2,656 prime voices from 3,160 total voices. See `examples/phase1_prime_voices.ops` for the opic-native implementation.*
 
 See [`docs/theory.md`](docs/theory.md) for mathematical foundations, [`docs/riemann_whitepaper.md`](docs/riemann_whitepaper.md) for academic framing, and [`docs/riemann_hypothesis_experiment.md`](docs/riemann_hypothesis_experiment.md) for experiment plans.
 
