@@ -297,6 +297,10 @@ phase2:
 	@echo "Running Phase 2: Functor Computation..."
 	@python3 opic execute examples/phase2_functor_computation.ops || python3 scripts/phase2_functor_computation.py
 
+coherence-scan:
+	@echo "Scanning voice network for coherence..."
+	@python3 opic execute examples/coherence_scan.ops || python3 scripts/coherence_scan.py
+
 # Default: give user a shell with opic available
 default: shell
 

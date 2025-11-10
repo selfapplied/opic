@@ -79,20 +79,43 @@ def compute_unitarity_deviation(zeta_s, zeta_one_minus_s, s):
     
     return deviation, abs(zeta_s) / abs(zeta_one_minus_s) if abs(zeta_one_minus_s) > 0 else 0
 
-def simulate_field_evolution(initial_phi, time_steps, dt):
+def simulate_field_evolution(initial_phi, time_steps, dt, coherence_data=None):
     """Simulate coherence field evolution: dΦ/dt = div J + S
     
-    Simplified: assume div J = 0, S = small noise
+    If coherence_data provided, uses real spectral magnitudes from voice network.
+    Otherwise uses simplified model.
     """
     phi_evolution = [initial_phi]
     phi = initial_phi
     
-    for _ in range(time_steps):
-        # Simplified: S = small oscillatory source
-        S = 0.01 * math.sin(phi * 0.1)
-        dphi_dt = S
-        phi = phi + dt * dphi_dt
-        phi_evolution.append(phi)
+    if coherence_data:
+        # Use real coherence data from voice network
+        measurements = coherence_data.get('measurements', [])
+        avg_coherence = coherence_data.get('statistics', {}).get('avg_coherence', 0.85)
+        
+        # Field evolves based on real coherence values
+        for i in range(time_steps):
+            # Use coherence values cyclically
+            if measurements:
+                idx = i % len(measurements)
+                coherence = measurements[idx]['coherence']
+                spectral_mag = measurements[idx].get('spectral_magnitude', coherence)
+            else:
+                coherence = avg_coherence
+                spectral_mag = coherence
+            
+            # Source term based on coherence
+            S = 0.01 * (coherence - 0.85) * math.sin(phi * spectral_mag)
+            dphi_dt = S
+            phi = phi + dt * dphi_dt
+            phi_evolution.append(phi)
+    else:
+        # Simplified: assume div J = 0, S = small noise
+        for _ in range(time_steps):
+            S = 0.01 * math.sin(phi * 0.1)
+            dphi_dt = S
+            phi = phi + dt * dphi_dt
+            phi_evolution.append(phi)
     
     return phi_evolution
 
@@ -201,11 +224,23 @@ def main():
     print("Phase 5: Field Evolution Simulation")
     print("-" * 60)
     
+    # Try to load real coherence data
+    coherence_file = Path('build/coherence_scan.json')
+    coherence_data = None
+    if coherence_file.exists():
+        with open(coherence_file, 'r') as f:
+            coherence_data = json.load(f)
+        print(f"✓ Using real coherence data from {coherence_file}")
+        print(f"  {coherence_data.get('total_voices', 0)} voices scanned")
+        print(f"  Average coherence: {coherence_data.get('statistics', {}).get('avg_coherence', 0):.4f}")
+    else:
+        print("  Using simplified field model (run 'make coherence-scan' for real data)")
+    
     initial_phi = 1.0
     time_steps = 100
     dt = 0.01
     
-    phi_evolution = simulate_field_evolution(initial_phi, time_steps, dt)
+    phi_evolution = simulate_field_evolution(initial_phi, time_steps, dt, coherence_data)
     
     # Check if |Φ| is approximately constant (oscillatory region)
     phi_magnitudes = [abs(p) for p in phi_evolution]

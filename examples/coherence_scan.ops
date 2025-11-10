@@ -1,0 +1,57 @@
+;;; coherence_scan.ops — Scan live voice network for coherence measurements
+
+include examples/phase2_functor_computation.ops
+include systems/field_coherence.ops
+
+;; Coherence scan definitions
+def coherence_measurement { voice_name, coherence_value, spectral_magnitude, timestamp }
+def coherence_scan { measurements, total_voices, scan_timestamp }
+
+;; Scan voice network for coherence
+voice coherence.scan_network / {
+  -> 
+  load_all_voices -> 
+  for_each_voice -> 
+  coherence.measure_voice -> 
+  collect_measurements -> 
+  coherence_scan
+}
+
+voice coherence.measure_voice / {
+  voice -> 
+  coherence.execute_voice -> 
+  coherence.compute_spectral_magnitude -> 
+  coherence.measure_field_coherence -> 
+  coherence_measurement
+}
+
+voice coherence.execute_voice / {
+  voice -> 
+  try_execute -> 
+  capture_output -> 
+  execution_result
+}
+
+voice coherence.compute_spectral_magnitude / {
+  execution_result -> 
+  compute_matrix_norm -> 
+  spectral_magnitude
+}
+
+voice coherence.measure_field_coherence / {
+  execution_result + network_state -> 
+  compute_coherence_field -> 
+  coherence_value
+}
+
+;; Save coherence scan
+voice coherence.save_scan / {
+  coherence_scan -> 
+  format_json -> 
+  write_file -> 
+  saved
+}
+
+target coherence_scan / "coherence_network_scan"
+voice main / {coherence.scan_network -> coherence.save_scan}
+
