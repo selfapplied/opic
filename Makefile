@@ -1,10 +1,61 @@
-.PHONY: build open install self-compile perf compare intelligence benchmark
+# Makefile: Bootstrap Memory Bank & Witness Checkpoint
+# 
+# Before opic is self-hosting: Make ensures opic is built and usable
+# After opic is self-hosting: Make is a witness checkpoint that opic works
+# Makefile = Memory bank / Integration point for different entry points
 
-build:
-	python3 build_tiddlywiki.py
+.PHONY: bootstrap build seed open install compile test plan repos perf compare intelligence benchmark shell
+
+# Bootstrap sequence: ensure opic is ready before self-hosting
+# This is the memory bank - remembers how to bootstrap opic
+# Witness checkpoint: check for .opicup file (created when opic successfully self-hosts)
+check-opic:
+	@for witness_file in .opicup opic/.opicup $$HOME/.opicup /usr/local/share/opic/.opicup; do \
+		if [ -f "$$witness_file" ]; then \
+			echo "✓ opic is up (witness checkpoint: $$witness_file)"; \
+			exit 0; \
+		fi; \
+	done; \
+	if [ ! -f opic ]; then \
+		echo "⚠ opic binary not found - bootstrap required"; \
+		exit 1; \
+	fi; \
+	echo "⚠ opic not up - bootstrap required"; \
+	echo "  (Run 'make bootstrap' to bring opic up)"; \
+	exit 1
+
+# Core opic verbs (aligned with bootstrap.ops)
+# Once opic is self-hosting, these are witness checkpoints
+bootstrap:
+	@echo "Bringing opic up..."
+	@python3 opic execute bootstrap.ops
+
+# Default: give user a shell with opic available
+shell: check-opic
+	@echo "opic shell (opic is up)"
+	@echo "  Type 'exit' to leave"
+	@echo ""
+	@bash -c 'while true; do \
+		read -p "opic> " cmd; \
+		[ "$$cmd" = "exit" ] && break; \
+		[ -z "$$cmd" ] && continue; \
+		python3 opic execute "$$cmd" 2>&1 || echo "  (opic command failed)"; \
+	done'
+
+build: check-opic
+	@echo "Building TiddlyWiki..."
+	@python3 opic execute tiddlywiki_build.ops
+
+seed: check-opic
+	@echo "Building Wild Sort company seed..."
+	@python3 opic execute company_seed.ops
 
 open: build
-	open tiddlywiki.html
+	@open tiddlywiki.html
+
+open-seed: seed
+	@echo "Opening company seed..."
+	@open company_seed.html 2>/dev/null || echo "Seed built - check output"
 
 compile-all: compile-music compile-gann
 	@echo "✓ All opic components compiled to Swift from opic definitions"
@@ -33,34 +84,47 @@ compile-gann:
 		Path('gann.swift').write_text('\n'.join(all_swift))" 2>/dev/null || true
 	@swiftc -o opic_gann gann.swift 2>/dev/null || echo "  (GANN: will use Python fallback)"
 
-install: compile-all
+# Install opic (aligned with opic.self_install from opic_compile.ops)
+# Makes opic available between restarts (system-wide installation)
+# opic.compile_install -> opic.self_compile -> opic.self_install -> opic.ready
+install: compile
+	@echo "Installing opic system-wide (persists between restarts)..."
 	@if [ -w /usr/local/bin ] 2>/dev/null; then \
-		install -m 755 opic /usr/local/bin/opic; \
-		echo "Installed to /usr/local/bin/opic"; \
+		install -m 755 opic /usr/local/bin/opic && \
+		echo "✓ Installed to /usr/local/bin/opic"; \
+		if [ -f .opicup ]; then \
+			mkdir -p /usr/local/share/opic && \
+			cp .opicup /usr/local/share/opic/.opicup && \
+			echo "✓ Witness checkpoint installed to /usr/local/share/opic/.opicup"; \
+		fi; \
 	elif [ -w $$HOME/.local/bin ] 2>/dev/null || mkdir -p $$HOME/.local/bin 2>/dev/null; then \
-		install -m 755 opic $$HOME/.local/bin/opic; \
-		echo "Installed to $$HOME/.local/bin/opic"; \
-	else \
-		echo "Error: No writable installation directory found"; \
-		exit 1; \
-	fi
-
-self-compile:
-	@echo "Self-compiling opic into Metal..."
-	@./opic metal core.ops core.metal
-	@./opic metal runtime.ops runtime.metal
-	@if command -v xcrun >/dev/null 2>&1; then \
-		if xcrun -sdk macosx metal -c core.metal runtime.metal -o opic.metallib 2>/dev/null; then \
-			echo "✓ Compiled opic.metallib"; \
-			xcrun -sdk macosx metallib -info opic.metallib 2>/dev/null | head -10 || true; \
-		else \
-			echo "⚠ Metal compiler not available (Xcode command line tools required)"; \
-			echo "  Generated: core.metal runtime.metal"; \
+		install -m 755 opic $$HOME/.local/bin/opic && \
+		echo "✓ Installed to $$HOME/.local/bin/opic"; \
+		if [ -f .opicup ]; then \
+			cp .opicup $$HOME/.opicup && \
+			echo "✓ Witness checkpoint installed to $$HOME/.opicup"; \
 		fi; \
 	else \
-		echo "⚠ xcrun not available"; \
-		echo "  Generated: core.metal runtime.metal"; \
+		echo "⚠ Error: No writable installation directory found"; \
+		exit 1; \
 	fi
+	@echo "✓ opic will be available after restart (run 'opic' from anywhere)"
+
+compile: check-opic
+	@echo "Self-compiling opic via opic_compile.ops..."
+	@python3 opic execute opic_compile.ops
+
+test: check-opic
+	@echo "Running opic runtime interface tests..."
+	@python3 opic execute runtime_test.ops
+
+plan: check-opic
+	@echo "opic suggests a plan..."
+	@python3 opic execute opic_plan.ops
+
+repos: check-opic
+	@echo "Listing repositories..."
+	@python3 opic execute repos.ops
 
 perf:
 	@echo "Running opic performance tests..."
@@ -173,5 +237,38 @@ draw:
 	@echo "Generating opic drawings..."
 	@./draw.py
 
-default: build
+# Launch components (aligned with company_seed.ops)
+# Entry points: witness checkpoints that opic works
+whitepaper: check-opic
+	@echo "Generating FEE + RCT technical bluepaper..."
+	@python3 opic execute whitepaper.ops
+
+guide: check-opic
+	@echo "Generating getting started guide..."
+	@python3 opic execute getting_started.ops
+
+gallery: check-opic
+	@echo "Generating art gallery..."
+	@python3 opic execute art_gallery.ops
+
+service: check-opic
+	@echo "Generating Wild Sort service..."
+	@python3 opic execute wild_sort_service.ops
+
+# System components (aligned with fee.ops, recursive_contract_theory.ops)
+# Entry points: witness checkpoints that opic works
+fee: check-opic
+	@echo "Field Equation Exchange..."
+	@python3 opic execute fee.ops
+
+rct: check-opic
+	@echo "Recursive Contract Theory..."
+	@python3 opic execute recursive_contract_theory.ops
+
+pools: check-opic
+	@echo "Learning Pools..."
+	@python3 opic execute learning_pools.ops
+
+# Default: give user a shell with opic available
+default: shell
 
