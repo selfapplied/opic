@@ -291,7 +291,11 @@ riemann-visualize:
 
 phase1:
 	@echo "Running Phase 1: Prime Voice Identification..."
-	@python3 opic execute examples/phase1_prime_voices.ops
+	@python3 opic execute examples/phase1_prime_voices.ops || python3 scripts/phase1_prime_voices.py
+
+phase2:
+	@echo "Running Phase 2: Functor Computation..."
+	@python3 opic execute examples/phase2_functor_computation.ops || python3 scripts/phase2_functor_computation.py
 
 # Default: give user a shell with opic available
 default: shell

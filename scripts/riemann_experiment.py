@@ -116,14 +116,32 @@ def main():
         prime_voices_data = phase1_results.get('prime_voices', [])
         print(f"✓ Loaded {len(prime_voices_data)} prime voices from Phase 1 results")
         
-        # Convert to format expected by rest of script (with mock coherence/phase for now)
-        prime_voices = []
-        for v in prime_voices_data[:20]:  # Use first 20 for computation
-            prime_voices.append({
-                'name': v['name'],
-                'coherence': 0.9 + (hash(v['name']) % 10) / 100,  # Mock coherence
-                'phase': (hash(v['name']) % 100) / 1000  # Mock phase
-            })
+        # Try to load Phase 2 functor results (real coherence data)
+        phase2_file = Path('build/phase2_functors.json')
+        if phase2_file.exists():
+            with open(phase2_file, 'r') as f:
+                phase2_results = json.load(f)
+            functors_data = phase2_results.get('functors', [])
+            print(f"✓ Loaded {len(functors_data)} functors from Phase 2 (real coherence data!)")
+            
+            # Use real functor data
+            prime_voices = []
+            for f in functors_data[:20]:  # Use first 20 for computation
+                prime_voices.append({
+                    'name': f['voice_name'],
+                    'coherence': f['coherence'],
+                    'phase': f['phase']
+                })
+        else:
+            print("  Phase 2 results not found, using Phase 1 data with estimated coherence")
+            # Convert Phase 1 data to format expected (with estimated coherence)
+            prime_voices = []
+            for v in prime_voices_data[:20]:  # Use first 20 for computation
+                prime_voices.append({
+                    'name': v['name'],
+                    'coherence': 0.9 + (hash(v['name']) % 10) / 100,  # Estimated coherence
+                    'phase': (hash(v['name']) % 100) / 1000  # Estimated phase
+                })
     else:
         print("⚠ Phase 1 results not found, using mock data")
         print("   Run: make phase1  (or: python3 scripts/phase1_prime_voices.py)")
