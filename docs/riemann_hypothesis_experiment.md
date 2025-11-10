@@ -328,5 +328,75 @@ voice compute_certificate_operator / {
 
 ---
 
+## Open Questions
+
+This experiment raises several fundamental questions that invite mathematical dialogue:
+
+### Phase Definition
+
+**What defines `phase(v)`?**
+
+- Is phase derived from execution timing, coherence oscillations, or both?
+- How stable is phase under composition: `phase(g ∘ f) = phase(g) + phase(f)`?
+- Does phase capture something intrinsic about voice structure, or is it emergent from dynamics?
+
+### Functor Stability
+
+**How stable is `ℱ(v)` under composition noise?**
+
+- When voices compose, does `ℱ(g ∘ f) = ℱ(g) · ℱ(f)` hold exactly or approximately?
+- What happens when composition introduces numerical errors or approximation?
+- Can we define a "coherence distance" metric between `ℱ(g ∘ f)` and `ℱ(g) · ℱ(f)`?
+
+### Critical Line Location
+
+**Can the critical line be empirically located?**
+
+- Can we detect `Re(s) = 1/2` by observing where `|Φ|` becomes constant?
+- Does the spectral radius actually equal 1 at the critical line, or is it an approximation?
+- How sensitive is the critical line location to changes in voice set or coherence measurements?
+
+### Control Test Interpretation
+
+**What does the control test tell us?**
+
+- If random voices fail unitarity, what specific properties of opic voices create the symmetry?
+- Is it compositional structure, coherence dynamics, or both?
+- Can we characterize the "specialness" of opic's structure mathematically?
+
+### Field-Category Bridge
+
+**How does the certificate operator bridge discrete and continuous?**
+
+- What is the explicit form of `C(s)` that satisfies `ζ_opic(s) = C(s) · ζ_opic(1-s)`?
+- Does `C(s)` have a natural interpretation in terms of voice composition?
+- Can we compute `C(s)` directly from certificate structure?
+
+### Convergence and Stability
+
+**What are the convergence properties?**
+
+- Does `ζ_opic(s)` converge for `Re(s) > 1`?
+- How does convergence depend on the size of the prime voice set `𝒫`?
+- What happens as we add more voices to the codebase?
+
+---
+
+## Contributing to the Experiment
+
+This is an open research environment. Contributions welcome:
+
+1. **Implement phases**: Start with Phase 1 (prime voice identification) and work through
+2. **Refine definitions**: Propose better definitions for `phase(v)`, `ℱ(v)`, or `C(s)`
+3. **Run experiments**: Test hypotheses, share results, discuss interpretations
+4. **Ask questions**: Open GitHub Discussions to explore mathematical questions
+5. **Extend theory**: Connect opic's structure to other areas of mathematics
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for code contribution guidelines.
+
+---
+
 *This experiment explores whether opic's dual structure provides a natural testing ground for Riemann Hypothesis exploration.*
+
+*Join the discussion: Open a GitHub Discussion to explore these questions with the community.*
 

@@ -4,7 +4,7 @@
 # After opic is self-hosting: Make is a witness checkpoint that opic works
 # Makefile = Memory bank / Integration point for different entry points
 
-.PHONY: bootstrap build seed open install compile test plan repos perf compare intelligence benchmark shell
+.PHONY: bootstrap build seed open install compile test plan repos perf compare intelligence benchmark shell riemann-experiment
 
 # Bootstrap sequence: ensure opic is ready before self-hosting
 # This is the memory bank - remembers how to bootstrap opic
