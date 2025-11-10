@@ -25,12 +25,15 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # Add any future dependencies here
+        # Ensure opic Python script is executable
+        chmod +x opic || true
     
     - name: Run Riemann Experiment
       run: |
-        make riemann-experiment
+        # Use Python implementation for CI (more reliable)
+        python3 scripts/riemann_experiment.py
       continue-on-error: true
+      timeout-minutes: 5
     
     - name: Upload Results
       uses: actions/upload-artifact@v3
