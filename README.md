@@ -17,6 +17,8 @@ Software today is brittle and centralized. Opic reimagines code as a living, dis
 
 **Opic's Answer:** Code becomes *voices* that compose into *chains*, each step cryptographically signed and verified. Programs are self-hosting, self-compiling, and self-verifying — enabling distributed computation with built-in trust.
 
+📖 **[Read the Theory](docs/theory.md)** — Mathematical foundations connecting opic to category theory, type theory, field dynamics, and cryptography.
+
 ---
 
 ## Hello World
@@ -282,12 +284,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Documentation
 
+- **[Theory](docs/theory.md)** — Mathematical foundations (category theory, type theory, field dynamics)
+- **[Philosophy](docs/philosophy.md)** — Core principles and vision
+- **[Architecture](docs/architecture.md)** — System architecture overview
 - **Technical Bluepaper**: `make whitepaper`
 - **Getting Started**: `make getting-started`
-- **System Plan**: `python3 opic execute opic_plan.ops`
-- **Integration Paper**: See `tiddlers/INTEGRATION_PAPER.md`
-- **Architecture**: See `docs/architecture.md` (coming soon)
-- **Philosophy**: See `docs/philosophy.md` (coming soon)
+- **System Plan**: `python3 opic execute systems/opic_plan.ops`
+- **Integration Paper**: See `wiki/tiddlers/INTEGRATION_PAPER.md`
 
 ---
 
