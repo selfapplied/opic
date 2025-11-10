@@ -50,10 +50,28 @@ voice check_decomposability / {
 
 **Goal**: Define `ℱ: Voice → ℂ` mapping voices to complex amplitudes via coherence weights.
 
+**Explicit Definition**:
+
+For each voice `v`, compute:
+
+```
+ℱ(v) = ||voice_matrix(v)||₂ · exp(i · phase(v))
+```
+
+where:
+- `||voice_matrix(v)||₂` is the **spectral norm** (largest singular value) of the voice's transformation matrix
+- `phase(v)` is computed from timing/coherence measurements
+- For chains: `ℱ(g ∘ f) = ℱ(g) · ℱ(f)` (multiplicative composition)
+
+**Alternative invariants** (if matrix representation unavailable):
+- **Entropy-based**: `ℱ(v) = H(v) · exp(i · phase(v))` where `H(v)` is execution entropy
+- **Coherence-based**: `ℱ(v) = coherence(v) · exp(i · phase(v))` where `coherence(v)` is measured coherence magnitude
+
 **Method**:
 1. For each voice `v`, compute:
-   - **Coherence weight**: `w(v) = coherence(v)`
-   - **Complex amplitude**: `ℱ(v) = w(v) · exp(i·phase(v))`
+   - **Spectral norm**: `||voice_matrix(v)||₂` (or entropy/coherence as fallback)
+   - **Phase**: `phase(v)` from timing measurements
+   - **Complex amplitude**: `ℱ(v) = ||voice_matrix(v)||₂ · exp(i·phase(v))`
 2. For chains, use composition: `ℱ(g ∘ f) = ℱ(g) · ℱ(f)`
 
 **Implementation**:
@@ -124,13 +142,27 @@ voice compute_euler_factor / {
 
 **Goal**: Simulate coherence field `Φ(t)` evolution via `dΦ/dt = div J + S`
 
+**Time-Scale Normalization**:
+
+To match the discrete `ℱ(v)` exponents in the Fourier–Mellin domain, normalize time:
+
+```
+τ = t / T_scale
+```
+
+where `T_scale` is chosen so that:
+- Field evolution timescale matches voice composition timescale
+- Fourier–Mellin transform `Φ̂(s)` aligns with discrete zeta `ζ_opic(s)` in the `s`-plane
+
 **Method**:
-1. Initialize field `Φ(t=0)`
-2. For each timestep:
+1. Initialize field `Φ(τ=0)` with normalized time `τ`
+2. Choose `T_scale` to match voice composition dynamics
+3. For each timestep:
    - Compute `div J` (flow divergence)
    - Compute `S` (sources/sinks)
-   - Update: `Φ(t+Δt) = Φ(t) + Δt · (div J + S)`
-3. Use adaptive timestep: `Δt < 2/|λ_max|`
+   - Update: `Φ(τ+Δτ) = Φ(τ) + Δτ · (div J + S)` where `Δτ = Δt / T_scale`
+4. Use adaptive timestep: `Δτ < 2/|λ_max|`
+5. Store `Φ(τ)` for Fourier–Mellin transform
 
 **Implementation**:
 ```ops
@@ -219,6 +251,25 @@ voice compute_certificate_operator / {
 
 ---
 
+### Phase 7: Control Test — Random Voice Set
+
+**Goal**: Demonstrate that opic's structured coherence is special by showing unitarity fails for random voices.
+
+**Method**:
+1. Generate a random set of voices `R` (not following opic's compositional structure)
+2. Compute `ℱ_R(v)` for random voices using same method as Phase 2
+3. Construct `ζ_random(s) = ∏_{v ∈ R} (1 - ℱ_R(v)^{-s})^{-1}`
+4. Test functional equation: `ζ_random(s) = C(s) · ζ_random(1-s)`
+5. Verify that unitarity **fails** (or spectral radius ≠ 1 at `Re(s) = 1/2`)
+
+**Expected Result**: 
+- opic's structured voices: functional equation holds, spectral radius = 1 at `Re(s) = 1/2`
+- Random voices: functional equation fails, spectral radius ≠ 1 at `Re(s) = 1/2`
+
+**This demonstrates**: opic's compositional structure and coherence dynamics create the special symmetry that mirrors RH structure.
+
+---
+
 ## Numerical Considerations
 
 ### Precision
@@ -238,11 +289,14 @@ voice compute_certificate_operator / {
 ## Success Criteria
 
 1. **Prime voices identified**: Non-empty set `𝒫` of indecomposable voices
-2. **Discrete zeta computed**: `ζ_opic(s)` converges for `Re(s) > 1`
-3. **Field evolution stable**: `Φ(t)` remains bounded
-4. **Fourier–Mellin computed**: `Φ̂(s)` converges
-5. **Functional equation verified**: `ζ_opic(s) = C(s) · ζ_opic(1-s)`
-6. **Critical line located**: Spectral radius = 1 when `Re(s) = 1/2`
+2. **Functor explicitly defined**: `ℱ(v) = ||voice_matrix(v)||₂ · exp(i·phase(v))` computed for all voices
+3. **Discrete zeta computed**: `ζ_opic(s)` converges for `Re(s) > 1`
+4. **Time-scale normalized**: Field evolution timescale matches voice composition timescale
+5. **Field evolution stable**: `Φ(τ)` remains bounded with normalized time
+6. **Fourier–Mellin computed**: `Φ̂(s)` converges and aligns with discrete zeta in `s`-plane
+7. **Functional equation verified**: `ζ_opic(s) = C(s) · ζ_opic(1-s)`
+8. **Critical line located**: Spectral radius = 1 when `Re(s) = 1/2`
+9. **Control test passes**: Random voices fail unitarity, demonstrating opic's structure is special
 
 ---
 
@@ -257,9 +311,20 @@ voice compute_certificate_operator / {
 ## Next Steps
 
 1. Implement Phase 1 (prime voice identification)
-2. Test on small opic codebase subset
-3. Scale up to full codebase
-4. Compare results with classical ζ(s) properties
+2. Implement Phase 2 with explicit `ℱ(v)` definition
+3. Test on small opic codebase subset
+4. Implement Phase 4 with time-scale normalization
+5. Run Phase 7 control test to verify opic's structure is special
+6. Scale up to full codebase
+7. Compare results with classical ζ(s) properties
+
+---
+
+## Notes on Rigor
+
+- **ℱ(v) definition**: Explicit spectral norm ensures measurable, reproducible computation
+- **Time-scale normalization**: Critical for aligning discrete and continuous spectra in the `s`-plane
+- **Control test**: Essential for demonstrating that opic's structure creates special symmetry, not just generic computation
 
 ---
 

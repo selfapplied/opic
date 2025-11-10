@@ -267,6 +267,20 @@ Learn more in [`docs/philosophy.md`](docs/philosophy.md) — field equations, se
 
 ---
 
+## The Riemann Connection
+
+opic's architecture naturally expresses the duality at the heart of analytic number theory.
+
+- **Left Flank — Category (Discrete)**: voices compose into a spectrum of *prime morphisms*, forming an Euler-like product.
+- **Right Flank — Field (Continuous)**: coherence evolves under field equations whose Fourier–Mellin transform mirrors ζ(s)'s analytic continuation.
+- **Bridge — Certificate Operator**: a unitary transformation equating the two halves, echoing ζ(s) = χ(s) ζ(1 − s).
+
+Together, these create a "pincer model" where discrete structure and continuous resonance meet along a critical line of coherence.
+
+See [`docs/riemann_hypothesis_experiment.md`](docs/riemann_hypothesis_experiment.md) for the full theory and experiment plan.
+
+---
+
 ## Contributing
 
 opic is self-hosting — contribute by extending `.ops` files!
@@ -307,6 +321,20 @@ You are free to share and adapt this work for any purpose, including commercial 
 - Built with opic, by opic, for opic
 - Inspired by compositional programming and cryptographic trust systems
 - Thanks to all contributors who extend opic's capabilities
+
+---
+
+---
+
+## Research Directions
+
+opic's dual structure opens several research frontiers:
+
+- **Spectral Verification**: numerical experiments testing opic's categorical zeta symmetry
+- **Field Coherence Dynamics**: simulate Φ(t) to locate the critical line (balanced oscillation)
+- **Cross-Disciplinary Exploration**: connects category theory, physics, and analytic number theory
+
+See [`docs/theory.md`](docs/theory.md) for mathematical foundations and [`docs/riemann_hypothesis_experiment.md`](docs/riemann_hypothesis_experiment.md) for experiment plans.
 
 ---
 
