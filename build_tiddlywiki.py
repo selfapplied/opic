@@ -1490,7 +1490,11 @@ module-type: widget
 }})();
 }})();"""
 
-def build_tiddlywiki(src="tiddlywiki.ops"):
+def build_tiddlywiki_with_ledger(src="tiddlywiki.ops", include_ledger=True):
+    """Build TiddlyWiki with voice certificate ledger"""
+    return build_tiddlywiki(src, include_ledger=include_ledger)
+
+def build_tiddlywiki(src="tiddlywiki.ops", include_ledger=False):
     """Main build function - uses Opic voice system"""
     src_path = Path(src)
     if not src_path.exists():
@@ -1575,7 +1579,25 @@ def build_tiddlywiki(src="tiddlywiki.ops"):
             # Convert to our format (they're already in TiddlyWiki format)
             system_tiddlers.extend(essential_tiddlers)
     
-    all_tiddlers = family_tiddlers + widget_definitions + all_content_tiddlers + system_tiddlers
+    # Add voice certificate ledger if requested
+    ledger_tiddlers = []
+    if include_ledger and voices:
+        # Generate voice certificate tiddlers for each voice
+        for voice_name, voice_body in voices.items():
+            if not voice_name.startswith("$"):  # Skip system voices
+                cert_tiddler = create_tiddler(
+                    f"VoiceCertificate/{voice_name}",
+                    f"Voice: {voice_name}\n\nBody: {voice_body}\n\n*Signature pending*",
+                    tags=["voice-certificate", "ledger"],
+                    fields={
+                        "voice_name": voice_name,
+                        "voice_body": str(voice_body),
+                        "type": "text/vnd.tiddlywiki"
+                    }
+                )
+                ledger_tiddlers.append(cert_tiddler)
+    
+    all_tiddlers = family_tiddlers + widget_definitions + all_content_tiddlers + system_tiddlers + ledger_tiddlers
     
     # Order by family order, then title
     family_order = {"ambiance": 1, "widgets": 2, "actions": 3, "tiddlers": 4}

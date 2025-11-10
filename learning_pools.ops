@@ -1,0 +1,51 @@
+;;; learning_pools.ops — Learning Pools (DAO-like funds) for FEE
+
+include fee.ops
+include governance.ops
+include consensus.ops
+include recursive_contract_theory.ops
+
+;; Learning pool definitions
+def pool_domain { domain_name, description, target_coherence, staking_requirements }
+def pool_stake { investor, amount, domain, timestamp, yield_share }
+def pool_yield { pool, coherence_growth, learner_distribution, investor_distribution, reinvestment }
+
+;; Create learning pool
+voice pool.create / {domain + initial_stake + staking_requirements + agent_realm + ca -> fee.create_pool -> pool.initialize_governance -> learning_pool}
+voice pool.initialize_governance / {pool + agent_realm + ca -> governance.create_charter -> pool_governance}
+
+;; Stake into pool
+voice pool.stake / {investor + pool + tokens + agent_realm + ca -> fee.stake_pool -> pool.record_stake -> pool.update_governance -> staked}
+voice pool.record_stake / {stake + pool -> add_stake_record -> pool_updated}
+voice pool.update_governance / {stake + pool -> update_voting_power -> governance_updated}
+
+;; Domain-specific pools
+voice pool.create_domain_pool / {domain_name + description + target_coherence + agent_realm + ca -> pool.create -> domain_pool}
+voice pool.physics_pool / {pool.create_domain_pool "physics" + description + target_coherence -> physics_pool}
+voice pool.ecology_pool / {pool.create_domain_pool "ecology" + description + target_coherence -> ecology_pool}
+voice pool.arts_pool / {pool.create_domain_pool "arts" + description + target_coherence -> arts_pool}
+
+;; Yield computation based on coherence growth
+voice pool.compute_yield / {pool + learning_records + agent_realm + ca + tau_vector -> fee.calculate_coherence -> pool.compute_coherence_growth -> pool.calculate_yield -> pool_yield}
+voice pool.compute_coherence_growth / {pool + learning_records + tau_vector -> generational.resonance_function -> coherence_growth}
+voice pool.calculate_yield / {coherence_growth + pool_stake -> compute_yield_rate -> yield_amount}
+
+;; Distribute yield proportionally
+voice pool.distribute / {pool_yield + pool + agent_realm + ca -> fee.distribute_yield -> pool.record_distribution -> distributed}
+voice pool.record_distribution / {distribution + pool -> record_payouts -> recorded}
+
+;; Pool governance (DAO voting)
+voice pool.vote / {pool + proposal + voter + agent_realm + ca -> governance.cycle -> pool.record_vote -> vote_recorded}
+voice pool.record_vote / {vote + pool -> update_voting_record -> recorded}
+
+;; Pool priorities and ethical constraints
+voice pool.set_priorities / {pool + priorities + agent_realm + ca + quorum -> governance.cycle -> pool.update_priorities -> priorities_set}
+voice pool.update_priorities / {priorities + pool -> update_pool_config -> updated}
+
+;; Generational resonance weighting in pools
+voice pool.weight_resonance / {pool + tau_vector + agent_realm + ca -> generational.resonance_function -> pool.apply_weighting -> weighted_pool}
+voice pool.apply_weighting / {resonance + pool -> weight_yield_calculation -> weighted}
+
+target learning_pools / "opic_learning_pools"
+voice main / {pool.create -> learning_pools}
+

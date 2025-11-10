@@ -6,16 +6,15 @@ import subprocess
 from pathlib import Path
 
 def build_tiddlywiki():
-    """Build TiddlyWiki from opic scores"""
-    script = Path(__file__).parent / "build_tiddlywiki.py"
-    subprocess.run([sys.executable, str(script)], check=True)
+    """Build TiddlyWiki from opic scores - now entirely in opic!"""
+    execute_opic("tiddlywiki_build.ops")
 
 def run_python():
     """Run opic python bootstrap"""
     from generate import parse_ops, compose
     from pathlib import Path
     ops_file = Path(__file__).parent / "core.ops"
-    defs, voices = parse_ops(ops_file.read_text())
+    defs, voices, _ = parse_ops(ops_file.read_text())
     print(compose(voices))
 
 def execute_opic(ops_file):
@@ -34,46 +33,115 @@ def execute_opic(ops_file):
                 project_root = possible_root
                 break
     
-    # Load opic parser (defined in opic_parse.ops)
-    # opic defines its own parser - Python implements opic's structure
-    opic_parse_file = project_root / "opic_parse.ops"
-    if opic_parse_file.exists():
-        # Load opic's parser definition
-        generate_path = project_root / "generate.py"
-        spec = importlib.util.spec_from_file_location("generate", generate_path)
-        generate_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(generate_module)
-        # Use Python implementation that follows opic's opic.parse_ops voice structure
-        parse_ops = generate_module.parse_ops  # Implements opic.parse_ops
-    else:
-        # Fallback: use generate.py directly
-        generate_path = project_root / "generate.py"
-        spec = importlib.util.spec_from_file_location("generate", generate_path)
-        generate_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(generate_module)
-        parse_ops = generate_module.parse_ops
+    # Bootstrap kernel: load minimal opic definitions
+    # Python implements opic.bootstrap voice from bootstrap.ops
+    bootstrap_file = project_root / "bootstrap.ops"
+    generate_path = project_root / "generate.py"
+    spec = importlib.util.spec_from_file_location("generate", generate_path)
+    generate_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(generate_module)
+    # parse_ops implements opic.parse_ops voice from bootstrap.ops
+    parse_ops = generate_module.parse_ops
     
-    # Load core capability files
-    core_files = ["planning.ops", "reasoning.ops", "ml.ops", "train_voices.ops", "audio.ops", "train_speech.ops", "train_model.ops", "generate_words.ops", "generate_field.ops", "conversation.ops", "voice_input.ops", "interactive.ops", "evaluate.ops", "language_field.ops", "markov.ops", "attention_field.ops", "extract_voices.ops", "topological_map.ops", "metal_tensors.ops", "evaluate_impl.ops"]
+    # Load namespace mapping from opic_load.ops (implements opic.map_namespaces from bootstrap.ops)
+    opic_load_file = project_root / "opic_load.ops"
+    namespace_map = {}
+    if opic_load_file.exists():
+        # Load namespace mappings from opic_load.ops (following opic.namespace_map voices)
+        _, load_voices, _ = parse_ops(opic_load_file.read_text())
+        for key, value in load_voices.items():
+            if key.startswith("opic.namespace_map."):
+                namespace = key.replace("opic.namespace_map.", "").replace(".", "") + "."
+                filename = value.strip('"')
+                namespace_map[namespace] = filename
+    
+    # Fallback namespace map (minimal bootstrap set)
+    if not namespace_map:
+        namespace_map = {
+            "ml.": "ml.ops", "audio.": "audio.ops", "train.": "train_model.ops",
+            "generate.": "generate_words.ops", "interactive.": "interactive.ops",
+            "evaluate.": "evaluate.ops", "topological.": "topological_map.ops",
+            "metal.": "metal_tensors.ops", "planning.": "planning.ops", "reason.": "reasoning.ops",
+        }
+    
+    def load_ops_file(file_path, loaded_files, all_defs, all_voices):
+        """Load .ops file - implements opic.load_recursive voice from bootstrap.ops"""
+        # opic.check_loaded voice
+        if file_path in loaded_files:
+            return
+        
+        if not file_path.exists():
+            return
+        
+        # opic.load_file voice
+        loaded_files.add(file_path)
+        defs, voices, includes = parse_ops(file_path.read_text())
+        
+        # opic.load_includes voice (explicit includes)
+        for include_file in includes:
+            include_path = file_path.parent / include_file
+            load_ops_file(include_path, loaded_files, all_defs, all_voices)
+        
+        # opic.merge_voices voice
+        all_defs.update(defs)
+        all_voices.update(voices)
+        
+        # opic.load_attention voice (automatic inclusion)
+        referenced_namespaces = set()
+        for voice_body in voices.values():
+            if isinstance(voice_body, str) and "->" in voice_body:
+                # opic.extract_references -> opic.find_namespaces
+                parts = voice_body.replace("{", "").replace("}", "").split("->")
+                for part in parts:
+                    part = part.strip().split("+")[0].strip()
+                    if "." in part:
+                        namespace = part.split(".")[0] + "."
+                        referenced_namespaces.add(namespace)
+        
+        # opic.auto_load voice
+        for namespace in referenced_namespaces:
+            if namespace in namespace_map:
+                auto_file = namespace_map[namespace]
+                auto_path = file_path.parent / auto_file
+                if auto_path.exists() and auto_path not in loaded_files:
+                    load_ops_file(auto_path, loaded_files, all_defs, all_voices)
+    
+    # Bootstrap: implement opic.bootstrap voice from bootstrap.ops
+    # Load bootstrap kernel first (minimal set)
+    bootstrap_path = project_root / "bootstrap.ops"
+    loaded_files = set()
     all_defs, all_voices = {}, {}
     
-    for core_file in core_files:
-        core_path = Path(__file__).parent / core_file
-        if core_path.exists():
-            core_defs, core_voices = parse_ops(core_path.read_text())
-            all_defs.update(core_defs)
-            all_voices.update(core_voices)
+    # Load bootstrap kernel if it exists (contains opic.parse_ops, opic.load_recursive, etc.)
+    if bootstrap_path.exists():
+        load_ops_file(bootstrap_path, loaded_files, all_defs, all_voices)
     
-    # Load main ops file
-    ops_path = Path(ops_file) if Path(ops_file).is_absolute() else Path(__file__).parent / ops_file
+    # Load minimal core files (implements opic.load_bootstrap)
+    core_files = ["planning.ops", "reasoning.ops", "ml.ops"]
+    for core_file in core_files:
+        core_path = project_root / core_file
+        load_ops_file(core_path, loaded_files, all_defs, all_voices)
+    
+    # Load main ops file (will auto-include dependencies via attention)
+    # This implements opic.bootstrap -> opic.load_bootstrap -> opic.find_main -> opic.execute_main
+    ops_path = Path(ops_file) if Path(ops_file).is_absolute() else project_root / ops_file
     if not ops_path.exists():
         print(f"Error: File not found: {ops_file}", file=sys.stderr)
         sys.exit(1)
-    defs, voices = parse_ops(ops_path.read_text())
     
-    # Merge voices (main file takes precedence)
-    voices = {**all_voices, **voices}
-    defs = {**all_defs, **defs}
+    # Save main voice from main file before loading (preserve it)
+    main_file_defs, main_file_voices, _ = parse_ops(ops_path.read_text())
+    main_voice_from_file = main_file_voices.get('main')
+    
+    load_ops_file(ops_path, loaded_files, all_defs, all_voices)
+    
+    # Restore main voice from main file (main file takes precedence)
+    if main_voice_from_file:
+        all_voices['main'] = main_voice_from_file
+    
+    # Get final voices and defs (main file already merged)
+    defs = all_defs
+    voices = all_voices
     
     # Print LaTeX equations if they exist
     latex_voices = {k: v for k, v in voices.items() if 'latex' in k}
@@ -343,19 +411,35 @@ def execute_opic(ops_file):
         
         main_body = voices['main']
         
-        # Check if this is an interactive conversation (self-executing)
-        is_interactive = "interactive.loop" in str(main_body) or "interactive.start" in str(main_body)
-        if is_interactive:
-            # opic executes its own interactive conversation
-            execute_interactive_conversation(voices, defs, project_root=Path(__file__).parent)
-            return
+        # Execute runtime following opic.execute_runtime interface from bootstrap.ops
+        # opic.detect_runtime_type -> opic.execute_specialized
+        project_root_path = Path(__file__).parent
         
-        # Check if this is evaluation (self-executing)
-        is_evaluation = "evaluate.run" in str(main_body) or "evaluate.training" in str(main_body)
-        if is_evaluation:
-            # opic evaluates itself - follows opic's evaluate structure
-            execute_evaluation(voices, defs, project_root=Path(__file__).parent)
+        # Detect runtime type (implements opic.detect_runtime_type -> opic.check_patterns)
+        # Follow opic.check_interactive, opic.check_evaluation, opic.check_repos, opic.check_compile voices
+        main_str = str(main_body)
+        is_interactive = "interactive" in main_str
+        is_evaluation = "evaluate" in main_str
+        is_repos = "repos" in main_str
+        is_compile = "compile" in main_str
+        # Execute specialized runtime (implements opic.execute_specialized)
+        if is_interactive:
+            # Implements opic.execute_interactive voice
+            execute_interactive_conversation(voices, defs, project_root=project_root_path)
             return
+        elif is_evaluation:
+            # Implements opic.execute_evaluation voice
+            execute_evaluation(voices, defs, project_root=project_root_path)
+            return
+        elif is_repos:
+            # Implements opic.execute_repos voice
+            execute_repos(voices, defs, project_root=project_root_path)
+            return
+        elif is_compile:
+            # Implements opic.execute_compile voice
+            execute_compile(voices, defs, project_root=project_root_path)
+            return
+        # Otherwise: implements opic.execute_generic voice (fall through to chain execution)
         
         print("\n" + "=" * 60)
         print("Execution:")
@@ -441,6 +525,7 @@ def execute_opic(ops_file):
                 print(f"  → opic can now generate words using trained model")
         
         # opic speaks through its own voice structure - check for audio.speak_* voices
+        import shutil
         say_cmd = shutil.which("say")
         if say_cmd:
             # Let opic's own voices determine what to speak
@@ -567,7 +652,7 @@ def execute_opic(ops_file):
         print("=" * 60)
 
 def execute_interactive_conversation(voices, defs, project_root):
-    """Execute opic's interactive conversation - opic executes itself"""
+    """Implements opic.execute_interactive voice from bootstrap.ops - opic executes itself"""
     import json
     import numpy as np
     import random
@@ -738,7 +823,7 @@ def execute_interactive_conversation(voices, defs, project_root):
             continue
 
 def execute_evaluation(voices, defs, project_root):
-    """Thin shim: execute opic's evaluation voices (opic is self-hosting)"""
+    """Implements opic.execute_evaluation voice from bootstrap.ops - opic evaluates itself"""
     import json
     import math
     from collections import Counter
@@ -989,7 +1074,7 @@ def interactive_mode():
     all_voices = {}
     for ops_file in [interactive_file, conversation_file_def, voice_input_file, generate_field_file]:
         if ops_file.exists():
-            _, voices = parse_ops(ops_file.read_text())
+            _, voices, _ = parse_ops(ops_file.read_text())
             all_voices.update(voices)
     
     print("=" * 60)
@@ -1167,6 +1252,201 @@ def generate_swift(ops_file, output_file=None):
         args.append(output_file)
     subprocess.run(args, check=True)
 
+def execute_repos(voices, defs, project_root):
+    """Implements opic.execute_repos voice from bootstrap.ops - opic manages repositories"""
+    import os
+    from pathlib import Path
+    
+    # Get home directory from environment or use default
+    home_dir = os.environ.get('OPIC_REPOS_DIR')
+    if home_dir is None:
+        home_path = Path.home()
+    else:
+        home_path = Path(home_dir)
+    
+    if not home_path.exists() or not home_path.is_dir():
+        print(f"Error: {home_path} does not exist or is not a directory", file=sys.stderr)
+        sys.exit(1)
+    
+    # Follow opic's repos.classify voice structure
+    def is_repo(path):
+        """Check if directory is itself a git repository"""
+        return (path / ".git").exists() and (path / ".git").is_dir()
+    
+    visited = set()
+    
+    def contains_repos(path, depth=0, max_depth=10):
+        """Check if directory contains repositories (recursively)"""
+        if depth > max_depth:
+            return False
+        
+        real_path = path.resolve()
+        if real_path in visited:
+            return False
+        visited.add(real_path)
+        
+        try:
+            for item in path.iterdir():
+                try:
+                    if item.is_symlink():
+                        continue
+                    if item.is_dir() and not item.name.startswith('.'):
+                        if is_repo(item):
+                            return True
+                        if contains_repos(item, depth + 1, max_depth):
+                            return True
+                except (OSError, PermissionError):
+                    continue
+        except (OSError, PermissionError):
+            pass
+        
+        return False
+    
+    def collect_repos(path, repos_list, is_root=False, depth=0, max_depth=10):
+        """Recursively collect all repositories (following repos.collect voice)"""
+        if depth > max_depth:
+            return
+        
+        real_path = path.resolve()
+        if real_path in visited:
+            return
+        visited.add(real_path)
+        
+        if not is_root and is_repo(path):
+            repos_list.append(path)
+            return
+        
+        try:
+            for item in path.iterdir():
+                try:
+                    if item.is_symlink():
+                        continue
+                    if item.is_dir() and not item.name.startswith('.'):
+                        if is_repo(item):
+                            repos_list.append(item)
+                        elif contains_repos(item, 0, max_depth):
+                            collect_repos(item, repos_list, is_root=False, depth=depth + 1, max_depth=max_depth)
+                except (OSError, PermissionError):
+                    continue
+        except (OSError, PermissionError):
+            pass
+    
+    # Execute repos.collect voice chain
+    repos = []
+    collect_repos(home_path, repos, is_root=True)
+    
+    # Execute repos.list voice chain (following repos.list -> repos.summarize_each voice)
+    print(f"\nRepositories in {home_path}:")
+    print("=" * 60)
+    if repos:
+        for repo in sorted(repos):
+            rel_path = repo.relative_to(home_path)
+            # Execute repos.summarize voice chain inline (following repos.summarize voice)
+            # repos.read_files -> repos.extract_text -> repos.summarize_text
+            summary = None
+            try:
+                # repos.find_readme voice
+                for readme_file in repo.glob("README*"):
+                    if readme_file.is_file():
+                        content = readme_file.read_text(encoding='utf-8', errors='ignore')[:500]
+                        # repos.extract_text -> repos.summarize_text (extract first meaningful line)
+                        for line in content.split('\n')[:10]:
+                            line = line.strip()
+                            if line and len(line) > 20 and not line.startswith('#'):
+                                summary = line[:100]
+                                break
+                        break
+            except:
+                pass
+            
+            if summary:
+                print(f"  {rel_path}")
+                print(f"    {summary}")
+            else:
+                print(f"  {rel_path}")
+    else:
+        print("  (no repositories found)")
+    print("=" * 60)
+    print(f"Total: {len(repos)} repository{'ies' if len(repos) != 1 else ''}")
+
+def execute_compile(voices, defs, project_root):
+    """Implements opic.execute_compile voice from bootstrap.ops - follows opic.compile_install chain"""
+    from pathlib import Path
+    import subprocess
+    import shutil
+    import os
+    
+    # Follow opic.compile_install voice chain from opic_compile.ops
+    # opic.compile_install -> opic.self_compile -> opic.self_install -> opic.ready
+    
+    # Execute opic.compile_bootstrap voice
+    bootstrap_ops = project_root / "bootstrap.ops"
+    if bootstrap_ops.exists():
+        print("Compiling bootstrap.ops to Metal...")
+        generate_metal("bootstrap.ops", "bootstrap.metal")
+    
+    # Execute opic.compile_core voice
+    core_ops = project_root / "core.ops"
+    if core_ops.exists():
+        print("Compiling core.ops to Metal...")
+        generate_metal("core.ops", "core.metal")
+    
+    # Execute opic.compile_all_metal voice (compile all .metal files to metallib)
+    metal_compiler = shutil.which("xcrun")
+    if metal_compiler:
+        metal_files = [f for f in project_root.glob("*.metal") if f.name != "core.metal" or f.name != "bootstrap.metal"]
+        if metal_files:
+            print("Compiling Metal shaders to metallib...")
+            try:
+                subprocess.run([
+                    "xcrun", "-sdk", "macosx", "metal", "-c"
+                ] + [str(f) for f in metal_files[:5]] + [
+                    "-o", str(project_root / "opic.metallib")
+                ], check=True, cwd=str(project_root), capture_output=True)
+                print("✓ Compiled opic.metallib")
+            except subprocess.CalledProcessError as e:
+                print("⚠ Metal compilation failed")
+    
+    # Execute opic.self_install voice chain
+    opic_binary = project_root / "opic"
+    if opic_binary.exists():
+        print("\nInstalling opic...")
+        # Execute opic.find_install_path voice
+        install_paths = [
+            Path("/usr/local/bin"),
+            Path.home() / ".local" / "bin"
+        ]
+        
+        # Execute opic.install voice
+        installed = False
+        for install_dir in install_paths:
+            if install_dir.exists() and os.access(install_dir, os.W_OK):
+                install_path = install_dir / "opic"
+                try:
+                    shutil.copy2(opic_binary, install_path)
+                    os.chmod(install_path, 0o755)
+                    print(f"✓ Installed to {install_path}")
+                    installed = True
+                    break
+                except Exception:
+                    continue
+            elif install_dir == Path.home() / ".local" / "bin":
+                try:
+                    install_dir.mkdir(parents=True, exist_ok=True)
+                    install_path = install_dir / "opic"
+                    shutil.copy2(opic_binary, install_path)
+                    os.chmod(install_path, 0o755)
+                    print(f"✓ Installed to {install_path}")
+                    installed = True
+                    break
+                except Exception:
+                    continue
+        
+        if not installed:
+            print("⚠ Could not install (no writable directory found)")
+    else:
+        print("⚠ opic binary not found")
+
 def show_help():
     """Show opic CLI help"""
     print("""Opic CLI — Event-Based Compositional Language
@@ -1187,6 +1467,8 @@ Commands:
   music          Generate music from opic definitions
   execute <file> Execute opic file directly (no Python needed)
   interactive    Interactive conversation with live training
+  repos [dir]    List repositories and init git repos for subdirs
+  compile        Self-compile opic to Metal and install
   help           Show this help message
 
 Examples:
@@ -1194,6 +1476,8 @@ Examples:
   opic run                     # Run python bootstrap
   opic metal core.ops          # Generate Metal shader
   opic swift core.ops          # Generate Swift code
+  opic repos                   # List repos and init git for subdirs
+  opic repos /path/to/dir      # List repos in specific directory
           opic bert                    # Train BERT with opic-generated code
           opic draw                    # Generate visual art
           opic gann download mnist     # Download MNIST dataset
@@ -1237,7 +1521,7 @@ def main():
         
         interactive_file = project_root / "interactive.ops"
         if interactive_file.exists():
-            defs, voices = parse_ops(interactive_file.read_text())
+            defs, voices, _ = parse_ops(interactive_file.read_text())
             execute_interactive_conversation(voices, defs, project_root=project_root)
         else:
             print(f"Error: interactive.ops not found", file=sys.stderr)
@@ -1254,6 +1538,7 @@ def main():
         ops_file = sys.argv[2]
         execute_opic(ops_file)
     elif command == "metal":
+        # Implements opic.generate_metal voice from opic_compile.ops
         if len(sys.argv) < 3:
             print("Error: metal requires an .ops file", file=sys.stderr)
             show_help()
@@ -1261,6 +1546,9 @@ def main():
         ops_file = sys.argv[2]
         output_file = sys.argv[3] if len(sys.argv) > 3 else None
         generate_metal(ops_file, output_file)
+    elif command == "self-compile" or command == "compile":
+        # Implements opic.self_compile voice from opic_compile.ops
+        execute_opic("opic_compile.ops")
     elif command == "swift":
         if len(sys.argv) < 3:
             print("Error: swift requires an .ops file", file=sys.stderr)
@@ -1380,9 +1668,9 @@ generateMusic()
             music_impl_file = project_root / "music_impl.ops"
             
             if music_file.exists():
-                defs, voices = parse_ops(music_file.read_text())
+                defs, voices, _ = parse_ops(music_file.read_text())
                 if music_impl_file.exists():
-                    impl_defs, impl_voices = parse_ops(music_impl_file.read_text())
+                    impl_defs, impl_voices, _ = parse_ops(music_impl_file.read_text())
                     voices.update(impl_voices)
                 
                 print("Generating music from opic music.ops...")
@@ -1475,6 +1763,12 @@ generateMusic()
             else:
                 print(f"Error: Could not find gann.py or gann binary")
                 sys.exit(1)
+    elif command == "repos" or command == "init-repos":
+        # Use opic's execution system - no new Python needed
+        if len(sys.argv) > 2:
+            import os
+            os.environ['OPIC_REPOS_DIR'] = sys.argv[2]
+        execute_opic("repos.ops")
     elif command == "help" or command == "--help" or command == "-h":
         show_help()
     else:

@@ -1,0 +1,53 @@
+;;; ledger_sync.ops — cross-realm ledger exchange for federated cognition
+
+include voice_ledger.ops
+include certificate.ops
+
+;; Sync definitions
+def sync_request { realm, from_hash, to_hash }
+def sync_response { realm, tiddlers, chain_valid }
+def federated_ledger { local_ledger, remote_ledgers, merged_chain }
+
+;; Fetch remote realm ledger
+voice sync.fetch_remote / {remote_realm + sync_endpoint -> sync.request -> sync.receive -> remote_tiddlers}
+voice sync.request / {remote_realm + sync_endpoint -> http.get -> response}
+voice sync.receive / {response -> parse_tiddlers -> remote_tiddlers}
+
+;; Verify remote chain before merging
+voice sync.verify_remote / {remote_tiddlers + agent_realm + ca -> ledger.filter_certificates -> ledger.verify_chain_complete -> cert.verify_cross_realm -> verified}
+voice sync.verify_cross_realm / {remote_tiddlers + agent_realm + ca -> for_each_cert -> cert.verify_cross_realm -> all_verified}
+
+;; Merge remote ledger if coherent (with consensus)
+voice sync.merge_if_coherent / {local_tiddlers + remote_tiddlers + agent_realm + ca -> sync.verify_remote -> sync.check_coherence -> sync.check_consensus -> if_coherent_merge -> if_incoherent_consensus -> merged_ledger}
+voice sync.check_coherence / {local_tiddlers + remote_tiddlers -> ledger.compute_coherence -> compare_coherence -> coherent}
+voice sync.check_consensus / {local_tiddlers + remote_tiddlers + agent_realm + ca -> consensus.merge_disagreement -> consensus_result}
+voice sync.if_coherent_merge / {coherent -> ledger.merge_chains -> merged_ledger}
+voice sync.if_incoherent_consensus / {incoherent -> consensus.merge_disagreement -> merged_ledger}
+
+;; Merge ledger chains
+voice ledger.merge_chains / {local_tiddlers + remote_tiddlers -> ledger.find_common_ancestor -> ledger.merge_from_ancestor -> merged_tiddlers}
+voice ledger.find_common_ancestor / {local_tiddlers + remote_tiddlers -> find_common_hash -> common_ancestor}
+voice ledger.merge_from_ancestor / {local_tiddlers + remote_tiddlers + common_ancestor -> merge_after_ancestor -> merged}
+
+;; Sync ledger with remote realm
+voice sync.ledger / {remote_realm + sync_endpoint + agent_realm + ca -> sync.fetch_remote -> sync.merge_if_coherent -> synced_ledger}
+
+;; Federated cognition - sync multiple realms
+voice sync.federated / {remote_realms + agent_realm + ca -> for_each_realm -> sync.ledger -> collect_synced -> federated_ledger}
+voice sync.collect_synced / {synced_ledgers -> merge_all -> federated_ledger}
+
+;; Exchange signed knowledge
+voice sync.exchange_knowledge / {local_realm + remote_realm + knowledge_voices + agent_realm + ca -> sync.sign_knowledge -> sync.send_knowledge -> sync.receive_knowledge -> sync.verify_knowledge -> exchanged}
+voice sync.sign_knowledge / {knowledge_voices + agent_certificate -> for_each -> signed.sign_voice -> signed_knowledge}
+voice sync.send_knowledge / {signed_knowledge + remote_realm -> sync.post -> sent}
+voice sync.receive_knowledge / {remote_realm -> sync.fetch_remote -> received_knowledge}
+voice sync.verify_knowledge / {received_knowledge + agent_realm + ca -> signed.verify_voice -> verified_knowledge}
+
+;; Sync endpoint (for serving ledger)
+voice sync.serve_ledger / {local_realm + tiddlers -> sync.filter_certificates -> sync.format_response -> sync_response}
+voice sync.filter_certificates / {tiddlers -> filter_by_realm -> realm_certificates}
+voice sync.format_response / {realm_certificates -> format_json -> response_json}
+
+target ledger_sync / "opic_federated_cognition"
+voice main / {sync.ledger -> ledger_sync}
+

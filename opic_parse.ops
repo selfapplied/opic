@@ -1,7 +1,11 @@
 ;;; opic_parse.ops — opic's self-parser (implemented in opic)
 
 ;; Parser implementation (all in opic)
-voice opic.parse_ops / {ops_text -> split_lines -> filter_lines -> parse_each -> collect_defs_voices -> defs + voices}
+voice opic.parse_ops / {ops_text -> split_lines -> filter_lines -> parse_each -> parse_includes -> collect_defs_voices_includes -> defs + voices + includes}
+voice opic.parse_includes / {valid_lines -> filter_include_lines -> extract_include_files -> includes}
+voice opic.filter_include_lines / {lines -> for_each -> check_starts_with "include " -> include_lines}
+voice opic.extract_include_files / {include_lines -> for_each -> remove_prefix "include " -> strip -> include_files}
+voice opic.collect_defs_voices_includes / {parsed_items + includes -> separate_defs_voices -> defs + voices + includes}
 voice opic.split_lines / {text -> split_by_newline -> lines}
 voice opic.filter_lines / {lines -> remove_comments -> remove_empty -> valid_lines}
 voice opic.remove_comments / {line -> check_starts_with ";" -> if_true_skip}

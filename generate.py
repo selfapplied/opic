@@ -5,22 +5,28 @@ from pathlib import Path
 import re
 
 def parse_ops(text):
-    """Parse .ops file into defs and voices"""
-    defs, voices = {}, {}
+    """Parse .ops file - implements opic.parse_ops voice from opic_parse.ops"""
+    defs, voices, includes = {}, {}, []
     for line in text.splitlines():
         line = line.strip()
         if not line or line.startswith(";"):
             continue
-        if line.startswith("def "):
+        if line.startswith("include "):
+            # Implements opic.extract_include_files voice
+            include_file = line[8:].strip()
+            includes.append(include_file)
+        elif line.startswith("def "):
+            # Implements opic.parse_def voice
             parts = line[4:].split()
             name = parts[0]
             defs[name] = {}
         elif line.startswith("voice "):
+            # Implements opic.parse_voice voice
             l, _, r = line.partition("/")
             name = l.split()[1].strip()
             body = r.strip().strip('" ')
             voices[name] = body
-    return defs, voices
+    return defs, voices, includes
 
 def compose(voices, src="main", dst="str"):
     """Compose voices - get voice body or default transformation"""
@@ -103,7 +109,7 @@ def load_implementations():
     all_voices = {}
     for impl_file in impl_files:
         if impl_file.exists():
-            defs, voices = parse_ops(impl_file.read_text())
+            defs, voices, _ = parse_ops(impl_file.read_text())
             all_voices.update(voices)
     return {}, all_voices
 
@@ -414,7 +420,7 @@ def generate_metal(ops_file, output_file=None):
     if not ops_path.exists():
         raise FileNotFoundError(f"File not found: {ops_file}")
     
-    defs, voices = parse_ops(ops_path.read_text())
+    defs, voices, _ = parse_ops(ops_path.read_text())
     metal_code = generate_metal_shader(defs, voices)
     
     if output_file:
@@ -431,7 +437,7 @@ def generate_swift(ops_file, output_file=None):
     if not ops_path.exists():
         raise FileNotFoundError(f"File not found: {ops_file}")
     
-    defs, voices = parse_ops(ops_path.read_text())
+    defs, voices, _ = parse_ops(ops_path.read_text())
     swift_code = generate_swift_code(defs, voices)
     
     if output_file:

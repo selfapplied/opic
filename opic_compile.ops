@@ -1,0 +1,45 @@
+;;; opic_compile.ops — opic's self-compilation system
+
+;; Compilation targets
+def compile_target { language, output_file, entry_point }
+def install_target { binary_path, install_path }
+
+;; Generate code from opic definitions
+voice opic.generate / {ops_file + target_language -> opic.parse_ops -> opic.generate_code -> generated_code}
+voice opic.generate_code / {defs + voices + language -> if_metal -> generate_metal -> if_swift -> generate_swift -> if_python -> generate_python -> code}
+voice opic.generate_metal / {defs + voices + entry_point -> metal.generate_shader -> metal_code}
+voice opic.generate_swift / {defs + voices + entry_point -> swift.generate_code -> swift_code}
+voice opic.generate_python / {defs + voices + entry_point -> python.generate_code -> python_code}
+
+;; Compile generated code
+voice opic.compile / {generated_code + language -> opic.compile_code -> binary}
+voice opic.compile_code / {code + language -> if_metal -> compile_metal -> if_swift -> compile_swift -> if_python -> compile_python -> binary}
+voice opic.compile_metal / {metal_code + output_file -> metal_compiler -> metallib}
+voice opic.compile_swift / {swift_code + output_file -> swiftc -> binary}
+voice opic.compile_python / {python_code -> python_bytecode -> pyc}
+
+;; Self-compilation chain
+voice opic.compile_bootstrap / {bootstrap.ops -> opic.generate + "metal" -> opic.compile -> bootstrap.metallib}
+voice opic.compile_core / {core.ops -> opic.generate + "metal" -> opic.compile -> core.metallib}
+voice opic.self_compile / {opic.compile_bootstrap -> opic.compile_core -> opic.compile_all_metal -> opic.metallib}
+voice opic.compile_all_metal / {all_metal_files -> metal_compiler -> opic.metallib}
+
+;; Installation
+voice opic.install / {binary + install_path -> opic.check_permissions -> opic.copy_binary -> opic.set_executable -> installed}
+voice opic.check_permissions / {install_path -> check_writable -> can_install}
+voice opic.copy_binary / {binary + install_path -> copy_file -> installed_binary}
+voice opic.set_executable / {installed_binary -> chmod_755 -> executable}
+
+;; Self-installation chain
+voice opic.self_install / {opic.binary -> opic.find_install_path -> opic.install -> opic.installed}
+voice opic.find_install_path / {system -> check_usr_local_bin -> check_home_local_bin -> install_path}
+voice opic.check_usr_local_bin / {"/usr/local/bin" -> check_writable -> if_writable_use}
+voice opic.check_home_local_bin / {"$HOME/.local/bin" -> check_writable_or_create -> if_writable_use}
+
+;; Complete self-compilation and installation
+voice opic.compile_install / {opic.self_compile -> opic.self_install -> opic.ready}
+voice opic.ready / {compiled + installed -> opic.operational}
+
+target opic_compile / "opic_self_compiler"
+voice main / {opic.compile_install -> opic_compile}
+

@@ -1,0 +1,57 @@
+;;; getting_started.ops — Getting started guide for opic
+
+include bootstrap.ops
+include opic_parse.ops
+include opic_load.ops
+include opic_compile.ops
+
+;; Guide definitions
+def guide_section { title, content, code_examples, next_steps }
+def tutorial_step { step_number, description, example_code, expected_output }
+
+;; Getting started guide
+voice guide.getting_started / {agent_realm + ca -> guide.introduction -> guide.installation -> guide.first_voice -> guide.composition -> guide.self_hosting -> guide.next_steps -> getting_started_guide}
+voice guide.introduction / {agent_realm + ca -> format_introduction -> introduction_section}
+voice guide.installation / {agent_realm + ca -> format_installation -> installation_section}
+voice guide.first_voice / {agent_realm + ca -> format_first_voice -> first_voice_section}
+voice guide.composition / {agent_realm + ca -> format_composition -> composition_section}
+voice guide.self_hosting / {agent_realm + ca -> format_self_hosting -> self_hosting_section}
+voice guide.next_steps / {agent_realm + ca -> format_next_steps -> next_steps_section}
+
+;; Format sections
+voice guide.format_introduction / {agent_realm + ca -> "Opic is a compositional, self-hosting language where programs are voices and chains" -> format_markdown -> introduction_markdown}
+voice guide.format_installation / {agent_realm + ca -> format_install_steps -> format_markdown -> installation_markdown}
+voice guide.format_first_voice / {agent_realm + ca -> format_voice_example -> format_markdown -> first_voice_markdown}
+voice guide.format_composition / {agent_realm + ca -> format_composition_example -> format_markdown -> composition_markdown}
+voice guide.format_self_hosting / {agent_realm + ca -> format_self_hosting_example -> format_markdown -> self_hosting_markdown}
+voice guide.format_next_steps / {agent_realm + ca -> format_next_steps_list -> format_markdown -> next_steps_markdown}
+
+;; Installation steps
+voice guide.format_install_steps / {agent_realm + ca -> step1 -> step2 -> step3 -> install_steps}
+voice guide.step1 / {"1. Clone opic repository" -> step1_text}
+voice guide.step2 / {"2. Run: python3 opic execute bootstrap.ops" -> step2_text}
+voice guide.step3 / {"3. Start composing voices" -> step3_text}
+
+;; First voice example
+voice guide.format_voice_example / {agent_realm + ca -> create_voice_example -> voice_example}
+voice guide.create_voice_example / {agent_realm + ca -> "voice greet / {name -> \"Hello \" + name -> greeting}" -> example_code}
+
+;; Composition example
+voice guide.format_composition_example / {agent_realm + ca -> create_composition_example -> composition_example}
+voice guide.create_composition_example / {agent_realm + ca -> "voice main / {greet \"world\" -> greet}" -> example_code}
+
+;; Self-hosting example
+voice guide.format_self_hosting_example / {agent_realm + ca -> create_self_hosting_example -> self_hosting_example}
+voice guide.create_self_hosting_example / {agent_realm + ca -> "Opic defines its own parser, loader, and executor in .ops files" -> example_text}
+
+;; Next steps
+voice guide.format_next_steps_list / {agent_realm + ca -> create_next_steps -> next_steps_list}
+voice guide.create_next_steps / {agent_realm + ca -> "Explore: repos.ops, witness.ops, certificate.ops, fee.ops" -> steps_text}
+
+;; Generate TiddlyWiki tiddler
+voice guide.generate_tiddler / {guide_content + agent_realm + ca -> format_as_tiddler -> guide_tiddler}
+voice guide.format_as_tiddler / {content + agent_realm + ca -> create_tiddler_json -> tiddler}
+
+target getting_started / "opic_getting_started"
+voice main / {guide.getting_started -> getting_started}
+

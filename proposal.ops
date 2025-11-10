@@ -1,0 +1,38 @@
+;;; proposal.ops — governance proposal system for OPIC
+
+include governance.ops
+include consensus.ops
+include witness_summons.ops
+
+;; Proposal definitions
+def proposal { id, title, description, proposer, realm, type, status }
+def proposal_type { amendment, dissolution, new_voice, policy_change }
+def proposal_status { draft, deliberation, public_comment, voting, ratified, rejected, implemented }
+
+;; Create proposal
+voice proposal.create / {title + description + proposer + realm + proposal_type -> proposal.build -> proposal}
+voice proposal.build / {title + description + proposer + realm + type + status_draft -> proposal}
+
+;; Submit proposal for deliberation
+voice proposal.submit / {proposal + realm + agent_realm + ca -> governance.deliberation -> proposal_certificate}
+voice proposal.publish / {proposal_certificate + realm -> ledger.add_certificate -> published}
+
+;; Public comment period
+voice proposal.open_comments / {proposal + realm + duration -> governance.public_comment -> comment_period}
+voice proposal.collect_comments / {proposal + comment_period -> governance.collect_comments -> comments}
+voice proposal.add_comment / {proposal + comment + commenter + realm -> signed.sign_voice -> ledger.add_certificate -> comment_added}
+
+;; Vote on proposal
+voice proposal.vote / {proposal + realm + agent_realm + ca -> governance.vote -> vote_result}
+voice proposal.check_quorum / {votes + quorum -> governance.check_quorum -> quorum_met}
+
+;; Witness ratification
+voice proposal.ratify / {proposal + vote_result + realm + quorum -> governance.witness_ratification -> witness_quorum}
+voice proposal.implement / {proposal + witness_quorum -> governance.implementation -> implemented}
+
+;; Proposal lifecycle
+voice proposal.lifecycle / {proposal + realm + agent_realm + ca -> proposal.submit -> proposal.open_comments -> proposal.vote -> proposal.ratify -> proposal.implement -> completed}
+
+target proposal / "opic_proposal_system"
+voice main / {proposal.create -> proposal}
+

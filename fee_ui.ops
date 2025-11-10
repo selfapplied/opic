@@ -1,0 +1,54 @@
+;;; fee_ui.ops — User experience flow and investor portal for FEE
+
+include fee.ops
+include learning_pools.ops
+include viral_resonance.ops
+
+;; UI definitions
+def user_flow { sign_in, choose_path, do_reflect_teach, peer_validate, earn_credits, watch_resonance, trade_reinvest }
+def investor_portal { coherence_per_token, resonance_impact_index, pool_metrics, yield_dashboard }
+def learning_path { path_id, courses, goals, coherence_target }
+
+;; User Experience Flow
+voice ui.user_flow / {user + agent_realm + ca -> ui.sign_in -> ui.choose_path -> ui.do_reflect_teach -> ui.peer_validate -> ui.earn_credits -> ui.watch_resonance -> ui.trade_reinvest -> user_flow}
+voice ui.sign_in / {user + agent_realm + ca -> openid.token_via_cert -> wallet_connect -> signed_in}
+voice ui.choose_path / {user + available_paths -> select_path -> learning_path}
+voice ui.do_reflect_teach / {user + path + wiki -> fee.verify_learning -> learning_complete}
+voice ui.peer_validate / {learning + peers + agent_realm + ca -> peer.proof_of_care -> validated}
+voice ui.earn_credits / {learning + agent_realm + ca -> fee.record_learning -> credits_earned}
+voice ui.watch_resonance / {user + agent_realm + ca + tau_vector -> viral.display_abundance -> resonance_dashboard}
+voice ui.trade_reinvest / {user + credits + agent_realm + ca -> fee.trade -> fee.reinvest -> completed}
+
+;; Investor Portal
+voice ui.investor_portal / {investor + pools + agent_realm + ca + tau_vector -> ui.compute_coherence_per_token -> ui.compute_resonance_impact -> ui.display_portal -> investor_portal}
+voice ui.compute_coherence_per_token / {pools + tokens + agent_realm + ca + tau_vector -> fee.calculate_coherence -> compute_per_token -> coherence_metric}
+voice ui.compute_resonance_impact / {pools + tau_vector -> generational.resonance_function -> resonance_impact_index}
+voice ui.display_portal / {metrics + impact + pools -> format_portal_html -> portal}
+
+;; Direct funds to realms/demographics
+voice ui.direct_funds / {investor + target_realm + amount + agent_realm + ca -> pool.stake -> funds_directed}
+voice ui.target_demographics / {investor + demographics + amount + agent_realm + ca -> pool.create_domain_pool -> pool.stake -> targeted}
+
+;; Bridge to traditional education grants
+voice ui.bridge_grants / {grant_api + pool + agent_realm + ca -> ui.connect_grant_api -> ui.map_grant_to_pool -> bridged}
+voice ui.connect_grant_api / {api + agent_realm + ca -> establish_connection -> connected}
+voice ui.map_grant_to_pool / {grant + pool -> map_funding -> mapped}
+
+;; Learning path selection
+voice ui.choose_learning_path / {user + available_paths -> ui.display_paths -> ui.select_path -> learning_path}
+voice ui.display_paths / {paths -> format_path_list -> path_list}
+voice ui.select_path / {user + path -> select -> selected_path}
+
+;; Community-curated courses
+voice ui.community_courses / {community + agent_realm + ca -> ui.collect_courses -> ui.curate_courses -> curated_courses}
+voice ui.collect_courses / {community + ledger -> filter_courses -> courses}
+voice ui.curate_courses / {courses + community_votes -> curate -> curated}
+
+;; Self-defined goals
+voice ui.self_defined_goals / {user + goals + agent_realm + ca -> ui.create_goal_path -> ui.track_progress -> goal_path}
+voice ui.create_goal_path / {goals + user -> format_path -> path}
+voice ui.track_progress / {path + user + agent_realm + ca -> fee.verify_learning -> progress_tracked}
+
+target fee_ui / "opic_fee_user_interface"
+voice main / {ui.user_flow -> fee_ui}
+

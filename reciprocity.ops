@@ -1,0 +1,44 @@
+;;; reciprocity.ops — Ethical Commons Federation with Legal Reciprocity
+
+include governance.ops
+include certificate.ops
+include consensus.ops
+include treaty.ops
+
+;; Reciprocity definitions
+def reciprocity_alignment { systems, legal_terms, fiduciary_duty, consensus_threshold }
+def public_benefit_license_stack { cc_by_sa, mpl, fiduciary_reciprocity }
+def fiduciary_reciprocity_clause { obligation, enforcement, witness_requirement }
+
+;; Align systems with legal reciprocity
+voice reciprocity.align / {systems + legal_terms + fiduciary_duty + consensus_threshold -> reciprocity.enforce_legal -> reciprocity.verify_consensus -> reciprocity.establish_reciprocity -> aligned}
+voice reciprocity.enforce_legal / {systems + legal_terms -> for_each -> legal.attach_license -> legal_terms_enforced}
+voice reciprocity.verify_consensus / {systems + consensus_threshold -> consensus.calculate_resonance -> compare_threshold -> consensus_met}
+voice reciprocity.compare_threshold / {resonance_score + threshold -> if_greater_equal -> consensus_met}
+voice reciprocity.establish_reciprocity / {systems + legal_terms + consensus_met -> reciprocity.create_clause -> reciprocity.sign -> reciprocity_alignment}
+
+;; Public Benefit License Stack
+voice reciprocity.license_stack / {systems -> reciprocity.apply_cc_by_sa -> reciprocity.apply_mpl -> reciprocity.apply_fiduciary -> public_benefit_license_stack}
+voice reciprocity.apply_cc_by_sa / {systems -> legal.cc_by_sa -> cc_by_sa_applied}
+voice reciprocity.apply_mpl / {systems -> legal.mpl -> mpl_applied}
+voice reciprocity.apply_fiduciary / {systems + fiduciary_duty -> reciprocity.create_fiduciary_clause -> fiduciary_applied}
+voice reciprocity.create_fiduciary_clause / {systems + duty -> format_fiduciary_clause -> clause}
+
+;; Reciprocity clause creation
+voice reciprocity.create_clause / {systems + legal_terms + fiduciary -> format_reciprocity_clause -> fiduciary_reciprocity_clause}
+voice reciprocity.format_reciprocity_clause / {systems + terms + duty -> format_clause -> clause}
+voice reciprocity.sign / {clause + participating_realms + agent_realm + ca -> cert.sign -> signed_clause}
+
+;; Verify reciprocity alignment
+voice reciprocity.verify / {systems + alignment + agent_realm + ca -> reciprocity.check_legal_terms -> reciprocity.check_fiduciary -> reciprocity.check_consensus -> alignment_verified}
+voice reciprocity.check_legal_terms / {systems + alignment -> verify_licenses -> terms_verified}
+voice reciprocity.check_fiduciary / {systems + alignment -> verify_fiduciary_duty -> fiduciary_verified}
+voice reciprocity.check_consensus / {systems + alignment + threshold -> verify_resonance -> consensus_verified}
+
+;; Multi-system alignment (git, selinux, mastodon, openid)
+voice reciprocity.align_multi / {git + selinux + mastodon + openid + legal_terms + fiduciary_duty -> reciprocity.align -> aligned_systems}
+voice reciprocity.enforce_multi / {aligned_systems + legal_terms + fiduciary_duty -> reciprocity.enforce_legal -> reciprocity.verify_consensus "0.66" -> enforced}
+
+target reciprocity / "opic_ethical_commons_federation"
+voice main / {reciprocity.align -> reciprocity}
+

@@ -1,0 +1,32 @@
+;;; company_seed.ops — Wild Sort company seed with launch components
+
+include seed_template.ops
+include tiddlywiki.ops
+include tiddlywiki_network.ops
+include viral_resonance.ops
+include whitepaper.ops
+include getting_started.ops
+include art_gallery.ops
+include wild_sort_service.ops
+
+;; Company seed with launch components
+voice company.create_seed / {agent_realm + ca + tau_vector -> seed.create -> company.add_whitepaper -> company.add_getting_started -> company.add_art_gallery -> company.add_wild_sort_service -> seed.add_resonance_features -> seed.add_viral_mechanic -> company_seed_wiki}
+
+;; Launch component 1: Technical bluepaper/whitepaper
+voice company.add_whitepaper / {seed + agent_realm + ca + tau_vector -> whitepaper.combined -> seed.add_tiddler -> seed_with_whitepaper}
+
+;; Launch component 2: Getting started guide
+voice company.add_getting_started / {seed + agent_realm + ca -> guide.getting_started -> seed.add_tiddler -> seed_with_guide}
+
+;; Launch component 3: Art gallery
+voice company.add_art_gallery / {seed + agent_realm + ca + tau_vector -> gallery.create -> seed.add_tiddlers -> seed_with_gallery}
+
+;; Launch component 4: Wild Sort as a Service
+voice company.add_wild_sort_service / {seed + agent_realm + ca + tau_vector -> service.create -> seed.add_tiddlers -> seed_with_service}
+
+;; Wild Sort company seed
+voice company.wild_seed / {agent_realm + ca + tau_vector -> company.create_seed -> wild_seed_wiki}
+
+target company_seed / "opic_company_seed"
+voice main / {company.create_seed -> company_seed}
+

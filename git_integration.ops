@@ -1,0 +1,49 @@
+;;; git_integration.ops — align opic certificates with git commits
+
+include certificate.ops
+include voice_ledger.ops
+include temporal_proof.ops
+
+;; Git integration definitions
+def git_commit { hash, tree, parent, author, message, signature }
+def git_signed_commit { commit, opic_certificate, voice_certificate }
+def git_branch { name, head_commit, realm }
+
+;; Sign git commit with opic certificate
+voice git.sign_commit / {git_commit + opic_certificate -> git.create_signed_commit -> git_signed_commit}
+voice git.create_signed_commit / {commit + certificate -> attach_certificate -> signed_commit}
+
+;; Verify git commit signature
+voice git.verify_commit / {git_signed_commit + agent_realm + ca -> cert.verify -> git.verify_git_signature -> verified}
+voice git.verify_git_signature / {commit + signature -> verify_gpg_signature -> git_valid}
+
+;; Map git commit to opic voice certificate
+voice git.commit_to_voice / {git_commit + voice_name -> ledger.create_cert_tiddler -> voice_certificate}
+voice git.voice_to_commit / {voice_certificate + git_repo -> git.create_commit -> git_commit}
+
+;; Git commit as opic voice transformation
+voice git.commit_voice / {voice_name + voice_body + git_repo + opic_certificate -> signed.sign_voice -> git.create_commit -> git.sign_commit -> git_signed_commit}
+voice git.create_commit / {voice_name + voice_body + git_repo -> format_commit_message -> create_git_commit -> commit}
+
+;; Git DAG as opic ledger chain
+voice git.dag_to_ledger / {git_repo + agent_realm + ca -> git.extract_commits -> for_each -> git.commit_to_voice -> ledger_tiddlers}
+voice git.extract_commits / {git_repo -> git_log -> commits}
+
+;; Opic ledger chain as git commits
+voice git.ledger_to_dag / {ledger_tiddlers + git_repo -> for_each -> git.voice_to_commit -> git.create_commits -> git_dag}
+
+;; Git branch as opic realm
+voice git.branch_as_realm / {git_branch + realm_name + ca -> cert.create_realm -> realm}
+voice git.realm_as_branch / {realm + git_repo -> git.create_branch -> branch}
+
+;; Git merge as opic consensus
+voice git.merge_as_consensus / {local_branch + remote_branch + trusted_realms + ca -> consensus.merge_disagreement -> git.merge_commits -> merged_commit}
+voice git.merge_commits / {consensus_result + local_commits + remote_commits -> git.merge -> merged}
+
+;; Git push/pull as opic sync
+voice git.push_as_sync / {local_repo + remote_repo + agent_realm + ca -> sync.ledger -> git.push -> synced}
+voice git.pull_as_sync / {remote_repo + local_repo + agent_realm + ca -> sync.fetch_remote -> git.pull -> synced}
+
+target git_integration / "opic_git_alignment"
+voice main / {git.sign_commit -> git_integration}
+

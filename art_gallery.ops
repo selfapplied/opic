@@ -1,0 +1,45 @@
+;;; art_gallery.ops — Art gallery for poems, videos, and digital creations
+
+include tiddlywiki.ops
+include viral_resonance.ops
+include fee.ops
+
+;; Gallery definitions
+def gallery_item { title, type, content, metadata, resonance_score }
+def poem { title, text, timestamp, resonance }
+def video { title, url, thumbnail, description, resonance }
+def digital_creation { title, format, content, description, resonance }
+def gallery_collection { collection_name, items, theme, resonance_field }
+
+;; Art gallery
+voice gallery.create / {agent_realm + ca -> gallery.collect_items -> gallery.organize -> gallery.render -> art_gallery}
+voice gallery.collect_items / {agent_realm + ca -> gallery.collect_poems -> gallery.collect_videos -> gallery.collect_creations -> all_items}
+voice gallery.collect_poems / {agent_realm + ca -> load_poems -> poems_list}
+voice gallery.collect_videos / {agent_realm + ca -> load_videos -> videos_list}
+voice gallery.collect_creations / {agent_realm + ca -> load_creations -> creations_list}
+
+;; Organize gallery
+voice gallery.organize / {items + agent_realm + ca -> gallery.by_type -> gallery.by_resonance -> gallery.by_theme -> organized}
+voice gallery.by_type / {items -> group_by_type -> type_groups}
+voice gallery.by_resonance / {items + agent_realm + ca + tau_vector -> compute_resonance -> sort_by_resonance -> resonance_sorted}
+voice gallery.by_theme / {items -> group_by_theme -> theme_groups}
+
+;; Render gallery
+voice gallery.render / {organized + agent_realm + ca -> gallery.create_tiddlers -> gallery.create_widget -> gallery_tiddlers}
+voice gallery.create_tiddlers / {items + agent_realm + ca -> for_each_item -> create_tiddler -> tiddlers}
+voice gallery.create_widget / {tiddlers + agent_realm + ca -> create_gallery_widget -> widget_tiddler}
+
+;; Compute resonance for items
+voice gallery.compute_resonance / {item + agent_realm + ca + tau_vector -> generational.resonance_function -> resonance_score}
+voice gallery.compute_resonance_field / {items + agent_realm + ca + tau_vector -> for_each -> gallery.compute_resonance -> resonance_field}
+
+;; Gallery themes
+voice gallery.theme_mysticism / {items -> filter_mysticism -> mysticism_items}
+voice gallery.theme_wild_intelligence / {items -> filter_wild_intelligence -> wild_intelligence_items}
+voice gallery.theme_resilience / {items -> filter_resilience -> resilience_items}
+voice gallery.theme_love / {items -> filter_love -> love_items}
+voice gallery.theme_math_learning / {items -> filter_math_learning -> math_learning_items}
+
+target art_gallery / "opic_art_gallery"
+voice main / {gallery.create -> art_gallery}
+

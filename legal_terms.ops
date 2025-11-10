@@ -1,0 +1,45 @@
+;;; legal_terms.ops — legal terms and licenses for OPIC certificates
+
+include certificate.ops
+include governance.ops
+
+;; Legal terms definitions
+def license { type, version, attribution, share_alike, commercial_use }
+def contributor_agreement { contributor, realm, license, rights_granted, obligations }
+def data_governance_policy { data_type, retention, access_control, transparency }
+
+;; License types (Mozilla-style)
+voice legal.cc_by_sa / {version -> if_not_set -> "4.0" -> "CC-BY-SA-" + version -> license}
+voice legal.mpl / {version -> if_not_set -> "2.0" -> "MPL-" + version -> license}
+voice legal.apache / {version -> if_not_set -> "2.0" -> "Apache-" + version -> license}
+
+;; Attach license to certificate
+voice legal.attach_license / {certificate + license -> cert.add_legal_terms -> certificate_with_license}
+voice legal.set_license / {certificate + license_type -> legal.get_license -> legal.attach_license -> licensed_certificate}
+voice legal.get_license / {license_type -> if_cc_by_sa -> legal.cc_by_sa -> if_mpl -> legal.mpl -> if_apache -> legal.apache -> license}
+
+;; Contributor Agreement
+voice legal.contributor_agreement / {contributor + realm + license -> legal.create_agreement -> contributor_agreement}
+voice legal.create_agreement / {contributor + realm + license -> legal.define_rights -> legal.define_obligations -> agreement}
+voice legal.define_rights / {license -> extract_rights -> rights_granted}
+voice legal.define_obligations / {realm + license -> extract_obligations -> obligations}
+
+;; Data Governance Policy
+voice legal.data_governance / {realm + data_types -> legal.create_policy -> data_governance_policy}
+voice legal.create_policy / {realm + data_types -> legal.set_retention -> legal.set_access -> legal.set_transparency -> policy}
+voice legal.set_retention / {data_types -> define_retention_periods -> retention}
+voice legal.set_access / {data_types + realm -> define_access_control -> access_control}
+voice legal.set_transparency / {realm -> define_transparency_requirements -> transparency}
+
+;; Jurisdiction and Governing Law
+voice legal.jurisdiction / {realm + location -> legal.set_jurisdiction -> jurisdiction}
+voice legal.set_jurisdiction / {realm + location -> if_not_set -> "Delaware" -> jurisdiction}
+voice legal.governing_law / {jurisdiction -> legal.map_law -> governing_law}
+voice legal.map_law / {jurisdiction -> if_delaware -> "Delaware Non-profit Corp Law" -> if_california -> "California Non-profit Law" -> governing_law}
+
+;; Legal Terms Template
+voice legal.terms_template / {realm + license_type + jurisdiction -> legal.set_license -> legal.jurisdiction -> legal.governing_law -> legal.contributor_agreement -> legal.data_governance -> legal_terms}
+
+target legal_terms / "opic_legal_framework"
+voice main / {legal.terms_template -> legal_terms}
+

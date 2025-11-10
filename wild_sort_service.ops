@@ -1,0 +1,81 @@
+;;; wild_sort_service.ops — Subscription service: Wild Sort as a Service
+
+include fee.ops
+include art_gallery.ops
+include tiddlywiki_network.ops
+include governance.ops
+include generational_resonance.ops
+
+;; Service definitions
+def subscription { subscriber, tier, access_level, start_date, renewal_date, payment_method }
+def service_tier { tier_name, price, features, early_access, community_access, crisis_support }
+def community_space { space_id, members, values, discussions, mutual_aid }
+def course_content { course_id, title, content, early_access_date, public_date, resonance }
+
+;; Wild Sort as a Service
+voice service.create / {agent_realm + ca -> service.define_tiers -> service.setup_community -> service.setup_courses -> service.setup_support -> wild_sort_service}
+voice service.define_tiers / {agent_realm + ca -> service.tier_wild -> service.tier_wilder -> service.tier_wildest -> tiers}
+voice service.setup_community / {agent_realm + ca -> service.create_community -> service.setup_values -> service.setup_discussions -> community}
+voice service.setup_courses / {agent_realm + ca -> service.create_courses -> service.setup_early_access -> courses}
+voice service.setup_support / {agent_realm + ca -> service.setup_crisis_support -> service.setup_addiction_support -> support_system}
+
+;; Service tiers
+voice service.tier_wild / {agent_realm + ca -> create_tier "wild" + price + features -> wild_tier}
+voice service.tier_wilder / {agent_realm + ca -> create_tier "wilder" + price + features -> wilder_tier}
+voice service.tier_wildest / {agent_realm + ca -> create_tier "wildest" + price + features -> wildest_tier}
+
+;; Tier features
+voice service.create_tier / {tier_name + price + agent_realm + ca -> service.add_features -> service.add_access -> service.add_community -> tier}
+voice service.add_features / {tier + features -> add_to_tier -> tier_with_features}
+voice service.add_access / {tier + early_access -> add_to_tier -> tier_with_access}
+voice service.add_community / {tier + community -> add_to_tier -> tier_with_community}
+
+;; Community setup
+voice service.create_community / {agent_realm + ca -> service.define_values -> service.create_spaces -> community}
+voice service.define_values / {agent_realm + ca -> "Math and learning, mysticism, wild intelligence, resilience, love" -> values}
+voice service.create_spaces / {values + agent_realm + ca -> service.space_math -> service.space_mysticism -> service.space_intelligence -> service.space_resilience -> service.space_love -> spaces}
+voice service.setup_values / {community + values -> embed_values -> community_with_values}
+voice service.setup_discussions / {community + agent_realm + ca -> create_discussion_forums -> discussions}
+
+;; Community spaces
+voice service.space_math / {agent_realm + ca -> create_space "math_learning" -> math_space}
+voice service.space_mysticism / {agent_realm + ca -> create_space "mysticism" -> mysticism_space}
+voice service.space_intelligence / {agent_realm + ca -> create_space "wild_intelligence" -> intelligence_space}
+voice service.space_resilience / {agent_realm + ca -> create_space "resilience" -> resilience_space}
+voice service.space_love / {agent_realm + ca -> create_space "love" -> love_space}
+
+;; Course content
+voice service.create_courses / {agent_realm + ca -> service.collect_courses -> service.organize_courses -> courses}
+voice service.collect_courses / {agent_realm + ca -> load_courses -> courses_list}
+voice service.organize_courses / {courses + agent_realm + ca -> service.by_topic -> service.by_resonance -> organized_courses}
+voice service.setup_early_access / {courses + subscribers + agent_realm + ca -> service.grant_early_access -> early_access_setup}
+voice service.grant_early_access / {course + subscriber + tier -> check_tier_access -> grant_if_eligible -> access_granted}
+
+;; Crisis and addiction support
+voice service.setup_crisis_support / {agent_realm + ca -> service.create_crisis_resources -> service.create_crisis_network -> crisis_support}
+voice service.setup_addiction_support / {agent_realm + ca -> service.create_addiction_resources -> service.create_addiction_network -> addiction_support}
+voice service.create_crisis_resources / {agent_realm + ca -> create_resources -> crisis_resources}
+voice service.create_crisis_network / {agent_realm + ca -> create_peer_network -> crisis_network}
+voice service.create_addiction_resources / {agent_realm + ca -> create_resources -> addiction_resources}
+voice service.create_addiction_network / {agent_realm + ca -> create_peer_network -> addiction_network}
+
+;; Subscription management
+voice service.subscribe / {user + tier + agent_realm + ca -> service.create_subscription -> service.grant_access -> service.add_to_community -> subscription}
+voice service.create_subscription / {user + tier + agent_realm + ca -> create_subscription_record -> subscription_record}
+voice service.grant_access / {subscription + tier -> grant_tier_access -> access_granted}
+voice service.add_to_community / {subscription + community -> add_member -> member_added}
+
+;; Payment integration (via FEE)
+voice service.process_payment / {subscription + agent_realm + ca -> fee.record_learning -> service.mint_subscription_credits -> payment_processed}
+voice service.mint_subscription_credits / {payment + agent_realm + ca -> currency.mint_credits -> subscription_credits}
+
+;; Generate TiddlyWiki tiddlers
+voice service.generate_tiddlers / {service + agent_realm + ca -> service.tier_tiddlers -> service.community_tiddlers -> service.course_tiddlers -> service.support_tiddlers -> all_tiddlers}
+voice service.tier_tiddlers / {tiers + agent_realm + ca -> for_each_tier -> create_tier_tiddler -> tier_tiddlers}
+voice service.community_tiddlers / {community + agent_realm + ca -> create_community_tiddler -> community_tiddler}
+voice service.course_tiddlers / {courses + agent_realm + ca -> for_each_course -> create_course_tiddler -> course_tiddlers}
+voice service.support_tiddlers / {support + agent_realm + ca -> create_support_tiddler -> support_tiddler}
+
+target wild_sort_service / "opic_wild_sort_service"
+voice main / {service.create -> wild_sort_service}
+

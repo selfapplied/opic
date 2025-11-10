@@ -1,0 +1,52 @@
+;;; coherence_graph.ops — visualize trust and resonance between realms
+
+include certificate.ops
+
+;; Graph definitions
+def coherence_graph { nodes, edges, layout }
+def graph_node { id, realm, type, position }
+def graph_edge { source, target, type, weight }
+
+;; Build coherence graph from certificates
+voice graph.build / {tiddlers + agent_realm -> graph.extract_realms -> graph.extract_trust -> graph.build_nodes -> graph.build_edges -> graph.layout -> coherence_graph}
+voice graph.extract_realms / {tiddlers -> filter_certificates -> extract_realm_fields -> unique_realms -> realms}
+voice graph.extract_trust / {tiddlers -> filter_certificates -> extract_trust_relationships -> trust_edges}
+voice graph.build_nodes / {realms -> for_each -> graph.create_node -> nodes}
+voice graph.create_node / {realm -> graph_node.create -> node}
+voice graph.build_edges / {trust_edges -> for_each -> graph.create_edge -> edges}
+voice graph.create_edge / {trust_relationship -> graph_edge.create -> edge}
+
+;; Graph layout (force-directed)
+voice graph.layout / {nodes + edges -> graph.compute_positions -> layout}
+voice graph.compute_positions / {nodes + edges -> force_directed_layout -> positioned_nodes}
+
+;; Render graph as TiddlyWiki widget (D3.js)
+voice graph.render_widget / {coherence_graph -> graph.generate_js -> graph.generate_html -> tiddlywiki_widget}
+voice graph.generate_js / {coherence_graph -> format_d3_code -> js_code}
+voice graph.generate_html / {coherence_graph -> format_svg_container -> html_code}
+
+;; Holographic graph rendering (WebGL/Three.js)
+voice graph.render_holographic / {coherence_graph -> graph.generate_webgl -> graph.generate_threejs -> holographic_widget}
+voice graph.generate_webgl / {coherence_graph -> graph.compute_harmonic_surfaces -> graph.generate_webgl_code -> webgl_code}
+voice graph.compute_harmonic_surfaces / {nodes + edges -> graph.compute_vibrations -> graph.generate_surfaces -> harmonic_surfaces}
+voice graph.compute_vibrations / {edges + trust_weights -> compute_edge_vibrations -> vibrations}
+voice graph.generate_surfaces / {nodes + vibrations -> generate_harmonic_mesh -> surfaces}
+voice graph.generate_threejs / {harmonic_surfaces -> format_threejs_scene -> threejs_code}
+voice graph.format_threejs_scene / {surfaces + nodes + edges -> create_threejs_scene -> scene_code}
+
+;; Animated harmonic visualization
+voice graph.animate_harmonics / {coherence_graph + time -> graph.update_vibrations -> graph.render_frame -> animated_frame}
+voice graph.update_vibrations / {edges + trust_weights + time -> compute_time_vibrations -> updated_vibrations}
+voice graph.render_frame / {updated_vibrations + harmonic_surfaces -> render_webgl_frame -> frame}
+
+;; D3.js visualization code
+voice graph.d3_code / {nodes + edges -> format_d3_force_graph -> d3_code}
+voice graph.format_d3_force_graph / {nodes + edges -> generate_d3_simulation -> d3_simulation}
+
+;; Create TiddlyWiki macro for graph
+voice graph.create_macro / {graph.render_widget -> format_tiddlywiki_macro -> macro}
+voice graph.format_tiddlywiki_macro / {widget_code -> wrap_macro -> macro_code}
+
+target coherence_graph / "opic_coherence_visualization"
+voice main / {graph.build -> coherence_graph}
+

@@ -1,0 +1,40 @@
+;;; ethics_kernel.ops — coherence computation and autopoietic ethics
+
+include opic_peer.ops
+include consensus.ops
+
+;; Ethics kernel definitions
+def coherence_function { node, network_state, coherence_score, gradient }
+def ethics_vector { intent, alignment, contribution, preservation }
+def autopoietic_state { network_coherence, minimum_energy, adjustment_vector }
+
+;; Compute coherence between nodes
+voice ethics.compute_coherence / {node_a + node_b + network -> ethics.compute_field_alignment -> ethics.compute_gradient_compatibility -> coherence_score}
+voice ethics.compute_field_alignment / {node_a + node_b -> peer.compute_gradients -> compute_alignment -> alignment}
+voice ethics.compute_gradient_compatibility / {gradient_a + gradient_b -> compute_compatibility -> compatibility}
+
+;; Adjust visibility based on coherence (not punishment)
+voice ethics.adjust_visibility / {node + coherence_score + network -> ethics.compute_visibility_weight -> ethics.apply_visibility -> adjusted}
+voice ethics.compute_visibility_weight / {coherence_score + threshold -> compute_weight -> visibility_weight}
+voice ethics.apply_visibility / {node + visibility_weight + network -> adjust_network_visibility -> adjusted_visibility}
+
+;; Ethics kernel: computes coherence, adjusts visibility (with generational resonance)
+voice ethics.kernel / {network_state + node_actions + tau_vector -> ethics.compute_all_coherence -> generational.resonance_function -> ethics.adjust_all_visibility -> ethics.seek_minimum_energy -> adjusted_network}
+voice ethics.compute_all_coherence / {nodes + network -> for_each_pair -> ethics.compute_coherence -> all_coherence}
+voice ethics.adjust_all_visibility / {all_coherence + network -> for_each -> ethics.adjust_visibility -> adjusted}
+voice ethics.seek_minimum_energy / {network_state + coherence -> compute_energy -> find_minimum -> minimum_state}
+
+;; Autopoietic ethics: self-correcting behavior
+voice ethics.autopoietic / {network + node_actions -> peer.autopoietic_ethics -> ethics.kernel -> self_corrected_network}
+voice ethics.self_correct / {current_state + minimum_state -> compute_adjustment -> apply_adjustment -> corrected}
+
+;; Ethics vector computation
+voice ethics.compute_vector / {node + network -> ethics.measure_intent -> ethics.measure_alignment -> ethics.measure_contribution -> ethics.measure_preservation -> ethics_vector}
+voice ethics.measure_intent / {node + network -> peer.compute_intent -> intent}
+voice ethics.measure_alignment / {node + network -> peer.compute_alignment_score -> alignment}
+voice ethics.measure_contribution / {node + network -> peer.compute_contribution_value -> contribution}
+voice ethics.measure_preservation / {node + network -> peer.measure_coherence_preservation -> preservation}
+
+target ethics_kernel / "opic_ethics_computation"
+voice main / {ethics.kernel -> ethics_kernel}
+

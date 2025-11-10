@@ -1,0 +1,145 @@
+;;; certificate.ops — certificate-based permission system for opic
+
+;; Certificate definitions (with legal terms)
+def certificate { issuer, subject, permissions, signature, expires, realm, ca, legal_terms, jurisdiction, fiduciary_duty }
+def permission { resource, action, constraints, realm }
+def resource { type, path, pattern, realm }
+def action { read, write, execute, create, delete }
+def constraint { condition, limit }
+def certificate_authority { agent, public_key, realm, trusted_realms }
+def realm { name, ca, agents, boundaries }
+def agent { identity, ca, realm, public_key }
+
+;; Certificate authority
+voice cert.issuer / {certificate -> extract_issuer -> issuer}
+voice cert.subject / {certificate -> extract_subject -> subject}
+voice cert.permissions / {certificate -> extract_permissions -> permissions}
+voice cert.signature / {certificate -> extract_signature -> signature}
+voice cert.expires / {certificate -> extract_expires -> expires}
+voice cert.realm / {certificate -> extract_realm -> realm}
+voice cert.ca / {certificate -> extract_ca -> ca}
+
+;; Agent and realm management
+voice cert.agent_identity / {agent -> extract_identity -> identity}
+voice cert.agent_realm / {agent -> extract_realm -> realm}
+voice cert.agent_ca / {agent -> extract_ca -> ca}
+voice cert.realm_name / {realm -> extract_name -> name}
+voice cert.realm_ca / {realm -> extract_ca -> ca}
+voice cert.realm_agents / {realm -> extract_agents -> agents}
+voice cert.realm_boundaries / {realm -> extract_boundaries -> boundaries}
+
+;; Verify certificate (with realm support)
+voice cert.verify / {certificate + public_key + agent_realm -> cert.check_realm -> cert.check_signature -> cert.check_expiry -> cert.check_permissions -> verified}
+voice cert.check_realm / {certificate + agent_realm -> cert.extract_realm -> cert.check_realm_access -> realm_valid}
+voice cert.check_realm_access / {cert_realm + agent_realm + ca -> cert.check_same_realm -> cert.check_trusted_realm -> cert.check_cross_realm -> realm_access}
+voice cert.check_same_realm / {cert_realm + agent_realm -> equals -> same_realm}
+voice cert.check_trusted_realm / {cert_realm + agent_realm + ca -> cert.find_trusted_realms -> contains -> trusted}
+voice cert.check_cross_realm / {cert_realm + agent_realm + ca -> cert.verify_cross_realm -> cross_realm_valid}
+voice cert.check_signature / {certificate + public_key -> blake.hash_witness -> verify_signature -> signature_valid}
+voice cert.check_expiry / {certificate + current_time -> compare_times -> not_expired}
+voice cert.check_permissions / {certificate + requested_permission + agent_realm -> cert.match_permission -> cert.check_realm_permission -> permission_granted}
+voice cert.check_realm_permission / {permission + agent_realm -> cert.match_realm -> realm_matches}
+
+;; Permission matching
+voice cert.match_permission / {permission + requested -> cert.match_resource -> cert.match_action -> cert.check_constraints -> matches}
+voice cert.match_resource / {permission_resource + requested_resource -> match_pattern -> resource_matches}
+voice cert.match_action / {permission_action + requested_action -> equals -> action_matches}
+voice cert.check_constraints / {permission_constraints + context -> evaluate_constraints -> constraints_satisfied}
+
+;; Certificate chain verification (with realm support)
+voice cert.verify_chain / {certificate + ca_certificates + agent_realm -> cert.find_issuer -> cert.verify_realm_chain -> cert.verify -> cert.verify_parent -> chain_valid}
+voice cert.find_issuer / {certificate + ca_certificates -> find_matching_subject -> issuer_cert}
+voice cert.verify_realm_chain / {certificate + issuer_cert + agent_realm -> cert.check_realm_transition -> realm_chain_valid}
+voice cert.check_realm_transition / {cert_realm + issuer_realm + agent_realm + ca -> cert.check_allowed_transition -> transition_allowed}
+voice cert.check_allowed_transition / {from_realm + to_realm + agent_realm + ca -> cert.check_realm_boundaries -> cert.check_ca_trust -> allowed}
+voice cert.verify_parent / {certificate + issuer_cert + agent_realm -> cert.verify -> parent_valid}
+
+;; Generate certificate (with realm and legal terms)
+voice cert.generate / {issuer + subject + permissions + private_key + realm + ca + legal_terms -> cert.create_certificate -> cert.sign -> certificate}
+voice cert.create_certificate / {issuer + subject + permissions + expires + realm + ca + legal_terms + jurisdiction + fiduciary_duty -> build_certificate -> unsigned_cert}
+voice cert.sign / {certificate + private_key -> blake.hash_witness -> sign_hash -> signature}
+
+;; Create certificate authority for agent
+voice cert.create_ca / {agent + realm + public_key + trusted_realms -> cert.build_ca -> ca}
+voice cert.build_ca / {agent + realm + public_key + trusted_realms -> certificate_authority}
+
+;; Create realm for agent
+voice cert.create_realm / {agent + realm_name + ca -> cert.build_realm -> realm}
+voice cert.build_realm / {realm_name + ca + agents + boundaries -> realm}
+
+;; Permission checking
+voice cert.check_permission / {certificate + resource + action -> cert.match_permission -> if_granted -> if_denied -> result}
+voice cert.if_granted / {matches -> if_true -> allow}
+voice cert.if_denied / {matches -> if_false -> deny}
+
+;; File access permissions
+voice cert.check_file_read / {certificate + file_path -> cert.check_permission "file" + "read" -> allowed}
+voice cert.check_file_write / {certificate + file_path -> cert.check_permission "file" + "write" -> allowed}
+voice cert.check_file_execute / {certificate + file_path -> cert.check_permission "file" + "execute" -> allowed}
+
+;; Voice execution permissions
+voice cert.check_voice_execute / {certificate + voice_name -> cert.check_permission "voice" + "execute" -> allowed}
+voice cert.check_voice_create / {certificate + voice_name -> cert.check_permission "voice" + "create" -> allowed}
+voice cert.check_voice_modify / {certificate + voice_name -> cert.check_permission "voice" + "modify" -> allowed}
+
+;; Runtime permissions
+voice cert.check_runtime_modify / {certificate -> cert.check_permission "runtime" + "modify" -> allowed}
+voice cert.check_witness_install / {certificate -> cert.check_permission "witness" + "install" -> allowed}
+voice cert.check_witness_verify / {certificate -> cert.check_permission "witness" + "verify" -> allowed}
+
+;; Certificate-based execution guard (with realm)
+voice cert.guard_execute / {certificate + file_path + action + agent_realm -> cert.verify -> cert.check_permission -> cert.check_realm_boundary -> if_allowed_execute -> if_denied_halt}
+voice cert.check_realm_boundary / {certificate + file_path + agent_realm -> cert.extract_file_realm -> cert.check_realm_access -> boundary_ok}
+voice cert.extract_file_realm / {file_path -> parse_realm_from_path -> file_realm}
+voice cert.if_allowed_execute / {allowed -> execute_normal}
+voice cert.if_denied_halt / {denied -> cert.explain_denial -> halt_execution}
+
+;; Explain permission denial
+voice cert.explain_denial / {certificate + requested_permission -> cert.find_missing_permission -> cert.generate_explanation -> explanation}
+voice cert.find_missing_permission / {certificate + requested -> compare_permissions -> missing}
+voice cert.generate_explanation / {missing_permission + certificate -> format_denial -> explanation}
+
+;; Install opic certificate (self-signed, own realm)
+voice cert.install_opic / {opic_private_key + opic_realm + opic_ca -> cert.generate "opic" + "opic" + opic_permissions + opic_realm + opic_ca -> cert.save -> installed}
+voice cert.opic_realm / {"opic" -> realm}
+voice cert.opic_ca / {opic_agent + opic_realm + opic_public_key + trusted_realms -> cert.create_ca -> ca}
+voice cert.opic_permissions / {"runtime" + "execute" + "witness" + "verify" + "file" + "read" + "voice" + "execute" + "opic" -> permissions}
+
+;; Create agent certificate authority
+voice cert.create_agent_ca / {agent_identity + realm_name + public_key -> cert.create_ca -> agent_ca}
+voice cert.create_agent_realm / {agent_identity + realm_name + agent_ca -> cert.create_realm -> agent_realm}
+
+;; Register agent in realm
+voice cert.register_agent / {agent + realm + ca -> cert.add_agent_to_realm -> registered}
+voice cert.add_agent_to_realm / {agent + realm -> update_realm_agents -> updated_realm}
+
+;; Trust realm (allow cross-realm access)
+voice cert.trust_realm / {realm + trusted_realm + ca -> cert.add_trusted_realm -> updated_ca}
+voice cert.add_trusted_realm / {trusted_realm + ca -> update_trusted_realms -> updated_ca}
+
+;; Load certificate
+voice cert.load / {certificate_path -> file.read -> cert.parse -> certificate}
+voice cert.parse / {certificate_text -> parse_json -> certificate}
+
+;; Save certificate
+voice cert.save / {certificate + certificate_path -> cert.serialize -> file.write -> saved}
+voice cert.serialize / {certificate -> to_json -> serialized}
+
+;; Certificate-based witness verification
+voice cert.witness_with_cert / {witness + certificate -> cert.verify -> cert.check_witness_verify -> witness.verify -> verified_witness}
+voice cert.check_witness_verify / {certificate -> cert.check_permission "witness" + "verify" -> allowed}
+
+;; Cross-realm certificate verification
+voice cert.verify_cross_realm / {certificate + agent_realm + ca -> cert.extract_cert_realm -> cert.check_realm_trust -> cert.verify_ca_chain -> cross_realm_valid}
+voice cert.check_realm_trust / {cert_realm + agent_realm + ca -> cert.find_trusted_realms -> contains -> trusted}
+voice cert.verify_ca_chain / {certificate + cert_realm_ca + agent_realm_ca -> cert.verify_ca_signature -> ca_valid}
+
+;; Realm boundary enforcement
+voice cert.enforce_boundary / {action + resource + agent_realm + resource_realm -> cert.check_boundary -> if_within_boundary -> if_cross_boundary -> result}
+voice cert.check_boundary / {agent_realm + resource_realm -> cert.check_same_realm -> cert.check_trusted_realm -> cert.check_cross_realm_permission -> boundary_ok}
+voice cert.if_within_boundary / {boundary_ok -> allow}
+voice cert.if_cross_boundary / {boundary_ok -> cert.require_cross_realm_cert -> require_cert}
+
+target certificate / "opic_certificate_system"
+voice main / {cert.verify -> certificate}
+

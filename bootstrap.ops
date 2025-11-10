@@ -1,0 +1,108 @@
+;;; bootstrap.ops — opic bootstrap kernel (minimal self-hosting seed)
+
+;; Core types (from core.ops)
+def type { name, fields, mass }
+def voice { input, output, charge, ratio }
+def target { name, head }
+def flow { source, sink }
+def str { bytes, mass:1 }
+def int { value, mass:1 }
+def file { path, mass:4 }
+def error { type, message, context, mass:2 }
+
+;; Minimal parser (implements opic.parse_ops)
+voice opic.parse_ops / {ops_text -> split_lines -> filter_lines -> parse_each -> parse_includes -> collect_defs_voices_includes -> defs + voices + includes}
+voice opic.split_lines / {text -> split_by_newline -> lines}
+voice opic.filter_lines / {lines -> remove_comments -> remove_empty -> valid_lines}
+voice opic.remove_comments / {line -> check_starts_with ";" -> if_true_skip}
+voice opic.remove_empty / {line -> check_whitespace -> if_empty_skip}
+voice opic.parse_each / {valid_lines -> for_each -> parse_line -> def_or_voice}
+voice opic.parse_line / {line -> check_type -> if_def_parse_def -> if_voice_parse_voice}
+voice opic.check_type / {line -> starts_with "def " -> is_def}
+voice opic.check_type / {line -> starts_with "voice " -> is_voice}
+voice opic.check_type / {line -> starts_with "include " -> is_include}
+
+;; Parse includes
+voice opic.parse_includes / {valid_lines -> filter_include_lines -> extract_include_files -> includes}
+voice opic.filter_include_lines / {lines -> for_each -> check_starts_with "include " -> include_lines}
+voice opic.extract_include_files / {include_lines -> for_each -> remove_prefix "include " -> strip -> include_files}
+
+;; Parse definition
+voice opic.parse_def / {def_line -> extract_name -> extract_fields -> create_def}
+voice opic.extract_name / {line -> split_spaces -> get_index_1 -> name}
+voice opic.extract_fields / {line -> find_braces -> extract_inside -> split_commas -> fields}
+voice opic.find_braces / {line -> find "{ }" -> inside}
+voice opic.create_def / {name + fields -> def_object}
+
+;; Parse voice
+voice opic.parse_voice / {voice_line -> extract_name -> extract_body -> create_voice}
+voice opic.extract_name / {voice_line -> before_slash -> split_spaces -> get_index_1 -> name}
+voice opic.extract_body / {voice_line -> after_slash -> strip_quotes -> strip_whitespace -> body}
+voice opic.before_slash / {line -> partition "/" -> before}
+voice opic.after_slash / {line -> partition "/" -> after}
+voice opic.strip_quotes / {text -> remove_leading_trailing_quotes -> cleaned}
+voice opic.create_voice / {name + body -> voice_object}
+
+;; Collect results
+voice opic.collect_defs_voices_includes / {parsed_items + includes -> separate_defs_voices -> defs + voices + includes}
+voice opic.separate_defs_voices / {items -> filter_defs -> filter_voices -> defs + voices}
+
+;; Minimal loader (implements opic.load_recursive) - with signature verification
+voice opic.load_recursive / {file_path + loaded_set + all_defs + all_voices + agent_realm + ca -> opic.check_loaded -> opic.load_if_new -> opic.load_with_verification -> opic.load_includes -> opic.load_attention -> loaded}
+voice opic.check_loaded / {file_path + loaded_set -> contains -> is_loaded}
+voice opic.load_if_new / {file_path + is_loaded -> if_not_loaded -> opic.load_file}
+voice opic.load_file / {file_path -> opic.read_file -> opic.parse_ops -> defs + voices + includes}
+voice opic.read_file / {file_path -> file_read -> text}
+voice opic.load_includes / {includes + file_dir + loaded_set -> for_each -> opic.resolve_include -> opic.load_recursive}
+voice opic.resolve_include / {include_file + base_dir -> join_path -> absolute_include_path}
+
+;; Attention-based auto-inclusion (implements opic.load_attention)
+voice opic.load_attention / {voices + file_dir + loaded_set + namespace_map -> opic.detect_namespaces -> opic.map_namespaces -> opic.auto_load -> loaded}
+voice opic.detect_namespaces / {voices -> opic.extract_references -> opic.find_namespaces -> namespaces}
+voice opic.extract_references / {voice_body -> opic.parse_chain -> opic.extract_voice_names -> references}
+voice opic.parse_chain / {body -> remove_braces -> split_arrows -> steps}
+voice opic.extract_voice_names / {steps -> for_each -> opic.split_plus -> opic.take_first -> opic.check_namespace -> namespaced_names}
+voice opic.find_namespaces / {namespaced_names -> for_each -> opic.extract_prefix -> namespaces}
+voice opic.extract_prefix / {name -> split_dot -> take_first -> add_dot -> namespace}
+voice opic.map_namespaces / {namespaces + namespace_map -> for_each -> opic.lookup_file -> files_to_load}
+voice opic.lookup_file / {namespace + namespace_map -> get -> filename}
+voice opic.auto_load / {files_to_load + file_dir + loaded_set -> for_each -> opic.load_recursive -> loaded}
+
+;; Merge voices and defs
+voice opic.merge_voices / {existing_voices + new_voices -> update_dict -> merged_voices}
+voice opic.merge_defs / {existing_defs + new_defs -> update_dict -> merged_defs}
+
+;; Minimal executor (implements opic.execute_chain)
+voice opic.execute_chain / {chain_string + voices -> parse_chain -> resolve_steps -> execute_steps -> result}
+voice opic.parse_chain / {chain -> remove_braces -> split_arrows -> steps}
+voice opic.remove_braces / {chain -> strip "{ }" -> inner}
+voice opic.split_arrows / {inner -> split "->" -> trim_each -> steps}
+voice opic.resolve_steps / {steps + voices -> for_each_step -> find_voice -> resolve_body}
+voice opic.find_voice / {step_name + voices -> lookup -> voice_body}
+voice opic.resolve_body / {voice_body -> if_chain_recurse -> if_string_return}
+voice opic.execute_steps / {resolved_steps -> for_each -> execute_step -> collect_results}
+
+;; Bootstrap runtime interface (all runtimes implement this)
+voice opic.bootstrap / {main_file -> opic.load_bootstrap -> opic.find_main -> opic.execute_main -> output}
+voice opic.load_bootstrap / {main_file -> opic.load_recursive -> all_voices + all_defs}
+voice opic.find_main / {voices -> get "main" -> main_voice}
+voice opic.execute_main / {main_voice + voices + defs + project_root -> opic.execute_runtime -> output}
+
+;; Runtime execution interface (specialized runtimes implement this)
+voice opic.execute_runtime / {main_voice + voices + defs + project_root -> opic.detect_runtime_type -> opic.execute_specialized -> output}
+voice opic.detect_runtime_type / {main_voice -> opic.check_patterns -> runtime_type}
+voice opic.check_patterns / {main_voice -> check_interactive + check_evaluation + check_repos + check_compile -> runtime_type}
+voice opic.check_interactive / {main_voice -> contains "interactive" -> is_interactive}
+voice opic.check_evaluation / {main_voice -> contains "evaluate" -> is_evaluation}
+voice opic.check_repos / {main_voice -> contains "repos" -> is_repos}
+voice opic.check_compile / {main_voice -> contains "compile" -> is_compile}
+voice opic.execute_specialized / {runtime_type + main_voice + voices + defs + project_root -> if_interactive -> if_evaluation -> if_repos -> if_compile -> if_generic -> output}
+voice opic.execute_interactive / {voices + defs + project_root -> execute_interactive_conversation -> output}
+voice opic.execute_evaluation / {voices + defs + project_root -> execute_evaluation -> output}
+voice opic.execute_repos / {voices + defs + project_root -> execute_repos -> output}
+voice opic.execute_compile / {voices + defs + project_root -> execute_compile -> output}
+voice opic.execute_generic / {main_voice + voices -> opic.execute_chain -> output}
+
+target bootstrap / "opic_bootstrap_kernel"
+voice main / {opic.bootstrap -> bootstrap}
+

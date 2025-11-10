@@ -1,0 +1,87 @@
+;;; tiddlywiki_network.ops — TiddlyWiki Resonance Network: local coherence infrastructure
+
+include viral_resonance.ops
+include opic_peer.ops
+include resonance_currency.ops
+include ledger_sync.ops
+include governance.ops
+include fee.ops
+
+;; Network definitions
+def resonance_node { wiki_id, realm, local_ledger, resonance_score, coherence_function, sync_policy }
+def tiddlywiki_node { wiki_file, node_id, realm, local_ledger, sync_endpoints }
+def network_entanglement { nodes, trust_relationships, coherence_graph, sync_routes }
+def local_coherence { node, flourishing_index, care_actions, resonance_growth }
+
+;; TiddlyWiki as micro-infrastructure (client-side, verifiable)
+voice network.create_node / {wiki_file + realm + agent_realm + ca -> network.initialize_ledger -> network.setup_sync -> network.create_node -> resonance_node}
+voice network.initialize_ledger / {wiki_file + realm + agent_realm + ca -> ledger.build_ledger -> local_ledger}
+voice network.setup_sync / {wiki_file + realm + sync_policy -> network.configure_sync -> sync_config}
+voice network.configure_sync / {wiki + policy -> set_sync_endpoints -> configure_privacy -> sync_config}
+
+;; Self-hosted ledger (proof of care, reciprocity, resonance)
+voice network.self_host_ledger / {node + agent_realm + ca -> network.store_in_wiki -> network.encrypt_local -> self_hosted}
+voice network.store_in_wiki / {ledger + wiki -> store_as_tiddler -> stored}
+voice network.encrypt_local / {ledger + node_key -> encrypt -> encrypted_ledger}
+
+;; Federate through consent and coherence (not servers)
+voice network.federate / {node_a + node_b + agent_realm + ca -> network.check_consent -> network.check_coherence -> network.establish_entanglement -> federated}
+voice network.check_consent / {node_a + node_b -> request_consent -> consent_granted}
+voice network.check_coherence / {node_a + node_b + agent_realm + ca -> peer.compute_coherence -> coherence_score}
+voice network.establish_entanglement / {nodes + consent + coherence -> create_entanglement -> entangled}
+
+;; Sync only what's necessary
+voice network.sync_selective / {node_a + node_b + sync_policy + agent_realm + ca -> network.filter_by_coherence -> network.filter_by_consent -> network.sync_filtered -> synced}
+voice network.filter_by_coherence / {content + coherence_threshold -> filter -> filtered_content}
+voice network.filter_by_consent / {content + consent_policy -> filter -> consented_content}
+voice network.sync_filtered / {filtered_content + nodes -> sync.sync_ledger -> synced}
+
+;; Collective action layer (proposals, votes, mutual-aid)
+voice network.collective_action / {node + action_type + agent_realm + ca -> network.create_proposal -> network.host_in_wiki -> network.federate_vote -> action_complete}
+voice network.create_proposal / {action_type + node -> proposal.create -> proposal}
+voice network.host_in_wiki / {proposal + wiki -> store_as_tiddler -> hosted}
+voice network.federate_vote / {proposal + network_nodes + agent_realm + ca -> consensus.federated_consensus -> vote_result}
+
+;; Mutual-aid logistics in wiki
+voice network.mutual_aid / {node + need + offer + agent_realm + ca -> network.create_aid_entry -> network.match_phases -> network.facilitate_exchange -> aid_completed}
+voice network.create_aid_entry / {need + offer + node -> format_aid_tiddler -> aid_entry}
+voice network.match_phases / {needs + offers + agent_realm + ca -> viral.phase_marketplace -> matches}
+voice network.facilitate_exchange / {matches + agent_realm + ca -> peer.exchange -> exchange_completed}
+
+;; Transition funding: value in use, not speculation
+voice network.transition_funding / {early_contributors + services + agent_realm + ca -> network.compute_value_in_use -> network.mint_credits -> network.reinvest_coherence -> funded}
+voice network.compute_value_in_use / {services + communities -> measure_usage_value -> value_score}
+voice network.mint_credits / {value_score + agent_realm + ca -> currency.mint_credits -> credits_minted}
+voice network.reinvest_coherence / {credits + agent_realm + ca -> network.invest_in_coherence -> reinvested}
+
+;; Services: reliability, customization, local hosting
+voice network.service_reliability / {node + service_level + agent_realm + ca -> network.provide_reliability -> network.mint_service_credits -> service_provided}
+voice network.service_customization / {node + customization + agent_realm + ca -> network.provide_customization -> network.mint_service_credits -> service_provided}
+voice network.service_hosting / {node + hosting_capacity + agent_realm + ca -> network.provide_hosting -> network.mint_service_credits -> service_provided}
+voice network.mint_service_credits / {service_value + agent_realm + ca -> currency.mint_credits -> credits}
+
+;; Ethical constraint: seven-generation reinvestment
+voice network.reinvest_profits / {profits + agent_realm + ca + tau_vector -> generational.resonance_function -> network.compute_reinvestment -> network.reinvest_coherence -> reinvested}
+voice network.compute_reinvestment / {profits + resonance + tau -> compute_coherence_investment -> investment_amount}
+voice network.reinvest_coherence / {investment + agent_realm + ca -> invest_in_development -> invest_in_plugins -> invest_in_interoperability -> reinvested}
+
+;; Capital as bridge for regeneration, not ownership
+voice network.capital_as_bridge / {capital + purpose + agent_realm + ca + tau_vector -> network.define_regeneration -> network.track_impact -> bridge_capital}
+voice network.define_regeneration / {capital + purpose -> define_regenerative_use -> regeneration_plan}
+voice network.track_impact / {capital + regeneration + tau -> generational.resonance_function -> track_coherence_impact -> impact_tracked}
+
+;; Network visualization
+voice network.visualize_network / {network_nodes + agent_realm + ca -> graph.build -> graph.render_holographic -> network_visualization}
+voice network.show_entanglement / {network + agent_realm + ca -> network.compute_entanglement -> graph.render_holographic -> entanglement_viz}
+
+;; Local coherence dashboard in wiki
+voice network.local_dashboard / {node + agent_realm + ca + tau_vector -> viral.display_abundance -> network.format_wiki_dashboard -> dashboard_tiddler}
+voice network.format_wiki_dashboard / {dashboard + wiki_format -> format_tiddlywiki_widget -> dashboard_tiddler}
+
+;; FEE integration: learning plugin in wiki
+voice network.add_learning_plugin / {node + agent_realm + ca -> fee.setup_learning_plugin -> network.embed_plugin -> plugin_embedded}
+voice network.embed_plugin / {plugin + wiki -> embed_as_widget -> embedded}
+
+target tiddlywiki_network / "opic_tiddlywiki_resonance_network"
+voice main / {network.create_node -> tiddlywiki_network}
+

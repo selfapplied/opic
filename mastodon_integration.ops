@@ -1,0 +1,60 @@
+;;; mastodon_integration.ops — align opic with Mastodon/ActivityPub federated social
+
+include certificate.ops
+include ledger_sync.ops
+include consensus.ops
+
+;; Mastodon/ActivityPub integration definitions
+def activitypub_actor { id, type, inbox, outbox, publicKey }
+def activitypub_object { id, type, actor, content, published, signature }
+def mastodon_post { id, content, account, created_at, visibility }
+def opic_mastodon_mapping { opic_realm, mastodon_account, activitypub_actor }
+
+;; Map opic realm to Mastodon account
+voice mastodon.realm_to_account / {opic_realm + mastodon_instance -> mastodon.create_account -> mastodon_account}
+voice mastodon.create_account / {realm + instance -> format_account -> account}
+
+;; Map opic voice to Mastodon post
+voice mastodon.voice_to_post / {voice_certificate + mastodon_account -> mastodon.create_post -> mastodon_post}
+voice mastodon.create_post / {voice + account -> format_post_content -> create_post -> post}
+voice mastodon.format_post_content / {voice_certificate -> extract_voice_body -> format_markdown -> post_content}
+
+;; Mastodon post as opic voice certificate
+voice mastodon.post_to_voice / {mastodon_post + agent_realm + ca -> signed.verify_voice -> voice_certificate}
+voice mastodon.verify_post / {post + agent_realm + ca -> mastodon.verify_signature -> mastodon.verify_actor -> verified}
+
+;; ActivityPub actor as opic realm
+voice mastodon.actor_to_realm / {activitypub_actor + ca -> cert.create_realm -> realm}
+voice mastodon.realm_to_actor / {realm + public_key -> mastodon.create_actor -> activitypub_actor}
+voice mastodon.create_actor / {realm + public_key -> format_activitypub_actor -> actor}
+
+;; Mastodon follow as opic trust
+voice mastodon.follow_as_trust / {follower_account + followed_account + ca -> cert.trust_realm -> trust_relationship}
+voice mastodon.trust_as_follow / {trust_relationship + mastodon_instance -> mastodon.follow -> follow_relationship}
+
+;; Mastodon boost as opic resonance
+voice mastodon.boost_as_resonance / {post + boosting_account + ca -> signed.emit_coherence -> coherence_cert}
+voice mastodon.resonance_as_boost / {coherence_cert + mastodon_account -> mastodon.boost -> boost}
+
+;; ActivityPub inbox as opic sync endpoint
+voice mastodon.inbox_as_sync / {activitypub_inbox + agent_realm + ca -> sync.serve_ledger -> sync_endpoint}
+voice mastodon.sync_as_inbox / {sync_endpoint + activitypub_actor -> mastodon.setup_inbox -> inbox}
+
+;; Federated timeline as opic ledger
+voice mastodon.timeline_as_ledger / {followed_accounts + agent_realm + ca -> sync.federated -> ledger_tiddlers}
+voice mastodon.ledger_as_timeline / {ledger_tiddlers + mastodon_account -> mastodon.format_timeline -> timeline}
+
+;; Mastodon instance as opic realm federation
+voice mastodon.instance_as_federation / {mastodon_instance + trusted_instances + ca -> cert.create_realm -> cert.trust_realms -> federated_realm}
+voice mastodon.federation_as_instance / {federated_realm + mastodon_config -> mastodon.create_instance -> instance}
+
+;; Post signed voice to Mastodon
+voice mastodon.post_voice / {voice_certificate + mastodon_account + agent_realm + ca -> mastodon.voice_to_post -> mastodon.post -> posted}
+voice mastodon.post / {post + mastodon_instance -> activitypub_create -> created}
+
+;; Receive Mastodon post as opic voice
+voice mastodon.receive_voice / {mastodon_post + agent_realm + ca -> mastodon.post_to_voice -> ledger.add_certificate -> added}
+
+target mastodon_integration / "opic_mastodon_alignment"
+voice main / {mastodon.post_voice -> mastodon_integration}
+
