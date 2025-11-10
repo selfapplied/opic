@@ -283,6 +283,10 @@ riemann-experiment:
 	@echo "Running Riemann Hypothesis baseline simulation..."
 	@python3 scripts/riemann_experiment.py
 
+riemann-visualize:
+	@echo "Generating Riemann Hypothesis visualizations..."
+	@python3 scripts/riemann_visualization.py
+
 # Default: give user a shell with opic available
 default: shell
 

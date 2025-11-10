@@ -302,6 +302,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - **[Theory](docs/theory.md)** — Mathematical foundations (category theory, type theory, field dynamics)
 - **[Philosophy](docs/philosophy.md)** — Core principles and vision
 - **[Architecture](docs/architecture.md)** — System architecture overview
+- **[Riemann Hypothesis Whitepaper](docs/riemann_whitepaper.md)** — Theoretical framing and baseline results
+- **[Riemann Experiment Plan](docs/riemann_hypothesis_experiment.md)** — Full experiment plan with 7 phases
 - **Technical Bluepaper**: `make whitepaper`
 - **Getting Started**: `make getting-started`
 - **System Plan**: `python3 opic execute systems/opic_plan.ops`

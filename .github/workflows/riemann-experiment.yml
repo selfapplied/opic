@@ -1,0 +1,61 @@
+name: Riemann Hypothesis Experiment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run daily to track baseline stability
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  riemann-experiment:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # Add any future dependencies here
+    
+    - name: Run Riemann Experiment
+      run: |
+        make riemann-experiment
+      continue-on-error: true
+    
+    - name: Upload Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: riemann-results
+        path: build/riemann_results.json
+        retention-days: 30
+    
+    - name: Display Results Summary
+      if: always()
+      run: |
+        echo "## Riemann Hypothesis Experiment Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -f build/riemann_results.json ]; then
+          echo "### Baseline Simulation Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat build/riemann_results.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ✓ Experiment ran successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See [experiment plan](docs/riemann_hypothesis_experiment.md) for details." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "**Status**: ⚠ Results file not found" >> $GITHUB_STEP_SUMMARY
+        fi
+
