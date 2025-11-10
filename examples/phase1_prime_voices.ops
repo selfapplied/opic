@@ -1,0 +1,191 @@
+;;; phase1_prime_voices.ops — Phase 1: Prime Voice Identification (in opic)
+
+include core/opic_parse.ops
+include core/opic_load.ops
+
+;; Phase 1 definitions
+def prime_voice { name, body, is_decomposable, is_prime }
+def prime_set { primes, count }
+def voice_location { file, line }
+
+;; Find all .ops files
+voice phase1.find_ops_files / {
+  root_dir -> 
+  phase1.scan_directory -> 
+  phase1.filter_ops_files -> 
+  ops_files
+}
+
+voice phase1.scan_directory / {
+  directory -> 
+  list_files -> 
+  filter_directories -> 
+  all_files
+}
+
+voice phase1.filter_ops_files / {
+  all_files -> 
+  check_extension ".ops" -> 
+  exclude_build_dirs -> 
+  ops_files
+}
+
+voice phase1.exclude_build_dirs / {
+  files -> 
+  exclude "build" -> 
+  exclude ".git" -> 
+  exclude "__pycache__" -> 
+  filtered_files
+}
+
+;; Parse all voices from all .ops files
+voice phase1.parse_all_voices / {
+  ops_files -> 
+  for_each_file -> 
+  phase1.parse_file_voices -> 
+  collect_all_voices -> 
+  all_voices + voice_locations
+}
+
+voice phase1.parse_file_voices / {
+  ops_file -> 
+  read_file -> 
+  opic.parse_ops -> 
+  extract_voices -> 
+  voices_with_locations
+}
+
+voice phase1.extract_voices / {
+  parsed_result -> 
+  get_voices -> 
+  add_file_location -> 
+  voices_with_locations
+}
+
+;; Check if voice is decomposable
+voice phase1.check_decomposability / {
+  voice_name + voice_body + all_voices -> 
+  phase1.extract_referenced_voices -> 
+  phase1.filter_existing_voices -> 
+  phase1.check_complexity -> 
+  is_decomposable
+}
+
+voice phase1.extract_referenced_voices / {
+  voice_body -> 
+  split_chain -> 
+  extract_voice_names -> 
+  referenced_voices
+}
+
+voice phase1.split_chain / {
+  body -> 
+  split_by_arrow -> 
+  steps
+}
+
+voice phase1.extract_voice_names / {
+  steps -> 
+  for_each_step -> 
+  extract_names -> 
+  voice_names
+}
+
+voice phase1.filter_existing_voices / {
+  voice_names + all_voices -> 
+  check_existence -> 
+  existing_voices
+}
+
+voice phase1.check_complexity / {
+  voice_body + referenced_voices + all_voices -> 
+  count_steps -> 
+  compare_complexity -> 
+  is_decomposable
+}
+
+voice phase1.count_steps / {
+  body -> 
+  split_by_arrow -> 
+  count -> 
+  step_count
+}
+
+voice phase1.compare_complexity / {
+  current_steps + referenced_complexities -> 
+  find_min_referenced -> 
+  compare -> 
+  is_decomposable
+}
+
+;; Identify prime voices
+voice phase1.identify_primes / {
+  all_voices -> 
+  for_each_voice -> 
+  phase1.check_decomposability -> 
+  phase1.classify_voice -> 
+  prime_voices + decomposable_voices
+}
+
+voice phase1.classify_voice / {
+  voice + is_decomposable -> 
+  if_decomposable_then_composite -> 
+  if_prime_then_prime -> 
+  classified_voice
+}
+
+voice phase1.if_decomposable_then_composite / {
+  voice + true -> 
+  mark_decomposable -> 
+  composite_voice
+}
+
+voice phase1.if_prime_then_prime / {
+  voice + false -> 
+  mark_prime -> 
+  prime_voice
+}
+
+;; Save results
+voice phase1.save_results / {
+  prime_voices + decomposable_voices + voice_locations -> 
+  format_results -> 
+  write_json -> 
+  saved
+}
+
+voice phase1.format_results / {
+  prime_voices + decomposable_voices + voice_locations -> 
+  create_results_object -> 
+  formatted_results
+}
+
+voice phase1.create_results_object / {
+  primes + decomposables + locations -> 
+  count_total -> 
+  count_primes -> 
+  count_decomposables -> 
+  results_object
+}
+
+;; Main Phase 1 execution
+voice phase1.run / {
+  -> 
+  phase1.find_ops_files -> 
+  phase1.parse_all_voices -> 
+  phase1.identify_primes -> 
+  phase1.save_results -> 
+  phase1.display_summary -> 
+  results
+}
+
+voice phase1.display_summary / {
+  results -> 
+  extract_counts -> 
+  format_summary -> 
+  print_summary
+}
+
+target phase1_prime_voices / "phase1_prime_voice_identification"
+voice main / {phase1.run -> phase1.display_summary}
+

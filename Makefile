@@ -289,6 +289,10 @@ riemann-visualize:
 	@python3 opic execute examples/riemann_visualization.ops || \
 	 (echo "Falling back to Python implementation..." && python3 scripts/riemann_visualization.py)
 
+phase1:
+	@echo "Running Phase 1: Prime Voice Identification..."
+	@python3 opic execute examples/phase1_prime_voices.ops
+
 # Default: give user a shell with opic available
 default: shell
 

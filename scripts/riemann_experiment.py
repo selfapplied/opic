@@ -104,21 +104,39 @@ def main():
     print("=" * 60)
     print()
     
-    # Phase 1: Simulate prime voices (in full implementation, parse opic codebase)
+    # Phase 1: Prime Voice Identification
     print("Phase 1: Prime Voice Identification")
     print("-" * 60)
     
-    # Mock prime voices for demonstration
-    # In full implementation, these would be parsed from opic codebase
-    prime_voices = [
-        {'name': 'voice.add', 'coherence': 0.95, 'phase': 0.1},
-        {'name': 'voice.multiply', 'coherence': 0.92, 'phase': 0.2},
-        {'name': 'voice.compose', 'coherence': 0.98, 'phase': 0.15},
-        {'name': 'voice.chain', 'coherence': 0.94, 'phase': 0.12},
-        {'name': 'voice.certify', 'coherence': 0.97, 'phase': 0.18},
-    ]
+    # Try to load Phase 1 results, fallback to mock data
+    phase1_file = Path('build/phase1_prime_voices.json')
+    if phase1_file.exists():
+        with open(phase1_file, 'r') as f:
+            phase1_results = json.load(f)
+        prime_voices_data = phase1_results.get('prime_voices', [])
+        print(f"✓ Loaded {len(prime_voices_data)} prime voices from Phase 1 results")
+        
+        # Convert to format expected by rest of script (with mock coherence/phase for now)
+        prime_voices = []
+        for v in prime_voices_data[:20]:  # Use first 20 for computation
+            prime_voices.append({
+                'name': v['name'],
+                'coherence': 0.9 + (hash(v['name']) % 10) / 100,  # Mock coherence
+                'phase': (hash(v['name']) % 100) / 1000  # Mock phase
+            })
+    else:
+        print("⚠ Phase 1 results not found, using mock data")
+        print("   Run: make phase1  (or: python3 scripts/phase1_prime_voices.py)")
+        # Mock prime voices for demonstration
+        prime_voices = [
+            {'name': 'voice.add', 'coherence': 0.95, 'phase': 0.1},
+            {'name': 'voice.multiply', 'coherence': 0.92, 'phase': 0.2},
+            {'name': 'voice.compose', 'coherence': 0.98, 'phase': 0.15},
+            {'name': 'voice.chain', 'coherence': 0.94, 'phase': 0.12},
+            {'name': 'voice.certify', 'coherence': 0.97, 'phase': 0.18},
+        ]
     
-    print(f"Found {len(prime_voices)} prime voices")
+    print(f"Using {len(prime_voices)} prime voices for computation")
     print()
     
     # Phase 2: Compute functor values
