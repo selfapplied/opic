@@ -137,19 +137,19 @@ repos: check-opic
 
 perf:
 	@echo "Running opic performance tests..."
-	@./performance_test.py
+	@scripts/performance_test.py
 
 compare:
 	@echo "Running opic performance comparisons..."
-	@./comparison_test.py
+	@scripts/comparison_test.py
 
 intelligence:
 	@echo "Running opic intelligence tests..."
-	@./intelligence_test.py
+	@scripts/intelligence_test.py
 
 benchmark:
 	@echo "Running Zeta Intelligence Benchmark..."
-	@./zib.py
+	@scripts/zib.py
 
 puzzle-code:
 	@echo "Running Code Mutation Puzzle..."
@@ -178,7 +178,7 @@ puzzle-dream:
 puzzles: puzzle-code puzzle-voice puzzle-bootstrap puzzle-analogy puzzle-repair puzzle-dream
 	@echo ""
 	@echo "Running all Level-2 puzzles..."
-	@./puzzles.py
+	@scripts/puzzles.py
 
 level3-genesis:
 	@echo "Running Operator Genesis Puzzle..."
@@ -244,7 +244,7 @@ transcendence: level4
 
 draw:
 	@echo "Generating opic drawings..."
-	@./draw.py
+	@scripts/draw.py
 
 # Launch components (aligned with company_seed.ops)
 # Entry points: witness checkpoints that opic works
