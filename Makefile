@@ -278,6 +278,11 @@ pools: check-opic
 	@echo "Learning Pools..."
 	@python3 opic execute systems/learning_pools.ops
 
+# Riemann Hypothesis Experiment
+riemann-experiment:
+	@echo "Running Riemann Hypothesis baseline simulation..."
+	@python3 scripts/riemann_experiment.py
+
 # Default: give user a shell with opic available
 default: shell
 
