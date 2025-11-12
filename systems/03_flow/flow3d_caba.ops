@@ -1,0 +1,14 @@
+;;; flow3d_caba.ops — CABA export: pack fields/spectra, verify on write
+
+include systems/flow3d_core.ops
+include systems/caba_spec.ops
+
+;; ops.io.caba: mode A|B, pack snapshot, verify, emit digest
+voice export.flow.caba.A / { u + U + time + config + N + kx + ky + kz -> compute.parseval.energy -> caba.header.mode.A -> caba.pack.mode.A -> caba.trailer.mode.A -> verify.on.write -> ⟨caba_snapshot_A⟩ }
+voice export.flow.caba.B / { u + U + E_k + time + config + seed + N + kx + ky + kz -> compute.power.spectrum -> caba.header.mode.B -> caba.pack.mode.B -> caba.trailer.mode.B -> verify.on.write -> ⟨caba_snapshot_B⟩ }
+
+;; Record hook: export fields/spectra directly into CABA during simulation
+voice record.hook.caba / { u + U + E_k + time + step + config + mode + output_dir -> check.snapshot.interval -> export.flow.caba.A + export.flow.caba.B -> verify.on.write -> emit.digest.line -> store.snapshot -> snapshot_recorded }
+
+target flow3d_caba / "flow3d_caba"
+voice main / { export.flow.caba.A + export.flow.caba.B + record.hook.caba -> flow3d_caba }

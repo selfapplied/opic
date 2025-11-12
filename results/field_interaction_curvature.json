@@ -1,0 +1,52 @@
+{
+  "results": [
+    {
+      "epsilon": 0.0,
+      "lyapunov_max": 100.0,
+      "transfer_entropy_zx": 0.030059971491661147,
+      "transfer_entropy_xz": 0.030060721846655616,
+      "spectral_kl": -8.999653586931577e-10,
+      "curvature": 9999999998.999998
+    },
+    {
+      "epsilon": 0.01,
+      "lyapunov_max": 100.0,
+      "transfer_entropy_zx": 0.030071342529319058,
+      "transfer_entropy_xz": 0.030070901309366828,
+      "spectral_kl": 1.4430099278840285e-07,
+      "curvature": 9999999998.999998
+    },
+    {
+      "epsilon": 0.02,
+      "lyapunov_max": 100.0,
+      "transfer_entropy_zx": 0.030243712747826265,
+      "transfer_entropy_xz": 0.030242124232387625,
+      "spectral_kl": 2.0911279465189167e-07,
+      "curvature": 9999999998.999998
+    },
+    {
+      "epsilon": 0.05,
+      "lyapunov_max": 100.0,
+      "transfer_entropy_zx": 0.03014111263876166,
+      "transfer_entropy_xz": 0.030144323853448642,
+      "spectral_kl": 1.403224981168725e-06,
+      "curvature": 9999999998.999998
+    },
+    {
+      "epsilon": 0.1,
+      "lyapunov_max": 100.0,
+      "transfer_entropy_zx": 0.02859304177139817,
+      "transfer_entropy_xz": 0.028614036232625723,
+      "spectral_kl": 6.027578719407548e-06,
+      "curvature": 9999999998.999998
+    },
+    {
+      "epsilon": 0.2,
+      "lyapunov_max": 100.0,
+      "transfer_entropy_zx": 0.024905070334129878,
+      "transfer_entropy_xz": 0.024939109659387063,
+      "spectral_kl": 8.499854166886772e-06,
+      "curvature": 9999999998.999998
+    }
+  ]
+}

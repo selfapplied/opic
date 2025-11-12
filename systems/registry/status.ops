@@ -1,0 +1,264 @@
+;;; status.ops — Extensible status registry system
+
+include base.ops
+
+;; ============================================================================
+;; DEFINITIONS
+;; ============================================================================
+
+def status {
+  name,
+  display_name,
+  transitions,
+  handlers,
+  metadata
+}
+
+def status_transition {
+  from_status,
+  to_status,
+  conditions,
+  validators,
+  handlers
+}
+
+def status_registry {
+  registry,
+  statuses,
+  transitions,
+  default_status
+}
+
+;; ============================================================================
+;; OPERATIONS
+;; ============================================================================
+
+voice register / {
+  status_registry + status_name + display_name + transitions + handlers + metadata + description + usage + examples + related_entries -> 
+  create_entry -> 
+  register -> 
+  updated_registry
+}
+
+voice create_entry / {
+  status_name + display_name + transitions + handlers + metadata + description + usage + examples + related_entries -> 
+  build_status_config -> 
+  create_entry -> 
+  status_entry
+}
+
+voice build_status_config / {
+  status_name + display_name + transitions + handlers + metadata -> 
+  combine_fields -> 
+  config
+}
+
+voice register_transition / {
+  status_registry + from_status + to_status + conditions -> 
+  create_transition -> 
+  add_transition -> 
+  updated_registry
+}
+
+voice create_transition / {
+  from_status + to_status + conditions + validators + handlers -> 
+  build_transition -> 
+  transition
+}
+
+voice can_transition / {
+  status_registry + from_status + to_status + context -> 
+  find_transition -> 
+  check_conditions -> 
+  can_transition
+}
+
+voice find_transition / {
+  status_registry + from_status + to_status -> 
+  lookup_transition -> 
+  transition
+}
+
+voice check_conditions / {
+  transition + context -> 
+  evaluate_conditions -> 
+  conditions_met
+}
+
+voice transition / {
+  status_registry + entity + from_status + to_status + context -> 
+  can_transition -> 
+  validate_transition -> 
+  execute_handlers -> 
+  update_entity -> 
+  transitioned_entity
+}
+
+voice validate_transition / {
+  transition + context -> 
+  run_validators -> 
+  validation_passed
+}
+
+voice execute_handlers / {
+  transition + entity + context -> 
+  run_handlers -> 
+  handled_entity
+}
+
+voice get / {
+  status_registry + status_name -> 
+  get -> 
+  status_entry
+}
+
+voice get_handlers / {
+  status_registry + status_name -> 
+  get -> 
+  extract_handlers -> 
+  handlers
+}
+
+voice list / {
+  status_registry -> 
+  list -> 
+  status_list
+}
+
+voice help / {
+  status_registry -> 
+  help -> 
+  status_help
+}
+
+voice help_status / {
+  status_registry + status_name -> 
+  help_entry -> 
+  status_help
+}
+
+voice discover / {
+  status_registry + query -> 
+  discover -> 
+  matching_statuses
+}
+
+voice show_usage / {
+  status_registry -> 
+  show_usage -> 
+  usage_text
+}
+
+voice show_examples / {
+  status_registry -> 
+  show_examples -> 
+  examples_text
+}
+
+voice list_transitions / {
+  status_registry + from_status -> 
+  get -> 
+  extract_transitions -> 
+  valid_transitions
+}
+
+;; ============================================================================
+;; BUILT-IN STATUSES
+;; ============================================================================
+
+voice active / {
+  -> 
+  create "active" "Active" [] [] {} 
+    "Active status - entity is operational and compliant" 
+    "Use when entity is functioning normally" 
+    ["registry.update_status entity 'active' reason"] 
+    ["suspended" "dissolved"] -> 
+  active_status
+}
+
+voice suspended / {
+  -> 
+  create "suspended" "Suspended" ["active"] [] {} 
+    "Suspended status - entity temporarily non-operational" 
+    "Use when entity needs temporary suspension, can reactivate" 
+    ["registry.suspend_realm realm reason"] 
+    ["active"] -> 
+  suspended_status
+}
+
+voice dissolved / {
+  -> 
+  create "dissolved" "Dissolved" [] [] {} 
+    "Dissolved status - entity permanently terminated" 
+    "Use when entity is permanently dissolved, assets transferred" 
+    ["registry.dissolve_realm realm proposal"] 
+    [] -> 
+  dissolved_status
+}
+
+voice pending / {
+  -> 
+  create "pending" "Pending" ["active" "suspended"] [] {} 
+    "Pending status - entity awaiting activation or review" 
+    "Use when entity is being set up or reviewed" 
+    ["registry.register_realm realm charter"] 
+    ["active" "suspended"] -> 
+  pending_status
+}
+
+voice init_registry / {
+  -> 
+  create "status_registry" null -> 
+  register_active -> 
+  register_suspended -> 
+  register_dissolved -> 
+  register_pending -> 
+  status_registry
+}
+
+voice register_active / {
+  status_registry -> 
+  register "active" "Active" [] [] {} 
+    "Active status - entity is operational and compliant" 
+    "Use when entity is functioning normally" 
+    ["registry.update_status entity 'active' reason"] 
+    ["suspended" "dissolved"] -> 
+  updated_registry
+}
+
+voice register_suspended / {
+  status_registry -> 
+  register "suspended" "Suspended" ["active"] [] {} 
+    "Suspended status - entity temporarily non-operational" 
+    "Use when entity needs temporary suspension, can reactivate" 
+    ["registry.suspend_realm realm reason"] 
+    ["active"] -> 
+  updated_registry
+}
+
+voice register_dissolved / {
+  status_registry -> 
+  register "dissolved" "Dissolved" [] [] {} 
+    "Dissolved status - entity permanently terminated" 
+    "Use when entity is permanently dissolved, assets transferred" 
+    ["registry.dissolve_realm realm proposal"] 
+    [] -> 
+  updated_registry
+}
+
+voice register_pending / {
+  status_registry -> 
+  register "pending" "Pending" ["active" "suspended"] [] {} 
+    "Pending status - entity awaiting activation or review" 
+    "Use when entity is being set up or reviewed" 
+    ["registry.register_realm realm charter"] 
+    ["active" "suspended"] -> 
+  updated_registry
+}
+
+target status_registry / "status_system"
+voice main / {
+  status_registry + status_name -> 
+  get -> 
+  status_registry
+}

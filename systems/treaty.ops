@@ -1,9 +1,9 @@
 ;;; treaty.ops — Inter-Realm Treaty System (Mozilla Public Benefit Network style)
 
-include systems/governance.ops
-include systems/consensus.ops
-include systems/certificate.ops
-include systems/registry.ops
+include protocol/governance.ops
+include protocol/consensus.ops
+include protocol/certificate.ops
+include protocol/registry.ops
 
 ;; Treaty definitions
 def inter_realm_treaty { id, participating_realms, shared_ip_pool, mutual_defense, data_use_boundaries, signed_date, expires_date, signatures }

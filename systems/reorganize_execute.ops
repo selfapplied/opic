@@ -1,0 +1,74 @@
+;;; reorganize_execute.ops — Execute Reorganization
+
+include systems/reorganize_plan.ops
+
+;; Step-by-step execution
+voice step.1.create.structure / {
+  create.core.structure -> 
+  create.systems.structure -> 
+  create.docs.structure -> 
+  structure_created
+}
+
+voice step.2.classify.files / {
+  all_files -> 
+  classify.domain -> 
+  classify.topic -> 
+  files_classified
+}
+
+voice step.3.migrate.core / {
+  core_files -> 
+  migrate.core -> 
+  core_migrated
+}
+
+voice step.4.migrate.systems / {
+  systems_files -> 
+  migrate.systems -> 
+  systems_migrated
+}
+
+voice step.5.migrate.docs / {
+  docs_files -> 
+  migrate.docs -> 
+  docs_migrated
+}
+
+voice step.6.archive.experiments / {
+  experiment_files -> 
+  archive.experiments -> 
+  experiments_archived
+}
+
+voice step.7.update.references / {
+  all_ops_files -> 
+  update.includes -> 
+  all_docs -> 
+  update.references -> 
+  references_updated
+}
+
+voice step.8.validate / {
+  new_structure -> 
+  validate.structure -> 
+  validation_complete
+}
+
+;; Full execution
+voice execute.reorganization / {
+  current_state -> 
+  step.1.create.structure -> 
+  step.2.classify.files -> 
+  step.3.migrate.core -> 
+  step.4.migrate.systems -> 
+  step.5.migrate.docs -> 
+  step.6.archive.experiments -> 
+  step.7.update.references -> 
+  step.8.validate -> 
+  reorganization_executed
+}
+
+target reorganize_execute / "execute"
+voice main / { execute.reorganization -> reorganize_execute }
+

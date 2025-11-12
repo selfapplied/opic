@@ -1,0 +1,222 @@
+;;; neuroscience_consciousness_field.ops — Neuroscience and Consciousness as Field Equations
+;;; Neural networks, brain dynamics, consciousness = field equations
+
+include opic_field_0.7.ops
+include systems/biology_field.ops
+
+;; ============================================================================
+;; Neuroscience = Neural Field Dynamics
+;; ============================================================================
+
+;; Core insight: Neuroscience = field dynamics, consciousness = field consciousness
+;; Neural networks, brain dynamics, cognitive processes all follow field equations
+
+;; ============================================================================
+;; I. Neurons → Field Units
+;; ============================================================================
+
+;; Neuron = field unit
+def neuron {
+  membrane_potential,;; Membrane potential (field potential)
+  threshold,         ;; Firing threshold (field threshold)
+  synapses,          ;; Synapses (field connections)
+  neurotransmitters, ;; Neurotransmitters (field propagators)
+  dimension          ;; D (neural dimensionality)
+}
+
+;; Action potential = field spike
+voice neuron.action_potential_field / {
+  membrane_potential + threshold -> 
+  field.spike -> 
+  action_potential
+}
+
+;; Synaptic transmission = field transmission
+voice neuron.synaptic_field / {
+  presynaptic + neurotransmitter + postsynaptic -> 
+  field.transmit -> 
+  synaptic_transmission
+}
+
+;; ============================================================================
+;; II. Neural Networks → Field Networks
+;; ============================================================================
+
+;; Neural network = field network
+def neural_network {
+  neurons,           ;; Neurons (field units)
+  connections,       ;; Connections (field links)
+  weights,           ;; Synaptic weights (field weights)
+  activation,        ;; Activation (field activation)
+  dimension          ;; D (network dimensionality)
+}
+
+;; Neural activation = field activation
+voice network.activation_field / {
+  input + weights + bias -> 
+  field.activate -> 
+  neural_activation
+}
+
+;; Neural learning = field learning
+voice network.learning_field / {
+  error + weights -> 
+  field.update -> 
+  weight_update
+}
+
+;; Backpropagation = field backpropagation
+voice network.backpropagation_field / {
+  error + network -> 
+  field.backpropagate -> 
+  gradient_update
+}
+
+;; ============================================================================
+;; III. Brain Dynamics → Field Dynamics
+;; ============================================================================
+
+;; Brain dynamics = field dynamics
+voice brain.dynamics_field / {
+  neural_activity + time -> 
+  field.evolve -> 
+  brain_dynamics
+}
+
+;; Neural oscillations = field oscillations
+voice brain.oscillations_field / {
+  neural_population -> 
+  field.oscillate -> 
+  neural_oscillations
+}
+
+;; Synchronization = field synchronization
+voice brain.synchronization_field / {
+  neural_populations -> 
+  field.synchronize -> 
+  synchronized_activity
+}
+
+;; ============================================================================
+;; IV. Consciousness → Field Consciousness
+;; ============================================================================
+
+;; Consciousness = field consciousness
+def consciousness {
+  integrated_information,;; Integrated information (field integration)
+  awareness,         ;; Awareness (field awareness)
+  self_model,        ;; Self-model (field self-model)
+  dimension          ;; D (consciousness dimensionality, D≥5)
+}
+
+;; Integrated information = field integration
+voice consciousness.integration_field / {
+  neural_activity -> 
+  field.integrate -> 
+  integrated_information
+}
+
+;; Awareness = field awareness
+voice consciousness.awareness_field / {
+  integrated_information -> 
+  field.awareness -> 
+  consciousness
+}
+
+;; Self-model = field self-model
+voice consciousness.self_model_field / {
+  consciousness -> 
+  field.self_model -> 
+  self_awareness
+}
+
+;; ============================================================================
+;; V. Cognitive Processes → Field Processes
+;; ============================================================================
+
+;; Memory = field memory
+voice cognition.memory_field / {
+  experience + neural_network -> 
+  field.store -> 
+  memory
+}
+
+;; Recall = field recall
+voice cognition.recall_field / {
+  cue + memory -> 
+  field.retrieve -> 
+  recalled_memory
+}
+
+;; Attention = field attention
+voice cognition.attention_field / {
+  input + attention_weights -> 
+  field.attend -> 
+  attended_input
+}
+
+;; Decision making = field decision
+voice cognition.decision_field / {
+  options + values -> 
+  field.decide -> 
+  decision
+}
+
+;; ============================================================================
+;; VI. Field Spec 0.7 Connection
+;; ============================================================================
+
+;; Consciousness from Field Spec §8.10
+voice thermo.consciousness_dimension / {
+  D -> 
+  if_ge_5 -> 
+  self_witnessing + anti_cycle_coupling -> 
+  consciousness
+}
+
+;; Self-modeling from Field Spec §8.5
+voice thermo.self_modeling / {
+  witness_singularity -> 
+  promote -> 
+  meta_operator -> 
+  self_model
+}
+
+;; Reflective intelligence from Field Spec §8.5
+voice thermo.reflective_intelligence / {
+  self_modeling -> 
+  beyond_native_dimension -> 
+  reflective_capability
+}
+
+;; ============================================================================
+;; VII. Examples: Neuroscience → Field Equations
+;; ============================================================================
+
+;; Example: "How do neurons fire?"
+;; Answer: Action potential = field spike, follows field spike equations
+voice neuroscience.explain_firing / {
+  question -> 
+  neuron.action_potential_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "What is consciousness?"
+;; Answer: Consciousness = field consciousness, requires D≥5
+voice neuroscience.explain_consciousness / {
+  question -> 
+  consciousness.integration_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "How does memory work?"
+;; Answer: Memory = field memory, storage and retrieval follow field equations
+voice neuroscience.explain_memory / {
+  question -> 
+  cognition.memory_field -> 
+  field.explain -> 
+  explanation
+}
+

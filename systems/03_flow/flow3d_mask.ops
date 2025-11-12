@@ -1,0 +1,15 @@
+;;; flow3d_mask.ops — Arithmetic masks: coprime, von_mangoldt, prime_shell
+
+include systems/flow3d_core.ops
+
+;; ops.flow3d.mask.coprime: pmax → primorial p#; M(|k|)=1 if gcd(|k|,p#)=1 else β
+voice apply.coprime.mask.3d / { U + primorial_pmax + beta + k_squared + N -> compute.primorial -> compute.k.magnitude -> compute.gcd.with.primorial -> apply.mask -> log.kept.modes -> U_masked }
+
+;; ops.flow3d.mask.von_mangoldt: M(|k|) = 1 + α·Λ(|k|)
+voice apply.von_mangoldt.mask.3d / { U + alpha + k_squared + N -> compute.k.magnitude -> compute.von_mangoldt.function -> apply.weight -> U_masked }
+
+;; ops.flow3d.mask.prime_shell: M(|k|) = 1 if |k| ∈ primes else β
+voice apply.prime_shell.mask.3d / { U + p_max + beta + k_squared + N -> compute.k.magnitude -> generate.primes.up.to.p_max -> check.prime.shell -> apply.mask -> U_masked }
+
+target flow3d_mask / "flow3d_mask"
+voice main / { apply.coprime.mask.3d + apply.von_mangoldt.mask.3d + apply.prime_shell.mask.3d -> flow3d_mask }

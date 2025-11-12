@@ -1,0 +1,62 @@
+;;; translation_syntax.ops — Crisp syntax for translation registration
+
+include syntax.ops
+include ../registry/translation.ops
+
+;; ============================================================================
+;; TRANSLATION REGISTRATION SYNTAX
+;; ============================================================================
+
+;; Crisp syntax: register translation "mse" from "opic" to "swift" with {
+;;   pattern: "error = prediction - target"
+;;   template: "let error = prediction - target; return error * error"
+;;   description: "Mean squared error translation"
+;;   examples: ["error = prediction - target → let error = ..."]
+;; }
+
+;; Parse and transform
+voice grammar.parse_translation_registration / {
+  line -> 
+  grammar.match "register translation" -> 
+  grammar.extract_quoted_name -> 
+  grammar.match "from" -> 
+  grammar.extract_quoted_source -> 
+  grammar.match "to" -> 
+  grammar.extract_quoted_target -> 
+  grammar.extract_with_block -> 
+  grammar.parse_config -> 
+  grammar.transform_to_translation_register -> 
+  transformed
+}
+
+;; Transform to translation.register call
+voice grammar.transform_to_translation_register / {
+  rule_name + source_lang + target_lang + config_map -> 
+  grammar.get_field "pattern" -> 
+  grammar.get_field "template" -> 
+  grammar.get_field "metadata" -> 
+  grammar.get_field "priority" -> 
+  grammar.get_field "description" -> 
+  grammar.get_field "usage" -> 
+  grammar.get_field "examples" -> 
+  grammar.get_field "related" -> 
+  format_translation_register -> 
+  register_call
+}
+
+;; Format as translation.register call
+voice format_translation_register / {
+  rule_name + pattern + template + source_lang + target_lang + metadata + priority + description + usage + examples + related -> 
+  "translation.register translation_registry \"" + rule_name + "\" \"" + pattern + "\" \"" + 
+  template + "\" \"" + source_lang + "\" \"" + target_lang + "\" " + format_dict metadata + 
+  " " + priority + " \"" + description + "\" \"" + usage + "\" " + format_list examples + 
+  " " + format_list related -> 
+  register_call
+}
+
+target translation_syntax / "translation_registration_syntax"
+voice main / {
+  grammar.parse_translation_registration -> 
+  translation_syntax
+}
+

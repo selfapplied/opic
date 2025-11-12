@@ -1,0 +1,57 @@
+;;; spectral_toy.ops — Zeta-like operator: Fourier–Laplace transform, critical-line zeros
+
+include systems/flow3d_core.ops
+
+;; Generate zeta-like operator: multiplicative function → spectrum
+voice generate.zeta.like.operator / {
+  multiplicative_function + s -> 
+  compute.fourier.laplace.transform -> 
+  compute.spectrum -> 
+  find.zeros -> 
+  zeta_operator + spectrum + zeros
+}
+
+;; Fourier–Laplace transform: ∫₀^∞ f(t) t^{s-1} e^{-iωt} dt
+voice compute.fourier.laplace.transform / {
+  function + s + omega -> 
+  compute.integrand -> 
+  integrate -> 
+  transform_result
+}
+
+;; Find zeros: where spectrum crosses zero
+voice find.zeros / {
+  spectrum + critical_line -> 
+  detect.zero.crossings -> 
+  compute.spacing.variance -> 
+  zeros + spacing_variance
+}
+
+;; Critical-line zeros: Re(s) = 1/2
+voice compute.critical.line.zeros / {
+  spectrum + s_range -> 
+  restrict.to.critical.line -> 
+  find.zeros -> 
+  critical_zeros
+}
+
+;; Symmetry → minimal entropy
+voice compute.entropy.from.symmetry / {
+  zeros + spectrum -> 
+  compute.spacing.distribution -> 
+  compute.entropy -> 
+  entropy_value
+}
+
+;; Visualize: spectrum + zeros + entropy
+voice visualize.spectral.toy / {
+  zeta_operator + zeros + entropy -> 
+  plot.spectrum -> 
+  mark.zeros -> 
+  show.entropy -> 
+  visualization
+}
+
+target spectral_toy / "spectral_toy"
+voice main / { generate.zeta.like.operator + compute.critical.line.zeros + compute.entropy.from.symmetry + visualize.spectral.toy -> spectral_toy }
+

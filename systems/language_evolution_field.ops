@@ -1,0 +1,243 @@
+;;; language_evolution_field.ops — Language Evolution as Field Evolution
+;;; Language change, spread, interaction = field equations
+
+include opic_field_0.7.ops
+include systems/zeta_grammar_field.ops
+
+;; ============================================================================
+;; Language Evolution = Field Evolution
+;; ============================================================================
+
+;; Core insight: Language evolution = field evolution
+;; Language change, spread, interaction all follow field equations
+
+;; ============================================================================
+;; I. Language Change → Field Evolution
+;; ============================================================================
+
+;; Language change = field evolution
+def language_change {
+  initial_form,     ;; Initial linguistic form (field state)
+  final_form,       ;; Final linguistic form (evolved field state)
+  change_rate,      ;; Rate of change (field evolution rate)
+  time,             ;; Time elapsed (field time parameter)
+  dimension         ;; D (linguistic dimensionality)
+}
+
+;; Phonetic change = field evolution
+voice language.phonetic_change_field / {
+  initial_sound + time -> 
+  field.evolve -> 
+  evolved_sound
+}
+
+;; Semantic change = field evolution
+voice language.semantic_change_field / {
+  initial_meaning + time -> 
+  field.evolve -> 
+  evolved_meaning
+}
+
+;; Grammatical change = field evolution
+voice language.grammatical_change_field / {
+  initial_grammar + time -> 
+  field.evolve -> 
+  evolved_grammar
+}
+
+;; ============================================================================
+;; II. Language Spread → Field Propagation
+;; ============================================================================
+
+;; Language spread = field propagation
+def language_spread {
+  source_population,;; Source population (field source)
+  target_population,;; Target population (field target)
+  transmission_rate,;; Transmission rate (field propagation rate)
+  distance,         ;; Geographic distance (field distance)
+  dimension         ;; D (spatial dimensionality)
+}
+
+;; Language diffusion = field diffusion
+voice language.diffusion_field / {
+  language + population + distance -> 
+  field.propagate -> 
+  language_spread
+}
+
+;; Wave model = field wave
+voice language.wave_model_field / {
+  linguistic_feature + geography -> 
+  field.wave -> 
+  wave_propagation
+}
+
+;; ============================================================================
+;; III. Language Contact → Field Interaction
+;; ============================================================================
+
+;; Language contact = field interaction
+def language_contact {
+  language1,        ;; Language 1 (field 1)
+  language2,       ;; Language 2 (field 2)
+  contact_intensity,;; Contact intensity (field coupling strength)
+  borrowing,        ;; Borrowing (field transfer)
+  dimension         ;; D (contact dimensionality)
+}
+
+;; Language borrowing = field transfer
+voice language.borrowing_field / {
+  source_language + target_language + contact -> 
+  field.transfer -> 
+  borrowed_features
+}
+
+;; Language mixing = field mixing
+voice language.mixing_field / {
+  language1 + language2 + contact -> 
+  field.mix -> 
+  mixed_language
+}
+
+;; Creole formation = field combination
+voice language.creole_field / {
+  pidgin + native_language -> 
+  field.combine -> 
+  creole
+}
+
+;; ============================================================================
+;; IV. Language Family → Field Family
+;; ============================================================================
+
+;; Language family = field family
+def language_family {
+  proto_language,   ;; Proto-language (ancestral field)
+  daughter_languages,;; Daughter languages (descendant fields)
+  divergence_time, ;; Divergence time (field evolution time)
+  dimension         ;; D (family dimensionality)
+}
+
+;; Language divergence = field divergence
+voice language.divergence_field / {
+  proto_language + time -> 
+  field.divergence -> 
+  daughter_languages
+}
+
+;; Language reconstruction = field reconstruction
+voice language.reconstruction_field / {
+  daughter_languages -> 
+  field.reconstruct -> 
+  proto_language
+}
+
+;; ============================================================================
+;; V. Language Acquisition → Field Learning
+;; ============================================================================
+
+;; Language acquisition = field learning
+def language_acquisition {
+  child,            ;; Child (learning field)
+  input_language,   ;; Input language (source field)
+  acquisition_rate, ;; Acquisition rate (field learning rate)
+  critical_period,  ;; Critical period (field learning window)
+  dimension         ;; D (acquisition dimensionality)
+}
+
+;; First language acquisition = field learning
+voice language.acquisition_field / {
+  child + input_language + time -> 
+  field.learn -> 
+  acquired_language
+}
+
+;; Critical period = field learning window
+voice language.critical_period_field / {
+  age + language_input -> 
+  field.learning_window -> 
+  if_open -> acquisition_possible
+}
+
+;; ============================================================================
+;; VI. Language Variation → Field Variation
+;; ============================================================================
+
+;; Language variation = field variation
+def language_variation {
+  standard_form,    ;; Standard form (field standard)
+  variants,         ;; Variants (field variants)
+  social_factors,   ;; Social factors (field factors)
+  dimension         ;; D (variation dimensionality)
+}
+
+;; Dialect variation = field variation
+voice language.dialect_field / {
+  language + geography + social -> 
+  field.vary -> 
+  dialects
+}
+
+;; Register variation = field variation
+voice language.register_field / {
+  language + context + social -> 
+  field.vary -> 
+  registers
+}
+
+;; ============================================================================
+;; VII. Language Extinction → Field Extinction
+;; ============================================================================
+
+;; Language extinction = field extinction
+voice language.extinction_field / {
+  language + pressure + time -> 
+  field.decay -> 
+  if_below_threshold -> extinction
+}
+
+;; Language death = field death
+voice language.death_field / {
+  language + no_speakers -> 
+  field.extinction -> 
+  language_death
+}
+
+;; Language revitalization = field revival
+voice language.revitalization_field / {
+  extinct_language + effort -> 
+  field.revive -> 
+  revitalized_language
+}
+
+;; ============================================================================
+;; VIII. Examples: Language Evolution → Field Equations
+;; ============================================================================
+
+;; Example: "How do languages change?"
+;; Answer: Language change = field evolution, follows field evolution equations
+voice language.explain_change / {
+  question -> 
+  language.phonetic_change_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "How do languages spread?"
+;; Answer: Language spread = field propagation, follows field propagation equations
+voice language.explain_spread / {
+  question -> 
+  language.diffusion_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "What causes language contact?"
+;; Answer: Language contact = field interaction, follows field interaction equations
+voice language.explain_contact / {
+  question -> 
+  language.borrowing_field -> 
+  field.explain -> 
+  explanation
+}
+

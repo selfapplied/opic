@@ -1,0 +1,26 @@
+;;; mode7_demo.ops — Mode 7 Lab Demo
+
+include systems/opic_mode7_lab.ops
+
+;; Run Mode 7 lab with demo parameters
+voice mode7.demo / {
+  budget [steps: 100, walltime: 3600] + 
+  seeds [42, 123, 456, 789, 1000] + 
+  targets [parity: 0.9, delta_mi: 0.0] + 
+  health_constraints [divL2: 1e-10, parseval: 1e-12] -> 
+  mode7.lab -> 
+  demo_results
+}
+
+;; Generate Mode 7 reel from golden seed
+voice generate.mode7.reel.demo / {
+  golden_seed 42 + 
+  camera_path [zoom: 1.0, rotation: 0.0] + 
+  configs [baseline, primorial, random_mask] -> 
+  generate.mode7.reel -> 
+  mode7_reel
+}
+
+target mode7_demo / "mode7_demo"
+voice main / { mode7.demo + generate.mode7.reel.demo -> mode7_demo }
+

@@ -1,0 +1,47 @@
+;;; flow3d_core.ops — Production 3D Flow: fft3, helmholtz_project, nonlinear, viscous, force_shell, rk4
+
+include systems/ns_tensor_validation.ops
+
+;; fft3(u) → U / ifft3(U) → u: unitary norm, axis order [0,1,2], real↔Hermitian compact
+voice fft3 / { u + N -> fft3d.unitary -> U }
+voice ifft3 / { U + N -> ifft3d.unitary -> u }
+
+;; helmholtz_project(U,k) → Udivfree: U - k(k·U)/|k|² for k≠0; pass DC unchanged
+voice helmholtz_project / { U + kx + ky + kz + N -> project.helmholtz.leray.3d -> Udivfree }
+
+;; nonlinear(u) → N: pseudospectral -u·∇u in x-space, FFT back, project
+voice nonlinear / { u + N + kx + ky + kz -> fft3 -> compute.gradient.3d -> ifft3 -> compute.u.dot.grad.u -> negate -> fft3 -> helmholtz_project -> N }
+
+;; viscous(U,nu,k) → L: multiply by -ν|k|²
+voice viscous / { U + nu + k_squared -> multiply.by.negative.nu.k.squared -> L }
+
+;; force_shell(k_f, amp, seed) → F(k): divergence-free, fixed shell, fixed RNG
+voice force_shell / { k_f + amp + seed + N + kx + ky + kz -> generate.narrow.shell.force -> enforce.divergence.free -> helmholtz_project -> F }
+
+;; mask_arith(U, scheme) → U': coprime(p#), von_mangoldt(alpha), prime_shell(beta). Apply after projection.
+voice mask_arith / { U + scheme + params -> match coprime -> coprime.mask, match von_mangoldt -> von.mangoldt.mask, match prime_shell -> prime.shell.mask -> U' }
+
+;; descent(U, eta, alpha, k) → D: gradient of T = ½||u||² + α||∇u||² in projected space
+voice descent / { U + eta + alpha + k_squared + N + kx + ky + kz -> compute.laplacian.term -> compute.u.minus.alpha.laplacian -> helmholtz_project -> multiply.by.negative.eta -> D }
+
+;; stepper_rk4(u, dt) → u': CFL-aware, project after each stage, dealias, emit diagnostics
+;; Solver hygiene: divL2 ≤1e-10 (spectral metric), print divL2 at each RK substage
+voice stepper_rk4 / { u + dt + config -> compute.cfl.dt -> check.cfl.limit -> compute.k1 -> project.after.stage -> check.divL2.stage -> dealias.2_3 -> compute.k2 -> project.after.stage -> check.divL2.stage -> dealias.2_3 -> compute.k3 -> project.after.stage -> check.divL2.stage -> dealias.2_3 -> compute.k4 -> project.after.stage -> check.divL2.stage -> combine.rk4.stages -> check.parseval.stage -> log.diagnostics -> log.energy.budget -> u' }
+
+;; Project after RK stage: enforce divergence-free
+voice project.after.stage / { u_stage + N + kx + ky + kz -> fft3 -> helmholtz_project -> ifft3 -> u_projected }
+
+;; 2/3 dealiasing: zero modes k > 2N/3
+voice dealias.2_3 / { U + N -> zero.modes.above.2N_3 -> U_dealiased }
+
+;; Invariants: divL2 ≤1e-10 (spectral metric), Parseval, energy budget
+voice compute.divL2 / { u + N + kx + ky + kz -> fft3 -> compute.divergence.k.space -> ifft3 -> compute.l2.norm -> divL2 }
+voice check.divL2.stage / { u_stage + N + kx + ky + kz -> compute.divL2 -> check.threshold.1e10 -> log.divL2.stage -> divL2_status }
+voice compute.energy / { u + N -> compute.magnitude.squared -> average -> multiply.by.half -> energy }
+voice compute.E_k / { U + kx + ky + kz + k_squared + N -> compute.shell.averaged.energy -> E_k }
+voice parseval.check / { u + U + N -> compute.energy.x.space + compute.energy.k.space -> compare.energies -> parseval_verified }
+;; Energy budget: log dE/dt vs injected - dissipated; plot residuals
+voice log.energy.budget / { u + U + force + viscous + mask + config -> compute.energy -> compute.injected.energy -> compute.dissipated.energy -> compute.residual -> log.energy.budget.entry }
+
+target flow3d_core / "flow3d_core"
+voice main / { fft3 + ifft3 + helmholtz_project + nonlinear + viscous + force_shell + mask_arith + descent + stepper_rk4 -> flow3d_core }

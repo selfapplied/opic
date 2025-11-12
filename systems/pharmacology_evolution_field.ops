@@ -1,0 +1,217 @@
+;;; pharmacology_evolution_field.ops — Catalysts, Receptors, Pharmacokinetics, Evolution as Field Equations
+;;; Enzymes, receptors, drug kinetics, evolution = field equations
+
+include opic_field_0.7.ops
+include systems/biology_field.ops
+
+;; ============================================================================
+;; Catalysts = Field Catalysts
+;; ============================================================================
+
+;; Catalyst = field catalyst
+def catalyst {
+  substrate,       ;; Substrate (field source)
+  product,         ;; Product (field target)
+  activation_energy,;; Activation energy (field barrier)
+  rate_enhancement,;; Rate enhancement (field amplification)
+  mechanism,       ;; Mechanism (field pathway)
+  dimension        ;; D (catalytic dimensionality)
+}
+
+;; Enzyme catalysis = field catalysis
+voice enzyme.catalysis_field / {
+  enzyme + substrate -> 
+  field.catalyze -> 
+  product + enzyme
+}
+
+;; Catalytic mechanism = field mechanism
+voice catalyst.mechanism_field / {
+  catalyst + substrate -> 
+  field.lower_barrier -> 
+  transition_state -> 
+  product
+}
+
+;; ============================================================================
+;; Cell Receptors = Field Receptors
+;; ============================================================================
+
+;; Cell receptor = field receptor
+def cell_receptor {
+  ligand,          ;; Ligand (field signal)
+  binding_site,    ;; Binding site (field target)
+  binding_affinity,;; Binding affinity (field coupling strength)
+  signal_transduction,;; Signal transduction (field propagation)
+  dimension        ;; D (receptor dimensionality)
+}
+
+;; Receptor binding = field binding
+voice receptor.binding_field / {
+  ligand + receptor -> 
+  coulomb.compute_potential -> 
+  binding_affinity -> 
+  bound_complex
+}
+
+;; Signal transduction = field transduction
+voice receptor.transduction_field / {
+  bound_receptor -> 
+  field.propagate -> 
+  cellular_response
+}
+
+;; Receptor activation = field activation
+voice receptor.activation_field / {
+  ligand_binding -> 
+  field.activate -> 
+  activated_receptor
+}
+
+;; ============================================================================
+;; Pharmacokinetics = Field Kinetics
+;; ============================================================================
+
+;; Pharmacokinetics = field kinetics
+def pharmacokinetics {
+  absorption,      ;; Absorption (field absorption)
+  distribution,    ;; Distribution (field distribution)
+  metabolism,      ;; Metabolism (field metabolism)
+  excretion,       ;; Excretion (field excretion)
+  clearance,       ;; Clearance (field clearance)
+  dimension        ;; D (pharmacokinetic dimensionality)
+}
+
+;; Drug absorption = field absorption
+voice pharmacokinetics.absorption_field / {
+  drug + membrane -> 
+  field.absorb -> 
+  absorbed_drug
+}
+
+;; Drug distribution = field distribution
+voice pharmacokinetics.distribution_field / {
+  drug + body_compartments -> 
+  field.distribute -> 
+  distributed_drug
+}
+
+;; Drug metabolism = field metabolism
+voice pharmacokinetics.metabolism_field / {
+  drug + enzyme -> 
+  field.metabolize -> 
+  metabolite
+}
+
+;; Drug excretion = field excretion
+voice pharmacokinetics.excretion_field / {
+  drug + kidney -> 
+  field.excrete -> 
+  excreted_drug
+}
+
+;; Clearance = field clearance
+voice pharmacokinetics.clearance_field / {
+  drug_concentration + clearance_rate -> 
+  field.clear -> 
+  cleared_drug
+}
+
+;; ============================================================================
+;; Evolution = Field Evolution
+;; ============================================================================
+
+;; Evolution = field evolution
+def evolution {
+  population,      ;; Population (field population)
+  variation,       ;; Variation (field variation)
+  selection,       ;; Selection (field selection)
+  drift,           ;; Genetic drift (field drift)
+  mutation,        ;; Mutation (field mutation)
+  dimension        ;; D (evolutionary dimensionality)
+}
+
+;; Natural selection = field selection
+voice evolution.selection_field / {
+  population + fitness -> 
+  field.select -> 
+  selected_population
+}
+
+;; Genetic drift = field drift
+voice evolution.drift_field / {
+  population + random -> 
+  field.drift -> 
+  drifted_population
+}
+
+;; Mutation = field mutation
+voice evolution.mutation_field / {
+  genome + error_rate -> 
+  field.perturb -> 
+  mutated_genome
+}
+
+;; Gene flow = field flow
+voice evolution.gene_flow_field / {
+  population1 + population2 -> 
+  field.flow -> 
+  gene_flow
+}
+
+;; Speciation = field speciation
+voice evolution.speciation_field / {
+  population + isolation -> 
+  field.divergence -> 
+  new_species
+}
+
+;; ============================================================================
+;; Modern Evolutionary Synthesis = Field Synthesis
+;; ============================================================================
+
+;; Modern synthesis = field synthesis
+voice evolution.modern_synthesis_field / {
+  natural_selection + genetic_drift + mutation + gene_flow -> 
+  field.synthesize -> 
+  evolutionary_change
+}
+
+;; Population genetics = field genetics
+voice evolution.population_genetics_field / {
+  allele_frequencies + selection + drift -> 
+  field.evolve -> 
+  evolved_frequencies
+}
+
+;; ============================================================================
+;; Examples: Pharmacology/Evolution → Field Equations
+;; ============================================================================
+
+;; Example: "How do enzymes work?"
+;; Answer: Enzymes = field catalysts, lower activation energy
+voice pharmacology.explain_enzyme / {
+  question -> 
+  enzyme.catalysis_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "How do cell receptors work?"
+;; Answer: Receptors = field receptors, binding = field binding
+voice pharmacology.explain_receptor / {
+  question -> 
+  receptor.binding_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "How does evolution work?"
+;; Answer: Evolution = field evolution, natural selection = field selection
+voice evolution.explain_evolution / {
+  question -> 
+  evolution.selection_field -> 
+  field.explain -> 
+  explanation
+}
+

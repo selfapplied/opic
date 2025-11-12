@@ -1,13 +1,52 @@
 ;;; generate_impl.ops — Code generation implementations in opic
 
+include systems/registry/translation.ops
+
 def code_generator { language, template, translation_rules }
 def translation_rule { pattern, source_lang, target_lang, template }
 
-;;; Swift translation rules (from opic implementations.ops)
-voice translate.mse.to.swift / "let error = prediction - target; return error * error"
-voice translate.crossentropy.to.swift / "let epsilon = 1e-15; let clipped = max(epsilon, min(1.0 - epsilon, prediction)); return -target * log(clipped) - (1.0 - target) * log(1.0 - clipped)"
-voice translate.gradient.to.swift / "return loss * learningRate"
-voice translate.optimize.to.swift / "return weight - learningRate * gradient"
+;; Initialize translation registry
+voice translation.init_registry / {
+  -> 
+  create_registry -> 
+  translation.register_swift_rules -> 
+  translation_registry
+}
+
+;; Register Swift translation rules
+voice translation.register_swift_rules / {
+  translation_registry -> 
+  translation.register "mse" "error = prediction - target" "let error = prediction - target; return error * error" "opic" "swift" {} -> 
+  translation.register "crossentropy" "epsilon" "let epsilon = 1e-15; let clipped = max(epsilon, min(1.0 - epsilon, prediction)); return -target * log(clipped) - (1.0 - target) * log(1.0 - clipped)" "opic" "swift" {} -> 
+  translation.register "gradient" "loss *" "return loss * learningRate" "opic" "swift" {} -> 
+  translation.register "optimize" "weight - rate * gradient" "return weight - learningRate * gradient" "opic" "swift" {} -> 
+  updated_registry
+}
+
+;; Get translations from registry
+voice translate.mse.to.swift / {
+  translation_registry + source_code -> 
+  translation.translate "opic" "swift" -> 
+  translated_code
+}
+
+voice translate.crossentropy.to.swift / {
+  translation_registry + source_code -> 
+  translation.translate "opic" "swift" -> 
+  translated_code
+}
+
+voice translate.gradient.to.swift / {
+  translation_registry + source_code -> 
+  translation.translate "opic" "swift" -> 
+  translated_code
+}
+
+voice translate.optimize.to.swift / {
+  translation_registry + source_code -> 
+  translation.translate "opic" "swift" -> 
+  translated_code
+}
 
 ;;; Neural network translations
 voice translate.matmul.to.swift / "var result = [Double](repeating: 0.0, count: input.count); vDSP_mmulD(input, 1, weights, 1, &result, 1, vDSP_Length(input.count), vDSP_Length(weights.count), vDSP_Length(1)); return result"

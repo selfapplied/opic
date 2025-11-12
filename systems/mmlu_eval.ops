@@ -1,0 +1,46 @@
+;;; mmlu_eval.ops — MMLU evaluation using opic's reasoning system (pure opic)
+
+;; Load MMLU dataset
+voice mmlu.load / {"data/benchmarks/mmlu.json" -> file_read -> json_decode}
+
+;; Collect all questions from all subjects
+voice mmlu.collect_questions / {mmlu_data -> extract_all_questions -> all_questions}
+
+;; Sample questions (for statistical significance, use 1000+)
+voice mmlu.sample / {all_questions + sample_size -> random_sample -> sample_questions}
+
+;; Answer question using opic reasoning
+voice mmlu.answer / {question + choices -> reason.answer -> answer_index}
+
+;; Check if answer is correct
+voice mmlu.check / {answer_index + correct_answer -> equals -> is_correct}
+
+;; Evaluate one question
+voice mmlu.eval_one / {
+  question + choices + correct_answer -> 
+  mmlu.answer -> 
+  mmlu.check -> 
+  score
+}
+
+;; Evaluate all questions in sample
+voice mmlu.evaluate_sample / {
+  sample_questions -> 
+  map_evaluate -> 
+  count_correct -> 
+  calculate_percentage -> 
+  mmlu_score
+}
+
+;; Main MMLU evaluation
+voice mmlu.evaluate / {
+  mmlu.load -> 
+  mmlu.collect_questions -> 
+  mmlu.sample -> 
+  mmlu.evaluate_sample -> 
+  results
+}
+
+target mmlu_eval / "mmlu_evaluation"
+voice main / {mmlu.evaluate -> mmlu_eval}
+

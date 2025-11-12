@@ -1,0 +1,32 @@
+;;; ops_eval_mi.ops — Mutual information: InfoNCE critic
+
+include systems/flow3d_core.ops
+
+;; InfoNCE critic (small) with seeds fixed
+voice compute.mi.infonce / {
+  assignment + observables + seeds -> 
+  build.infonce.critic -> 
+  train.critic -> 
+  compute.mutual.information -> 
+  mi_value
+}
+
+;; Report MI and ΔMI vs baselines
+voice compute.delta.mi / {
+  primorial_mi + baseline_mi + random_mask_mi + linearized_mi -> 
+  compute.differences -> 
+  compute.confidence.intervals -> 
+  delta_mi
+}
+
+;; ΔMI vs controls ± CI
+voice report.mi.metrics / {
+  mi_results + baseline_results + control_results -> 
+  compute.delta.mi -> 
+  compute.confidence.intervals -> 
+  mi_metrics
+}
+
+target ops_eval_mi / "eval_mi"
+voice main / { compute.mi.infonce + compute.delta.mi + report.mi.metrics -> ops_eval_mi }
+

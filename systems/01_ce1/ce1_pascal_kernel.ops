@@ -1,0 +1,39 @@
+;;; ce1_pascal_kernel.ops — Pascal Kernel: Combinatorial Lattice
+
+include systems/ce1_field_kernel.ops
+
+;; Pascal mod 10: C(n,k) mod 10
+voice pascal.mod10 / {
+  n + k -> 
+  compute.combination -> 
+  mod.ten -> 
+  pascal_value
+}
+
+;; Unit cycle: (1 → 3 → 9 → 7 → 1)
+voice unit.cycle / {
+  x -> 
+  multiply.by.three -> 
+  mod.ten -> 
+  unit_cycle_value
+}
+
+;; 7-trace cycle: (1 → 3 → 9 → 7 → 1)
+voice seven.trace.cycle / {
+  state -> 
+  compute.trace -> 
+  cycle.through.units -> 
+  seven_trace_state
+}
+
+;; Pascal lattice initialization
+voice initialize.pascal.lattice / {
+  n_max + k_max -> 
+  compute.pascal.triangle -> 
+  mod.ten -> 
+  pascal_lattice
+}
+
+target ce1_pascal_kernel / "pascal_kernel"
+voice main / { initialize.pascal.lattice + pascal.mod10 + unit.cycle + seven.trace.cycle -> ce1_pascal_kernel }
+

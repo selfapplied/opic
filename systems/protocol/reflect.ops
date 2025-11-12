@@ -1,0 +1,37 @@
+;;; agent_ready.ops — agent readiness checklist and improvements
+
+include help/agent.ops
+include core/bootstrap.ops
+
+;; Agent readiness requirements
+def agent_requirement { name, status, description }
+def agent_capability { name, available, structured_output }
+
+;; Check agent readiness
+voice agent.check_readiness / {agent.check_help + agent.check_errors + agent.check_discovery + agent.check_feedback -> readiness_report}
+voice agent.check_help / {help.agent_format -> if_exists -> help_available}
+voice agent.check_errors / {error.structured -> if_exists -> errors_structured}
+voice agent.check_discovery / {voice.discover -> if_exists -> discovery_available}
+voice agent.check_feedback / {feedback.structured -> if_exists -> feedback_available}
+
+;; Structured error output (for agents)
+voice error.structured / {error_type + error_message + context -> format_error_json -> error_json}
+voice format_error_json / {error_type + message + context -> to_json -> json}
+voice error.handle / {error -> error.structured -> output_error}
+
+;; Voice discovery (for agents)
+voice voice.discover / {namespace -> find_voices_in_namespace -> list_voices -> voices_list}
+voice find_voices_in_namespace / {namespace + all_voices -> filter_by_prefix -> matching_voices}
+voice list_voices / {voices -> format_voice_list -> voice_list_json}
+
+;; Structured feedback (for agents)
+voice feedback.structured / {operation + result + details -> format_feedback_json -> feedback_json}
+voice format_feedback_json / {operation + result + details -> to_json -> json}
+
+;; Agent capability check
+voice agent.capabilities / {agent.check_readiness -> format_capabilities -> capabilities_json}
+voice format_capabilities / {readiness -> to_json -> json}
+
+target agent_ready / "agent_readiness"
+voice main / {agent.check_readiness -> agent_ready}
+

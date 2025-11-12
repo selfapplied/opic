@@ -1,0 +1,254 @@
+;;; temporal_field.ops — Time as Field Evolution
+;;; Temporal dynamics = field evolution, time = field parameter
+
+include opic_field_0.7.ops
+include systems/zeta_grammar_field.ops
+
+;; ============================================================================
+;; Time as Field Evolution
+;; ============================================================================
+
+;; Core insight: Time = field evolution parameter
+;; Temporal dynamics = field dynamics, time flow = field flow
+
+;; ============================================================================
+;; I. Time → Field Parameter
+;; ============================================================================
+
+;; Time = field evolution parameter
+def temporal_field {
+  t,                ;; Time parameter
+  field_state,      ;; Field state at time t
+  evolution,        ;; Field evolution ∂Φ/∂t
+  flow,             ;; Field flow (temporal unfolding)
+  dimension         ;; D (temporal dimensionality)
+}
+
+;; Time evolution = field evolution
+voice time.field_evolution / {
+  field_state + dt -> 
+  field.evolve -> 
+  field_state_t_plus_dt
+}
+
+;; Temporal derivative = field derivative
+voice time.field_derivative / {
+  field_state -> 
+  field.derivative -> 
+  temporal_derivative
+}
+
+;; Time flow = field flow
+voice time.field_flow / {
+  field_state -> 
+  field.flow -> 
+  temporal_flow
+}
+
+;; ============================================================================
+;; II. Temporal Dynamics → Field Dynamics
+;; ============================================================================
+
+;; Temporal dynamics = field dynamics
+voice time.dynamics_field / {
+  initial_state + time -> 
+  field.evolve -> 
+  evolved_state
+}
+
+;; Time translation = field translation
+voice time.translation_field / {
+  field_state + delta_t -> 
+  field.translate -> 
+  translated_state
+}
+
+;; Time reversal = field reversal
+voice time.reversal_field / {
+  field_state -> 
+  field.reverse -> 
+  reversed_state
+}
+
+;; ============================================================================
+;; III. Time Arrow → Field Arrow
+;; ============================================================================
+
+;; Time arrow = field arrow (entropy increase)
+voice time.arrow_field / {
+  field_state -> 
+  field.entropy -> 
+  entropy_increase -> 
+  time_arrow
+}
+
+;; Entropy increase = field entropy increase
+voice time.entropy_field / {
+  field_state -> 
+  field.entropy -> 
+  entropy
+}
+
+;; Thermodynamic time = field thermodynamic time
+voice time.thermodynamic_field / {
+  system_state -> 
+  field.entropy -> 
+  if_increasing -> forward_time
+}
+
+;; ============================================================================
+;; IV. Time Scales → Field Scales
+;; ============================================================================
+
+;; Time scales = field time scales
+voice time.scales_field / {
+  process -> 
+  determine_time_scale -> 
+  field_time_scale
+}
+
+;; Planck time = fundamental field time
+voice time.planck_field / {
+  planck_time -> 
+  fundamental_field_time
+}
+
+;; Cosmological time = cosmic field time
+voice time.cosmological_field / {
+  cosmic_time -> 
+  cosmic_field_time
+}
+
+;; ============================================================================
+;; V. Temporal Symmetry → Field Symmetry
+;; ============================================================================
+
+;; Time translation symmetry = field translation symmetry
+voice time.symmetry_field / {
+  field_state -> 
+  field.translate -> 
+  if_invariant -> time_translation_symmetry
+}
+
+;; Time reversal symmetry = field reversal symmetry
+voice time.reversal_symmetry_field / {
+  field_state -> 
+  field.reverse -> 
+  if_invariant -> time_reversal_symmetry
+}
+
+;; CPT symmetry = field CPT symmetry
+voice time.cpt_symmetry_field / {
+  field_state -> 
+  charge_parity_time -> 
+  field.cpt -> 
+  cpt_symmetry
+}
+
+;; ============================================================================
+;; VI. Relativistic Time → Field Time
+;; ============================================================================
+
+;; Relativistic time = field time (Lorentz transformation)
+voice time.relativistic_field / {
+  field_state + velocity -> 
+  lorentz_transform -> 
+  transformed_field_state
+}
+
+;; Time dilation = field dilation
+voice time.dilation_field / {
+  field_state + velocity -> 
+  field.dilate -> 
+  dilated_field_state
+}
+
+;; Proper time = field proper time
+voice time.proper_field / {
+  worldline -> 
+  field.proper_time -> 
+  proper_time
+}
+
+;; ============================================================================
+;; VII. Quantum Time → Field Time
+;; ============================================================================
+
+;; Quantum time evolution = field evolution
+voice time.quantum_field / {
+  quantum_state + time -> 
+  field.evolve -> 
+  evolved_quantum_state
+}
+
+;; Schrödinger equation = field evolution equation
+voice time.schrodinger_field / {
+  quantum_state -> 
+  field.evolve -> 
+  ihbar_dpsi_dt = H_psi
+}
+
+;; Time-energy uncertainty = field uncertainty
+voice time.uncertainty_field / {
+  time + energy -> 
+  field.uncertainty -> 
+  delta_t_delta_E >= hbar_over_2
+}
+
+;; ============================================================================
+;; VIII. Examples: Time → Field Equations
+;; ============================================================================
+
+;; Example: "How does time flow?"
+;; Answer: Time flow = field flow, temporal unfolding = field evolution
+voice time.explain_flow / {
+  question -> 
+  time.field_flow -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "What is the arrow of time?"
+;; Answer: Time arrow = field arrow, entropy increase = field entropy
+voice time.explain_arrow / {
+  question -> 
+  time.arrow_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "How does time dilation work?"
+;; Answer: Time dilation = field dilation, Lorentz transformation
+voice time.explain_dilation / {
+  question -> 
+  time.dilation_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; ============================================================================
+;; IX. Field Spec 0.7 Connection
+;; ============================================================================
+
+;; Time operator from Cycle-to-Dimension Principle (§7.5)
+voice cycle.identity_to_time / {
+  identity_cycle -> 
+  promote -> 
+  time_operator -> 
+  ddt
+}
+
+;; Time = promoted identity cycle
+voice time.from_cycle / {
+  identity_cycle -> 
+  cycle.promote_to_operator -> 
+  time_operator
+}
+
+;; Temporal dimension from bracket loops (§7.5)
+voice cycle.bracket_loop_temporal / {
+  morphism_witness_loop -> 
+  promote -> 
+  temporal_dimension
+}
+

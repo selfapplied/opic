@@ -1,0 +1,27 @@
+{
+  "primorial": 2310,
+  "kept_modes": [
+    1,
+    13,
+    17,
+    19
+  ],
+  "filtered_modes": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    14,
+    15,
+    16,
+    18
+  ],
+  "insight": "Primorial masks create arithmetic structure that could encode computational problems"
+}

@@ -1,0 +1,185 @@
+;;; reorganize_implement.ops — Concrete Implementation of Reorganization
+
+include systems/reorganize.ops
+
+;; Concrete structure creation
+voice create.core.structure / {
+  "core" -> dir.create -> core_ready
+}
+
+voice create.systems.structure / {
+  "systems/00_core" -> dir.create -> 
+  "systems/01_ce1" -> dir.create -> 
+  "systems/02_runtime" -> dir.create -> 
+  "systems/03_flow" -> dir.create -> 
+  "systems/04_mode7" -> dir.create -> 
+  "systems/05_experiments" -> dir.create -> 
+  systems_ready
+}
+
+voice create.docs.structure / {
+  "docs/00_specification" -> dir.create -> 
+  "docs/01_theory" -> dir.create -> 
+  "docs/02_implementation" -> dir.create -> 
+  "docs/03_reference" -> dir.create -> 
+  docs_ready
+}
+
+;; File classification helpers
+voice get.all.ops.files / {
+  "." -> file.find -> 
+  pattern "*.ops" -> 
+  all_ops_files
+}
+
+voice get.all.python.files / {
+  "." -> file.find -> 
+  pattern "*.py" -> 
+  all_python_files
+}
+
+voice get.all.docs / {
+  "docs" -> file.find -> 
+  pattern "*.md" -> 
+  all_docs
+}
+
+;; Core migration
+voice migrate.core / {
+  "scripts/opic_executor.py" -> file.backup -> 
+  backup_path -> 
+  "scripts/opic_executor.py" + "core/opic_executor.py" -> file.move -> 
+  "scripts/generate.py" + "core/parser.py" -> file.move -> 
+  core_migrated
+}
+
+;; Systems migration by pattern
+voice migrate.systems.core / {
+  "systems/opic_field_0.7.ops" + "systems/00_core/opic_field_0.7.ops" -> file.move -> 
+  "systems/opic_cosmogenesis.ops" + "systems/00_core/opic_cosmogenesis.ops" -> file.move -> 
+  "systems/opic_phase_flux.ops" + "systems/00_core/opic_phase_flux.ops" -> file.move -> 
+  "systems/opic_three_fluxes.ops" + "systems/00_core/opic_three_fluxes.ops" -> file.move -> 
+  "systems/opic_coherence_dance.ops" + "systems/00_core/opic_coherence_dance.ops" -> file.move -> 
+  core_systems_migrated
+}
+
+voice migrate.systems.ce1 / {
+  "systems/ce1_*.ops" -> file.find -> 
+  pattern "ce1_*.ops" -> 
+  for.each -> file.move + "systems/01_ce1/" -> 
+  ce1_systems_migrated
+}
+
+voice migrate.systems.runtime / {
+  "systems/zetacore_runtime.ops" + "systems/02_runtime/zetacore_runtime.ops" -> file.move -> 
+  "systems/sigmabody_interfaces.ops" + "systems/02_runtime/sigmabody_interfaces.ops" -> file.move -> 
+  "systems/signetwork_governance.ops" + "systems/02_runtime/signetwork_governance.ops" -> file.move -> 
+  runtime_systems_migrated
+}
+
+voice migrate.systems.flow / {
+  "systems/flow3d_*.ops" + "systems/03_flow/" -> file.move -> 
+  "systems/ns_3d_flow*.ops" + "systems/03_flow/" -> file.move -> 
+  flow_systems_migrated
+}
+
+voice migrate.systems.mode7 / {
+  "systems/opic_mode7_*.ops" + "systems/04_mode7/" -> file.move -> 
+  mode7_systems_migrated
+}
+
+voice migrate.systems.experiments / {
+  "systems/ops_*.ops" + "systems/05_experiments/" -> file.move -> 
+  experiments_systems_migrated
+}
+
+;; Docs migration
+voice migrate.docs.specification / {
+  "docs/ce1_*.md" + "docs/00_specification/" -> file.move -> 
+  "docs/zetacore_*.md" + "docs/00_specification/" -> file.move -> 
+  "docs/sigma*.md" + "docs/00_specification/" -> file.move -> 
+  "docs/opic_*.md" + "docs/00_specification/" -> file.move -> 
+  "docs/collective_*.md" + "docs/00_specification/" -> file.move -> 
+  "docs/metafield_*.md" + "docs/00_specification/" -> file.move -> 
+  "docs/mathematical_*.md" + "docs/00_specification/" -> file.move -> 
+  "docs/philosophical_*.md" + "docs/00_specification/" -> file.move -> 
+  "docs/meta_reflection_*.md" + "docs/00_specification/" -> file.move -> 
+  "docs/opic_complete_specification_index.md" + "docs/00_specification/" -> file.move -> 
+  "docs/opic_final_synthesis.md" + "docs/00_specification/" -> file.move -> 
+  specification_docs_migrated
+}
+
+voice migrate.docs.theory / {
+  "docs/opic_cosmogenesis.md" + "docs/01_theory/opic_cosmogenesis.md" -> file.move -> 
+  "docs/mathematical_proof_annex.md" + "docs/01_theory/mathematical_proof_annex.md" -> file.move -> 
+  "docs/philosophical_synthesis.md" + "docs/01_theory/philosophical_synthesis.md" -> file.move -> 
+  "docs/opic_phase_flux_insight.md" + "docs/01_theory/opic_phase_flux_insight.md" -> file.move -> 
+  theory_docs_migrated
+}
+
+voice migrate.docs.implementation / {
+  "docs/opic_engineering_spec.md" + "docs/02_implementation/opic_engineering_spec.md" -> file.move -> 
+  "docs/developer_experiments_handbook.md" + "docs/02_implementation/developer_experiments_handbook.md" -> file.move -> 
+  "docs/reorganization_*.md" + "docs/02_implementation/" -> file.move -> 
+  implementation_docs_migrated
+}
+
+;; Archive experiments
+voice archive.experiments / {
+  "scripts/*_experiment.py" -> file.find -> 
+  "scripts/*_test.py" -> file.find -> 
+  "scripts/*_mapper.py" -> file.find -> 
+  "scripts/*_benchmark.py" -> file.find -> 
+  "scripts/*_visualization.py" -> file.find -> 
+  "archive/python_experiments" -> dir.create -> 
+  for.each -> file.move + "archive/python_experiments/" -> 
+  experiments_archived
+}
+
+;; Main execution
+voice execute.reorganization / {
+  step.1.create.structure -> 
+  step.2.migrate.core -> 
+  step.3.migrate.systems -> 
+  step.4.migrate.docs -> 
+  step.5.archive.experiments -> 
+  reorganization_executed
+}
+
+voice step.1.create.structure / {
+  create.core.structure -> 
+  create.systems.structure -> 
+  create.docs.structure -> 
+  structure_created
+}
+
+voice step.2.migrate.core / {
+  migrate.core -> 
+  core_migrated
+}
+
+voice step.3.migrate.systems / {
+  migrate.systems.core -> 
+  migrate.systems.ce1 -> 
+  migrate.systems.runtime -> 
+  migrate.systems.flow -> 
+  migrate.systems.mode7 -> 
+  migrate.systems.experiments -> 
+  systems_migrated
+}
+
+voice step.4.migrate.docs / {
+  migrate.docs.specification -> 
+  migrate.docs.theory -> 
+  migrate.docs.implementation -> 
+  docs_migrated
+}
+
+voice step.5.archive.experiments / {
+  archive.experiments -> 
+  experiments_archived
+}
+
+target reorganize_implement / "reorganize"
+voice main / { execute.reorganization -> reorganize_implement }
+

@@ -1,0 +1,121 @@
+;;; knowledge_base.ops — Knowledge storage and retrieval for benchmark improvement
+
+include systems/reasoning.ops
+include systems/ce1_kernel.ops
+
+;; Knowledge representation
+def fact { domain, statement, confidence, source }
+def knowledge_entry { fact, embeddings, pascal_index, zeta_weight }
+
+;; Knowledge domains (MMLU subjects)
+def domain { 
+  abstract_algebra,
+  anatomy,
+  astronomy,
+  business_ethics,
+  clinical_knowledge,
+  college_biology,
+  college_chemistry,
+  college_computer_science,
+  college_mathematics,
+  college_medicine,
+  college_physics,
+  computer_security,
+  conceptual_physics,
+  econometrics,
+  electrical_engineering,
+  elementary_mathematics,
+  formal_logic,
+  global_facts,
+  high_school_biology,
+  high_school_chemistry,
+  high_school_computer_science,
+  high_school_european_history,
+  high_school_geography,
+  high_school_government_and_politics,
+  high_school_macroeconomics,
+  high_school_mathematics,
+  high_school_microeconomics,
+  high_school_physics,
+  high_school_psychology,
+  high_school_statistics,
+  high_school_us_history,
+  high_school_world_history,
+  human_aging,
+  human_sexuality,
+  international_law,
+  jurisprudence,
+  logical_fallacies,
+  machine_learning,
+  management,
+  marketing,
+  medical_genetics,
+  miscellaneous,
+  moral_disputes,
+  moral_scenarios,
+  nutrition,
+  philosophy,
+  prehistory,
+  professional_accounting,
+  professional_law,
+  professional_medicine,
+  professional_psychology,
+  public_relations,
+  security_studies,
+  sociology,
+  us_foreign_policy,
+  virology,
+  world_religions
+}
+
+;; Store knowledge
+voice knowledge.store / {fact + domain -> create_entry -> index -> store -> stored}
+voice knowledge.create_entry / {fact + domain -> compute_embeddings -> assign_pascal_index -> assign_zeta_weight -> knowledge_entry}
+voice knowledge.compute_embeddings / {fact -> embed -> embeddings}
+voice knowledge.assign_pascal_index / {fact + domain -> hash_mod10 -> pascal_index}
+voice knowledge.assign_zeta_weight / {fact + domain -> compute_zeta -> zeta_weight}
+
+;; Retrieve knowledge
+voice knowledge.retrieve / {query + domain -> search_index -> filter_by_domain -> rank_by_relevance -> top_k -> facts}
+voice knowledge.search_index / {query -> compute_query_embedding -> search_embeddings -> candidates}
+voice knowledge.filter_by_domain / {candidates + domain -> filter -> domain_filtered}
+voice knowledge.rank_by_relevance / {domain_filtered + query -> compute_similarity -> sort -> ranked}
+voice knowledge.compute_similarity / {fact_embedding + query_embedding -> cosine_similarity -> score}
+
+;; Use Pascal lattice for indexing
+voice knowledge.pascal_index / {fact -> hash -> mod10 -> pascal_index}
+voice knowledge.shadow_lookup / {pascal_index -> shadow -> shadow_index -> lookup -> related_facts}
+
+;; Use Zeta weights for relevance
+voice knowledge.zeta_relevance / {fact + query -> compute_zeta_s -> weight -> relevance_score}
+voice knowledge.compute_zeta_s / {fact + query -> harmonic_analysis -> zeta_s}
+
+;; Knowledge reasoning
+voice knowledge.reason_with_facts / {query + facts -> reason.deduce -> answer}
+voice knowledge.combine_facts / {facts -> reason.forward_chain -> combined_knowledge}
+
+;; Load benchmark knowledge
+voice knowledge.load_mmlu / {mmlu_dataset -> extract_facts -> store_all -> knowledge_base}
+voice knowledge.extract_facts / {questions + answers -> extract_statements -> facts}
+voice knowledge.store_all / {facts -> for_each_fact -> knowledge.store -> stored_count}
+
+;; GPQA scientific knowledge
+voice knowledge.load_gpqa / {gpqa_dataset -> extract_scientific_facts -> store_all -> knowledge_base}
+voice knowledge.extract_scientific_facts / {questions -> extract_concepts -> extract_relationships -> scientific_facts}
+
+;; AIME problem patterns
+voice knowledge.load_aime_patterns / {aime_problems -> extract_solution_patterns -> store_patterns -> pattern_base}
+voice knowledge.extract_solution_patterns / {problems + solutions -> identify_techniques -> extract_patterns -> patterns}
+
+;; Knowledge base query for benchmarks
+voice knowledge.answer_question / {
+  question -> 
+  knowledge.retrieve -> 
+  knowledge.reason_with_facts -> 
+  reason.select -> 
+  answer
+}
+
+target knowledge_base / "opic_knowledge_system"
+voice main / {knowledge.store -> knowledge.retrieve -> knowledge_base}
+

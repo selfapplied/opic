@@ -1,0 +1,51 @@
+;;; field_interaction.ops — ζ-field vs NP-field interaction: watch symmetry breaks
+
+include systems/flow3d_core.ops
+
+;; ζ-field: linear, unitary, symmetric evolution
+voice evolve.zeta.field / {
+  phi_k_initial + time -> 
+  linear.evolution -> 
+  unitary.transform -> 
+  preserve.symmetry -> 
+  phi_k_evolved
+}
+
+;; NP-field: nonlinear, dissipative, search-based evolution
+voice evolve.np.field / {
+  search_state_initial + time -> 
+  nonlinear.evolution -> 
+  dissipative.term -> 
+  search.step -> 
+  search_state_evolved
+}
+
+;; Let them interact: watch symmetry breaks
+voice interact.fields / {
+  phi_k + search_state + coupling -> 
+  compute.interaction.term -> 
+  evolve.coupled -> 
+  detect.symmetry.break -> 
+  measure.computational.curvature -> 
+  interaction_results
+}
+
+;; Measure computational curvature: deviation from ideal
+voice measure.computational.curvature / {
+  zeta_field + np_field + interaction -> 
+  compute.deviation.from.ideal -> 
+  compute.curvature.metric -> 
+  computational_curvature
+}
+
+;; Detect symmetry breaks: where ideal breaks down
+voice detect.symmetry.break / {
+  zeta_field + np_field -> 
+  compare.symmetry -> 
+  detect.breaks -> 
+  symmetry_breaks
+}
+
+target field_interaction / "field_interaction"
+voice main / { evolve.zeta.field + evolve.np.field + interact.fields + measure.computational.curvature -> field_interaction }
+

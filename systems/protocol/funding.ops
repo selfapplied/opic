@@ -1,0 +1,49 @@
+;;; transition_funding.ops — ethical funding model for transition phase
+
+include ../wiki/tiddlywiki_network.ops
+include protocol/resonance.ops
+include protocol/currency.ops
+
+;; Transition funding definitions
+def early_contributor { contributor_id, contributions, value_in_use, credits_earned, reinvestment_commitment }
+def service_offering { service_type, provider, value_delivered, credits_minted, coherence_impact }
+def reinvestment_plan { profits, coherence_investment, development_allocation, plugin_allocation, interoperability_allocation }
+
+;; Early contributor model
+voice funding.early_contributor / {contributor + contributions + agent_realm + ca -> funding.compute_value_in_use -> funding.mint_credits -> funding.commit_reinvestment -> early_contributor}
+voice funding.compute_value_in_use / {contributions + communities -> measure_usage -> value_score}
+voice funding.mint_credits / {value_score + agent_realm + ca -> currency.mint_credits -> credits}
+voice funding.commit_reinvestment / {contributor + credits + agent_realm + ca -> funding.create_reinvestment_commitment -> committed}
+
+;; Service offerings: reliability, customization, hosting
+voice funding.service_reliability / {provider + reliability_service + communities + agent_realm + ca -> funding.measure_value -> funding.mint_service_credits -> service_offering}
+voice funding.service_customization / {provider + customization_service + communities + agent_realm + ca -> funding.measure_value -> funding.mint_service_credits -> service_offering}
+voice funding.service_hosting / {provider + hosting_service + communities + agent_realm + ca -> funding.measure_value -> funding.mint_service_credits -> service_offering}
+voice funding.measure_value / {service + communities -> measure_usage_value -> value_delivered}
+voice funding.mint_service_credits / {value_delivered + agent_realm + ca -> currency.mint_credits -> credits_minted}
+
+;; Value in use, not speculation
+voice funding.value_in_use / {service + usage_metrics + agent_realm + ca -> funding.compute_usage_value -> funding.mint_credits -> value_based_credits}
+voice funding.compute_usage_value / {usage_metrics + service -> compute_value -> value_score}
+
+;; Seven-generation reinvestment model
+voice funding.reinvest_profits / {profits + agent_realm + ca + tau_vector -> generational.resonance_function -> funding.compute_reinvestment -> funding.allocate_reinvestment -> reinvestment_plan}
+voice funding.compute_reinvestment / {profits + resonance + tau -> compute_coherence_allocation -> investment_amount}
+voice funding.allocate_reinvestment / {investment + agent_realm + ca -> funding.allocate_development -> funding.allocate_plugins -> funding.allocate_interoperability -> allocated}
+voice funding.allocate_development / {investment + development_needs -> allocate_percentage -> development_allocation}
+voice funding.allocate_plugins / {investment + plugin_needs -> allocate_percentage -> plugin_allocation}
+voice funding.allocate_interoperability / {investment + interoperability_needs -> allocate_percentage -> interoperability_allocation}
+
+;; Capital as bridge for regeneration
+voice funding.capital_bridge / {capital + regeneration_purpose + agent_realm + ca + tau_vector -> funding.define_regeneration -> funding.track_coherence_impact -> bridge_capital}
+voice funding.define_regeneration / {capital + purpose -> define_regenerative_use -> regeneration_plan}
+voice funding.track_coherence_impact / {capital + regeneration + tau -> generational.resonance_function -> track_impact -> impact_tracked}
+
+;; Transition phase funding
+voice funding.transition / {early_contributors + services + agent_realm + ca + tau_vector -> funding.compute_total_value -> funding.mint_credits -> funding.reinvest_profits -> transition_funded}
+voice funding.compute_total_value / {contributors + services -> sum_value_in_use -> total_value}
+voice funding.transition_funded / {credits + reinvestment -> transition_complete}
+
+target transition_funding / "opic_transition_funding"
+voice main / {funding.transition -> transition_funding}
+

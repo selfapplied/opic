@@ -1,0 +1,49 @@
+;;; ops_features_v1_v3.ops — Feature packs: v1 (cheap), v2 (richer), v3 (bite)
+
+include systems/flow3d_core.ops
+
+;; v1 (cheap): shell power + slopes
+voice extract.features.v1 / {
+  U + kx + ky + kz + k_squared + N -> 
+  compute.E_k.shells -> 
+  compute.slopes -> 
+  features_v1
+}
+
+;; v2 (richer): v1 + cross-shell couplings + anisotropy bins (6–12/shell)
+voice extract.features.v2 / {
+  features_v1 + U + kx + ky + kz + N -> 
+  compute.cross.shell.couplings -> 
+  compute.anisotropy.bins -> 
+  features_v2
+}
+
+;; v3 (bite): v2 + phase-increments (circular means) + 50–100 bispectrum triplets
+voice extract.features.v3 / {
+  features_v2 + U + kx + ky + kz + N -> 
+  compute.phase.increments -> 
+  compute.bispectrum.triplets -> 
+  features_v3
+}
+
+;; Router starts v1→v2; promotes to v3 only if accuracy < 0.9 but ΔMI shows lift
+voice route.features / {
+  accuracy + delta_mi + current_features -> 
+  check.accuracy.threshold -> 
+  check.delta_mi.lift -> 
+  promote.to.v3 -> 
+  feature_choice
+}
+
+;; Deterministic schema + CABA(B) write/verify
+voice write.features.caba / {
+  features + schema_version + run_id -> 
+  encode.caba.mode.b -> 
+  write.archive -> 
+  verify.hash -> 
+  caba_archive
+}
+
+target ops_features_v1_v3 / "features_v1_v3"
+voice main / { extract.features.v1 + extract.features.v2 + extract.features.v3 + route.features + write.features.caba -> ops_features_v1_v3 }
+

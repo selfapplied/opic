@@ -1,0 +1,33 @@
+;;; flow3d_main.ops — Complete 3D flow simulation
+
+include systems/flow3d_core.ops
+include systems/flow3d_benchmarks.ops
+include systems/flow3d_mask.ops
+include systems/flow3d_descent.ops
+include systems/flow3d_caba.ops
+
+;; Complete simulation: deterministic, reproducible, benchmarked
+voice simulate.flow3d.complete / { config + initial_condition -> initialize.grid -> initialize.k.grid -> initialize.flow.field -> simulate.step -> compute.diagnostics -> check.invariants -> final.results }
+
+;; RHS: N(u) + L(u) + F + mask? + descent?
+voice compute.rhs / { u + config -> nonlinear -> viscous -> force_shell -> apply.mask.if.enabled -> apply.descent.if.enabled -> combine.rhs.terms -> rhs }
+voice apply.mask.if.enabled / { U + mask_scheme + mask_params -> check.mask.enabled -> if.enabled -> mask_arith, if.disabled -> pass.through -> U_masked }
+voice apply.descent.if.enabled / { U + descent_enabled + eta + alpha + k_squared + N + kx + ky + kz -> check.descent.enabled -> if.enabled -> descent.energy, if.disabled -> zero.term -> D }
+
+;; Diagnostics: divL2, energy, E(k), Parseval, CFL
+voice compute.diagnostics / { u + U + N + kx + ky + kz + k_squared + time -> compute.divL2 -> compute.energy -> compute.E_k -> parseval.check -> compute.cfl.ratio -> ⟨diagnostics⟩ }
+
+;; Initialize: TGV, ABC, random, custom
+voice initialize.flow.field / { initial_condition_type + config -> match tgv -> init.tgv, match abc -> init.abc, match random -> initialize.random.divergence.free, match custom -> load.custom.field -> u_initial }
+
+;; Configs: A=baseline, B=+mask, C=+descent, D=both
+voice config.A / { N 64 + nu 0.01 + k_f 2.0 + mask_scheme "none" + descent_enabled false -> ⟨config_A⟩ }
+voice config.B / { N 64 + nu 0.01 + k_f 2.0 + mask_scheme "coprime" + mask_params {primorial_pmax 5, beta 0.0} + descent_enabled false -> ⟨config_B⟩ }
+voice config.C / { N 64 + nu 0.01 + k_f 2.0 + mask_scheme "none" + descent_enabled true + eta 0.05 + alpha 0.01 -> ⟨config_C⟩ }
+voice config.D / { N 64 + nu 0.01 + k_f 2.0 + mask_scheme "coprime" + mask_params {primorial_pmax 5, beta 0.0} + descent_enabled true + eta 0.05 + alpha 0.01 -> ⟨config_D⟩ }
+
+;; Validation matrix
+voice run.validation.matrix / { initial_condition + config.A -> simulate.flow3d.complete -> compute.final.diagnostics -> export.results -> validation_matrix_results }
+
+target flow3d_main / "flow3d_complete"
+voice main / { simulate.flow3d.complete + run.validation.matrix + init.tgv + init.abc -> flow3d_main }

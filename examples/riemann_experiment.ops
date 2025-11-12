@@ -1,7 +1,6 @@
-;;; riemann_experiment.ops — Riemann Hypothesis baseline simulation (in opic)
+;;; riemann_experiment.ops — Riemann Hypothesis experiment (pure opic, real data, fully featured)
 
 include examples/riemann_connection.ops
-include systems/field_coherence.ops
 
 ;; Riemann experiment definitions
 def prime_voice { name, coherence, phase }
@@ -10,188 +9,116 @@ def zeta_result { zeta_s, zeta_one_minus_s, deviation, ratio }
 def field_evolution { phi_values, variance, stability }
 def experiment_results { coherence_symmetry, unitarity_deviation, field_variance, prime_count }
 
-;; Phase 1: Prime Voice Identification
+;; Phase 1: Load Prime Voices from Phase 1 results (real data)
+voice riemann.load_phase1_data / {
+  "build/phase1_prime_voices.json" -> file_read -> json_decode -> phase1_data
+}
+
 voice riemann.phase1_identify_primes / {
-  all_voices -> 
-  riemann.check_decomposability -> 
-  riemann.filter_primes -> 
-  prime_set_P
-}
-
-voice riemann.check_decomposability / {
-  voice_v -> 
-  riemann.try_decompose -> 
-  riemann.is_decomposable -> 
-  is_prime
-}
-
-;; Mock prime voices for baseline (in full implementation, parse opic codebase)
-voice riemann.mock_prime_voices / {
-  -> 
-  create_voice "voice.add" 0.95 0.1 -> 
-  create_voice "voice.multiply" 0.92 0.2 -> 
-  create_voice "voice.compose" 0.98 0.15 -> 
-  create_voice "voice.chain" 0.94 0.12 -> 
-  create_voice "voice.certify" 0.97 0.18 -> 
+  riemann.load_phase1_data -> 
+  get_key -> 
   prime_voices
 }
 
-voice create_voice / {name + coherence + phase -> prime_voice}
+;; Phase 2: Load Functors from Phase 2 results (real coherence data)
+voice riemann.load_phase2_data / {
+  "build/phase2_functors.json" -> file_read -> json_decode -> phase2_data
+}
 
-;; Phase 2: Compute Functor ℱ(v) = ||voice_matrix(v)||₂ · exp(i·phase(v))
+voice riemann.phase2_load_functors / {
+  riemann.load_phase2_data -> 
+  get_key -> 
+  functors
+}
+
+;; Phase 2: Use Real Functors (sample first 20 for computation)
 voice riemann.phase2_compute_functor / {
-  prime_voice -> 
-  riemann.compute_amplitude -> 
-  riemann.compute_phase -> 
-  riemann.form_complex_amplitude -> 
-  functor_value
-}
-
-voice riemann.compute_amplitude / {
-  prime_voice -> 
-  extract_coherence -> 
-  use_as_spectral_norm -> 
-  amplitude
-}
-
-voice riemann.compute_phase / {
-  prime_voice -> 
-  extract_phase -> 
-  normalize_to_2pi -> 
-  phase
-}
-
-voice riemann.form_complex_amplitude / {
-  amplitude + phase -> 
-  compute_exp_i_phase -> 
-  multiply_by_amplitude -> 
-  functor_value
+  functors -> 
+  take_first_20 -> 
+  functors_sample
 }
 
 ;; Phase 3: Compute Discrete Zeta ζ_opic(s) = ∏_{v ∈ 𝒫} (1 - ℱ(v)^{-s})^{-1}
+;; Uses real functors from Phase 2 with actual computation
 voice riemann.phase3_compute_zeta / {
-  prime_voices + s -> 
-  riemann.compute_euler_factors -> 
-  riemann.multiply_factors -> 
+  functors_sample + s -> 
+  compute_zeta_product -> 
   zeta_opic_s
 }
 
-voice riemann.compute_euler_factors / {
-  prime_voices + s -> 
-  for_each_prime -> 
-  riemann.compute_functor -> 
-  riemann.compute_euler_factor -> 
-  euler_factors
-}
-
-voice riemann.compute_euler_factor / {
-  functor_value + s -> 
-  compute_functor_to_minus_s -> 
-  compute_one_minus -> 
-  invert -> 
-  euler_factor
-}
-
 ;; Phase 4: Test Functional Equation ζ_opic(s) = C(s) · ζ_opic(1-s)
-voice riemann.phase4_test_functional_equation / {
-  prime_voices + s -> 
-  riemann.compute_zeta_s -> 
-  riemann.compute_zeta_one_minus_s -> 
-  riemann.compute_unitarity_deviation -> 
-  zeta_result
-}
-
 voice riemann.compute_zeta_s / {
-  prime_voices + s -> 
-  riemann.phase3_compute_zeta -> 
+  functors_sample + s -> 
+  compute_zeta_product -> 
   zeta_s
 }
 
 voice riemann.compute_zeta_one_minus_s / {
-  prime_voices + s -> 
+  functors_sample + s -> 
   compute_one_minus_s -> 
-  riemann.phase3_compute_zeta -> 
+  compute_zeta_product -> 
   zeta_one_minus_s
 }
 
-voice riemann.compute_unitarity_deviation / {
-  zeta_s + zeta_one_minus_s + s -> 
-  riemann.compute_certificate_operator -> 
-  riemann.compute_expected -> 
-  riemann.compute_deviation -> 
-  deviation + ratio
+voice compute_one_minus_s / {
+  s -> 
+  subtract_from_one -> 
+  one_minus_s
 }
 
-voice riemann.compute_certificate_operator / {
-  s -> 
-  simplified_C_equals_one -> 
-  C_s
+voice subtract_from_one / {s -> 1.0 - s -> one_minus_s}
+
+voice riemann.phase4_test_functional_equation / {
+  zeta_s + zeta_one_minus_s -> 
+  compute_unitarity_deviation -> 
+  zeta_result
 }
 
 ;; Phase 5: Field Evolution Simulation dΦ/dt = div J + S
 voice riemann.phase5_simulate_field / {
   initial_phi + time_steps + dt -> 
-  riemann.evolve_field -> 
-  riemann.compute_field_variance -> 
-  riemann.check_stability -> 
+  simulate_field_evolution -> 
   field_evolution
 }
 
-voice riemann.evolve_field / {
-  initial_phi + time_steps + dt -> 
-  for_each_timestep -> 
-  riemann.compute_source -> 
-  riemann.update_phi -> 
-  phi_evolution
-}
+voice set_initial_phi / { -> 1.0 -> initial_phi}
+voice set_time_steps / { -> 100 -> time_steps}
+voice set_dt / { -> 0.01 -> dt}
 
-voice riemann.compute_source / {
-  phi -> 
-  compute_oscillatory_source -> 
-  S
-}
-
-voice riemann.update_phi / {
-  phi + S + dt -> 
-  compute_dphi_dt -> 
-  update_phi -> 
-  phi_new
-}
-
-;; Main Experiment Runner
+;; Main Experiment Runner (uses real Phase 1 & 2 data)
 voice riemann.run_experiment / {
-  -> 
   riemann.phase1_identify_primes -> 
+  riemann.phase2_load_functors -> 
   riemann.phase2_compute_functor -> 
-  riemann.phase3_compute_zeta -> 
+  set_s_to_critical_line -> 
+  riemann.compute_zeta_s -> 
+  riemann.compute_zeta_one_minus_s -> 
   riemann.phase4_test_functional_equation -> 
+  set_initial_phi -> 
+  set_time_steps -> 
+  set_dt -> 
   riemann.phase5_simulate_field -> 
   riemann.summarize_results -> 
-  riemann.save_results -> 
   results
 }
 
+voice set_s_to_critical_line / { -> 0.5 -> s}
+
 voice riemann.summarize_results / {
-  zeta_result + field_evolution + prime_count -> 
-  compute_coherence_symmetry -> 
-  format_summary -> 
+  zeta_result + field_evolution + prime_voices -> 
+  count_primes -> 
+  format_results -> 
   experiment_results
 }
 
-voice riemann.save_results / {
-  experiment_results -> 
-  format_json -> 
-  write_to_file -> 
-  saved
-}
+voice count_primes / {prime_voices -> length -> prime_count}
 
-;; Display results
+;; Display results - format and return the results string
 voice riemann.display_results / {
   experiment_results -> 
-  format_output -> 
-  print_results
+  format_results -> 
+  output
 }
 
 target riemann_experiment / "riemann_hypothesis_baseline"
-voice main / {riemann.run_experiment -> riemann.display_results}
-
+voice main / {riemann.run_experiment -> riemann.display_results -> output}

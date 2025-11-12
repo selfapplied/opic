@@ -1,0 +1,68 @@
+;;; status_syntax.ops — Crisp syntax for status registration
+
+include syntax.ops
+include ../registry/status.ops
+
+;; ============================================================================
+;; STATUS REGISTRATION SYNTAX
+;; ============================================================================
+
+;; Crisp syntax: register status "active" with {
+;;   display: "Active"
+;;   transitions: []
+;;   description: "Active status - entity is operational"
+;;   usage: "Use when entity is functioning normally"
+;;   examples: ["registry.update_status entity 'active' reason"]
+;;   related: ["suspended" "dissolved"]
+;; }
+
+;; Parse and transform
+voice grammar.parse_status_registration / {
+  line -> 
+  grammar.match "register status" -> 
+  grammar.extract_quoted_name -> 
+  grammar.extract_with_block -> 
+  grammar.parse_config -> 
+  grammar.transform_to_status_register -> 
+  transformed
+}
+
+;; Transform to status.register call
+voice grammar.transform_to_status_register / {
+  status_name + config_map -> 
+  grammar.get_field "display" -> 
+  grammar.get_field "transitions" -> 
+  grammar.get_field "handlers" -> 
+  grammar.get_field "metadata" -> 
+  grammar.get_field "description" -> 
+  grammar.get_field "usage" -> 
+  grammar.get_field "examples" -> 
+  grammar.get_field "related" -> 
+  format_status_register -> 
+  register_call
+}
+
+;; Format as status.register call
+voice format_status_register / {
+  status_name + display_name + transitions + handlers + metadata + description + usage + examples + related -> 
+  "status.register status_registry \"" + status_name + "\" \"" + display_name + "\" " + 
+  format_list transitions + " " + format_list handlers + " " + format_dict metadata + " " +
+  "\"" + description + "\" \"" + usage + "\" " + format_list examples + " " + format_list related -> 
+  register_call
+}
+
+;; Helper: Get field from config map with default
+voice grammar.get_field / {
+  config_map + field_name + default_value -> 
+  grammar.lookup -> 
+  if_found -> value -> 
+  if_not_found -> default_value -> 
+  field_value
+}
+
+target status_syntax / "status_registration_syntax"
+voice main / {
+  grammar.parse_status_registration -> 
+  status_syntax
+}
+

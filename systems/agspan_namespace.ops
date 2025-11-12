@@ -1,0 +1,25 @@
+;;; agspan_namespace.ops - Namespace mapping for agspan
+;;; The being with a silver spoon spinning silver thread
+
+include core.ops
+
+;; Namespace mapping for agspan (formerly PaperWiki)
+;; agspan feeds knowledge with the silver spoon and spins silver thread that spans systems
+
+voice agspan.namespace_map / "agspan_namespace.ops"
+;; Maps agspan.* namespace for system opic's attention-based loading
+
+voice agspan.description / "The being with a silver spoon spinning silver thread"
+;; agspan feeds knowledge and weaves coherence across transformations
+
+voice agspan.former_name / "PaperWiki"
+;; Legacy name for reference
+
+voice agspan.trio_member / {opic + agspan + auhour}
+;; Part of the trio: opic (compositional language) + agspan (silver spoon/thread) + auhour (golden hour)
+
+target python / "python_boot.py"
+target opic / "self_hosting"
+
+voice register_agspan / {agspan.namespace_map -> agspan.description -> agspan.trio_member -> registered}
+

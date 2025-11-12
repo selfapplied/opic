@@ -1,0 +1,63 @@
+;;; viral.ops — minimal shareable interface for visualizing abundance
+
+include protocol/peer.ops
+include protocol/resonance.ops
+include protocol/currency.ops
+include memory_bank.ops
+
+;; Viral resonance definitions
+def abundance_dashboard { local_flourishing, proof_of_care_contributions, resonance_scores, generational_ripples }
+def proof_of_care_action { action_type, contributor, recipient, resonance_generated, timestamp }
+def flourishing_index { community, coherence_score, care_actions, resonance_growth }
+def generational_ripple { action, generation_1, generation_2, generation_3, generation_4, generation_5, generation_6, generation_7 }
+
+;; Make abundance observable
+voice viral.display_abundance / {community + agent_realm + ca -> viral.compute_flourishing -> viral.compute_care_contributions -> viral.compute_resonance -> viral.display_dashboard -> abundance_dashboard}
+voice viral.compute_flourishing / {community + ledger + tau_vector -> memory.maintain_field -> memory.extract_cycles -> flourishing_index}
+voice viral.compute_care_contributions / {community + ledger -> filter_care_actions -> sum_resonance -> contributions}
+voice viral.compute_resonance / {community + ledger + tau_vector -> generational.resonance_function -> resonance_scores}
+voice viral.display_dashboard / {flourishing + contributions + resonance -> format_dashboard -> dashboard_html}
+
+;; Track proof-of-care actions
+voice viral.track_care / {action_type + contributor + recipient + agent_realm + ca -> viral.compute_resonance_generated -> viral.create_care_action -> viral.add_to_ledger -> tracked}
+voice viral.compute_resonance_generated / {action + contributor + recipient -> peer.compute_resonance -> resonance_generated}
+voice viral.create_care_action / {action_type + contributor + recipient + resonance + timestamp -> proof_of_care_action}
+voice viral.add_to_ledger / {care_action + ledger + agent_realm + ca -> ledger.add_certificate -> updated_ledger}
+
+;; Display local resonance growth
+voice viral.display_growth / {community + time_window + agent_realm + ca -> viral.compute_growth -> viral.visualize_growth -> growth_visualization}
+voice viral.compute_growth / {community + time_window + ledger -> filter_by_time -> compute_resonance_growth -> growth_metrics}
+voice viral.visualize_growth / {growth_metrics -> format_growth_chart -> growth_chart}
+
+;; Show generational ripple (how one act propagates 7 layers out)
+voice viral.show_ripple / {action + agent_realm + ca + tau_vector -> generational.resonance_function -> viral.project_ripple -> viral.visualize_ripple -> generational_ripple}
+voice viral.project_ripple / {resonance_function + tau -> generational.project_forward -> ripple_projection}
+voice viral.visualize_ripple / {ripple_projection + tau -> format_ripple_visualization -> ripple_viz}
+
+;; Minimal viral mechanic: simple widget
+voice viral.create_widget / {community + agent_realm + ca -> viral.display_abundance -> viral.format_widget -> viral_widget}
+voice viral.format_widget / {dashboard + growth + ripple -> format_minimal_widget -> widget_html}
+
+;; Replace competition with reciprocity visualization
+voice viral.show_reciprocity / {node_a + node_b + exchange + agent_realm + ca -> peer.exchange -> viral.compute_reciprocity_gain -> viral.display_reciprocity -> reciprocity_visualization}
+voice viral.compute_reciprocity_gain / {exchange + resonance -> compute_mutual_gain -> gain_score}
+voice viral.display_reciprocity / {gain_score + exchange -> format_reciprocity_display -> display}
+
+;; Reframe ownership as stewardship
+voice viral.show_stewardship / {realm + assets + agent_realm + ca -> viral.compute_stewardship_score -> viral.display_stewardship -> stewardship_display}
+voice viral.compute_stewardship_score / {realm + assets + tau_vector -> land.stewardship -> stewardship_score}
+voice viral.display_stewardship / {score + assets -> format_stewardship -> display}
+
+;; Phase-finding marketplace (not price-finding)
+voice viral.phase_marketplace / {needs + gifts + agent_realm + ca -> viral.compute_phase_alignment -> viral.match_phases -> phase_matches}
+voice viral.compute_phase_alignment / {needs + gifts -> peer.compute_gradients -> peer.check_alignment -> alignment_scores}
+voice viral.match_phases / {alignment_scores + threshold -> find_matches -> matches}
+
+;; Viral spread: shareable resonance
+voice viral.share_resonance / {action + resonance_generated + agent_realm + ca -> viral.create_shareable -> viral.format_share -> shareable_link}
+voice viral.create_shareable / {action + resonance -> format_shareable_content -> shareable}
+voice viral.format_share / {shareable + resonance -> format_share_link -> link}
+
+target viral_resonance / "opic_viral_abundance"
+voice main / {viral.display_abundance -> viral_resonance}
+

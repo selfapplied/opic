@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OPIC Voice Chat Demo</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .voice-chat {
+            border: 2px solid #4a90e2;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+        .participant {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border-left: 3px solid #4a90e2;
+        }
+        .voice-controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 5px;
+            border: none;
+            border-radius: 6px;
+            background: #4a90e2;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #e8f4f8;
+            color: #2c5aa0;
+        }
+        .status-listening {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>OPIC Voice Chat — ζ-Field Architecture</h1>
+    
+    <div class="voice-chat">
+        <h2>Voice Chat Controls</h2>
+        <div class="voice-controls">
+            <button id="startVoice">Start Voice</button>
+            <button id="stopVoice" disabled>Stop Voice</button>
+            <button id="testAudio">Test Audio</button>
+        </div>
+        <div id="status">Click Start Voice to begin</div>
+        
+        <h3>Participants</h3>
+        <div id="participants">
+            <div class="participant">You (Local)</div>
+        </div>
+        
+        <h3>Voice Activity</h3>
+        <div id="voiceActivity">Waiting for voice...</div>
+    </div>
+
+    <script src="../scripts/voice_chat_service.js"></script>
+    <script>
+        // Initialize OPIC Voice Service
+        const opicVoice = new OpicVoiceService();
+        
+        let voiceActivityInterval = null;
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await opicVoice.initialize();
+        });
+
+        // Start voice button
+        document.getElementById('startVoice').addEventListener('click', async () => {
+            const result = await opicVoice.startVoiceSession('demo-room');
+            
+            if (result.success) {
+                document.getElementById('startVoice').disabled = true;
+                document.getElementById('stopVoice').disabled = false;
+                document.getElementById('status').textContent = 'Listening...';
+                document.getElementById('status').className = 'status-listening';
+                
+                // Monitor voice activity
+                startVoiceActivityMonitoring();
+            } else {
+                document.getElementById('status').textContent = `Error: ${result.error}`;
+                document.getElementById('status').className = 'status-error';
+            }
+        });
+
+        // Stop voice button
+        document.getElementById('stopVoice').addEventListener('click', () => {
+            const result = opicVoice.stopVoiceSession();
+            
+            if (result.success) {
+                document.getElementById('startVoice').disabled = false;
+                document.getElementById('stopVoice').disabled = true;
+                document.getElementById('status').textContent = 'Voice session stopped';
+                document.getElementById('status').className = '';
+                
+                stopVoiceActivityMonitoring();
+            }
+        });
+
+        // Test audio button
+        document.getElementById('testAudio').addEventListener('click', () => {
+            const utterance = new SpeechSynthesisUtterance('Hello from OPIC voice chat! This is a test of the voice synthesis system.');
+            window.speechSynthesis.speak(utterance);
+        });
+
+        // Voice activity monitoring
+        function startVoiceActivityMonitoring() {
+            voiceActivityInterval = setInterval(() => {
+                if (opicVoice.isListening) {
+                    // Simulate voice activity detection
+                    const activity = Math.random() > 0.7 ? 'Voice detected!' : 'Listening...';
+                    document.getElementById('voiceActivity').textContent = activity;
+                }
+            }, 500);
+        }
+
+        function stopVoiceActivityMonitoring() {
+            if (voiceActivityInterval) {
+                clearInterval(voiceActivityInterval);
+                voiceActivityInterval = null;
+            }
+            document.getElementById('voiceActivity').textContent = 'Waiting for voice...';
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            opicVoice.stopVoiceSession();
+        });
+    </script>
+</body>
+</html>
+
+

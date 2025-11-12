@@ -1,0 +1,140 @@
+;;; reorganize.ops — OPIC Reorganization: Using OPIC to Organize OPIC
+
+include systems/opic_field_0.7.ops
+include systems/opic_cosmogenesis.ops
+
+;; Core principle: OPIC organizes itself through voices
+
+;; Directory structure as voices
+voice create.core.structure / {
+  core_dir -> 
+  create.directory -> 
+  move.opic_executor -> 
+  move.parser -> 
+  core_ready
+}
+
+voice create.systems.structure / {
+  systems_dir -> 
+  create.numbered.directories -> 
+  organize.by.domain -> 
+  systems_ready
+}
+
+voice create.docs.structure / {
+  docs_dir -> 
+  create.topic.directories -> 
+  organize.by.purpose -> 
+  docs_ready
+}
+
+;; File classification
+voice classify.file / {
+  file_path -> 
+  check.extension -> 
+  check.purpose -> 
+  determine.category -> 
+  file_category
+}
+
+voice is.essential.python / {
+  file_path -> 
+  check.name.pattern -> 
+  check.dependencies -> 
+  essential_status
+}
+
+voice is.experiment.python / {
+  file_path -> 
+  check.name.pattern -> 
+  check.isolation -> 
+  experiment_status
+}
+
+;; Migration process
+voice migrate.core / {
+  source + destination -> 
+  verify.essential -> 
+  move.file -> 
+  update.references -> 
+  core_migrated
+}
+
+voice migrate.systems / {
+  source_pattern + destination_dir -> 
+  find.matching.files -> 
+  classify.by.domain -> 
+  move.to.numbered.dir -> 
+  update.includes -> 
+  systems_migrated
+}
+
+voice migrate.docs / {
+  source_pattern + destination_dir -> 
+  find.matching.files -> 
+  classify.by.topic -> 
+  move.to.topic.dir -> 
+  update.links -> 
+  docs_migrated
+}
+
+voice archive.experiments / {
+  experiment_files + archive_dir -> 
+  verify.not.essential -> 
+  move.to.archive -> 
+  create.index -> 
+  experiments_archived
+}
+
+;; Reference updating
+voice update.includes / {
+  ops_file + old_path + new_path -> 
+  find.includes -> 
+  replace.paths -> 
+  verify.includes -> 
+  includes_updated
+}
+
+voice update.references / {
+  file + old_paths + new_paths -> 
+  find.references -> 
+  replace.paths -> 
+  verify.references -> 
+  references_updated
+}
+
+;; Validation
+voice validate.structure / {
+  new_structure -> 
+  check.core.exists -> 
+  check.systems.organized -> 
+  check.docs.organized -> 
+  check.no.broken.refs -> 
+  structure_valid
+}
+
+voice check.no.broken.refs / {
+  ops_files -> 
+  extract.includes -> 
+  verify.paths.exist -> 
+  broken_refs
+}
+
+;; Main reorganization voice
+voice reorganize.opic / {
+  current_state -> 
+  create.core.structure -> 
+  create.systems.structure -> 
+  create.docs.structure -> 
+  migrate.core -> 
+  migrate.systems -> 
+  migrate.docs -> 
+  archive.experiments -> 
+  update.all.references -> 
+  validate.structure -> 
+  reorganization_complete
+}
+
+target reorganize / "reorganize"
+voice main / { reorganize.opic -> reorganize }
+

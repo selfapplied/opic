@@ -1,0 +1,150 @@
+;;; opic_mode7_perspective.ops — Mode 7: Perspective layer for lab harvest
+;;; Turns flat traces into navigable world
+
+include systems/opic_primorial_lab.ops
+
+;; Parallax dashboards: one reality, layered speeds
+;; Foreground: live health strip (divL2 per RK substage, Parseval, CFL)
+voice parallax.foreground / {
+  health_history + time_steps -> 
+  compute.scroll.speed -> 
+  render.health.strip -> 
+  foreground_layer
+}
+
+;; Midground: experiment state (mask on/off, p#, η, decoder, ΔMI)
+voice parallax.midground / {
+  experiment_state + config + metrics -> 
+  compute.scroll.speed -> 
+  render.experiment.state -> 
+  midground_layer
+}
+
+;; Background: slow-rolling aggregates (E(k) dents with CIs, decode accuracy vs samples)
+voice parallax.background / {
+  aggregates + E_k_results + accuracy_results -> 
+  compute.scroll.speed -> 
+  render.aggregates -> 
+  background_layer
+}
+
+;; OPIC sets scroll speed per layer; calm layers glide, alerts nudge faster
+voice compute.scroll.speed / {
+  layer_type + alert_level + stability -> 
+  compute.base.speed -> 
+  adjust.for.alerts -> 
+  scroll_speed
+}
+
+;; Perspective-invariant views: rotate/scale the same data
+;; Unfolded spectra, ΔE(k), MI bars, decoder SHAP projected onto shared map
+voice perspective.invariant.view / {
+  unfolded_spectra + delta_E_k + mi_bars + decoder_shap -> 
+  project.to.shared.map -> 
+  set.viewpoint -> 
+  render.projection -> 
+  perspective_view
+}
+
+;; Zoom = sample size; rotation = condition (baseline / primorial / random / linearized)
+voice set.viewpoint / {
+  zoom_level + rotation_condition + data -> 
+  apply.zoom -> 
+  apply.rotation -> 
+  viewpoint
+}
+
+;; Tiled k-space: SNES map sheets for shells
+;; Shell-binned k-space as tiles; primorial-kept tiles get higher elevation
+voice tiled.k.space / {
+  k_space + shell_bins + primorial_mask -> 
+  compute.tile.elevation -> 
+  render.tiles -> 
+  tiled_map
+}
+
+;; Parallax shows dents/plateaus as terrain
+voice compute.tile.elevation / {
+  shell + primorial_mask + E_k -> 
+  compute.elevation -> 
+  elevation
+}
+
+;; Fusion moments: detect when layers lock
+;; Trigger fusion flag when three layers align:
+;; significant shells (q<0.05) + ΔMI>0 + decode↑ on validation
+voice detect.fusion.moment / {
+  significant_shells + delta_mi + decode_accuracy + validation_results -> 
+  check.significant.shells -> 
+  check.delta_mi.positive -> 
+  check.decode.improvement -> 
+  detect.alignment -> 
+  fusion_flag
+}
+
+;; Store fusion as CABA bundle (fields A, spectra/features B) with OPIC note
+voice store.fusion.moment / {
+  fusion_flag + fields + spectra + features + run_id -> 
+  encode.caba.mode.a -> 
+  encode.caba.mode.b -> 
+  generate.opic.note -> 
+  store.snapshot -> 
+  fusion_snapshot
+}
+
+;; Time warps: fast-forward stable, slow-motion divergences
+voice time.warp / {
+  stability_regime + divergence_detected + router_pivot -> 
+  compute.warp.speed -> 
+  apply.warp -> 
+  narrate.warp -> 
+  warped_timeline
+}
+
+;; OPIC narrates the warp
+voice narrate.warp / {
+  warp_event + context -> 
+  generate.narration -> 
+  narration
+}
+
+;; Perspective-invariant features: survive zoom/rotation
+;; Local spectral slopes, anisotropy bins, phase-increment means, small bispectrum set
+voice extract.perspective.invariant.features / {
+  U + kx + ky + kz + N -> 
+  compute.local.spectral.slopes -> 
+  compute.anisotropy.bins -> 
+  compute.phase.increment.means -> 
+  compute.small.bispectrum.set -> 
+  perspective_invariant_features
+}
+
+;; Train once; reproject for each condition to compare geometry
+voice reproject.features / {
+  perspective_invariant_features + condition + viewpoint -> 
+  apply.zoom -> 
+  apply.rotation -> 
+  reprojected_features
+}
+
+;; Harvest loops: record viewpoint, layer states, fusion flags, CABA artifacts
+voice mode7.harvest / {
+  viewpoint + layer_states + fusion_flags + caba_artifacts -> 
+  record.viewpoint -> 
+  record.layer.states -> 
+  record.fusion.flags -> 
+  record.caba.artifacts -> 
+  harvest_record
+}
+
+;; Replays are exact: same seeds + same camera path ⇒ same film
+voice mode7.replay / {
+  seeds + camera_path + harvest_record -> 
+  restore.viewpoint -> 
+  restore.layer.states -> 
+  replay_timeline
+}
+
+target opic_mode7_perspective / "mode7_perspective"
+voice main / { parallax.foreground + parallax.midground + parallax.background + perspective.invariant.view + tiled.k.space + detect.fusion.moment + time.warp + extract.perspective.invariant.features + mode7.harvest -> opic_mode7_perspective }
+

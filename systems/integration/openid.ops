@@ -1,0 +1,52 @@
+;;; openid_integration.ops — align opic certificates with OpenID Connect identity
+
+include protocol/certificate.ops
+include protocol/signed.ops
+
+;; OpenID Connect integration definitions
+def openid_provider { issuer, authorization_endpoint, token_endpoint, userinfo_endpoint }
+def openid_token { access_token, id_token, token_type, expires_in }
+def openid_id_token { iss, sub, aud, exp, iat, nonce }
+def opic_openid_mapping { opic_certificate, openid_id_token, openid_provider }
+
+;; Map opic certificate to OpenID identity
+voice openid.cert_to_identity / {opic_certificate + openid_provider -> openid.create_id_token -> openid_id_token}
+voice openid.create_id_token / {cert + provider -> extract_identity_claims -> format_id_token -> id_token}
+voice openid.extract_identity_claims / {certificate -> extract_subject -> extract_realm -> extract_expires -> claims}
+
+;; OpenID token as opic certificate
+voice openid.token_to_cert / {openid_token + agent_realm + ca -> openid.verify_token -> openid.extract_cert -> certificate}
+voice openid.verify_token / {token + provider -> verify_signature -> verify_expiry -> verified}
+voice openid.extract_cert / {id_token + agent_realm + ca -> cert.create_from_claims -> certificate}
+
+;; Opic realm as OpenID provider
+voice openid.realm_to_provider / {opic_realm + ca + public_key -> openid.create_provider -> openid_provider}
+voice openid.create_provider / {realm + ca + public_key -> format_provider_endpoints -> provider}
+
+;; OpenID authorization flow via opic
+voice openid.authorize_via_opic / {client_id + redirect_uri + scope + agent_realm + ca -> cert.check_permission -> openid.create_auth_code -> authorization_code}
+voice openid.create_auth_code / {permission + client_id -> generate_code -> code}
+
+;; OpenID token exchange via opic certificate
+voice openid.token_via_cert / {authorization_code + client_id + agent_realm + ca -> cert.verify -> openid.create_token -> openid_token}
+voice openid.create_token / {cert + client_id -> generate_access_token -> generate_id_token -> token}
+
+;; OpenID userinfo via opic certificate
+voice openid.userinfo_via_cert / {access_token + agent_realm + ca -> cert.verify -> openid.extract_userinfo -> userinfo}
+voice openid.extract_userinfo / {certificate -> extract_claims -> format_userinfo -> userinfo}
+
+;; Opic certificate as OpenID ID token
+voice openid.cert_as_id_token / {opic_certificate + openid_provider + client_id -> openid.cert_to_identity -> openid.sign_token -> id_token}
+voice openid.sign_token / {id_token + provider_private_key -> sign_jwt -> signed_token}
+
+;; OpenID Connect discovery via opic
+voice openid.discover_via_opic / {opic_realm + ca -> openid.realm_to_provider -> openid.format_discovery -> discovery_document}
+voice openid.format_discovery / {provider -> format_oidc_discovery -> discovery}
+
+;; Single sign-on via opic certificates
+voice openid.sso_via_opic / {user_realm + service_realm + ca -> cert.verify_cross_realm -> openid.create_sso_token -> sso_token}
+voice openid.create_sso_token / {cross_realm_cert + service_realm -> openid.cert_to_identity -> sso_token}
+
+target openid_integration / "opic_openid_alignment"
+voice main / {openid.cert_to_identity -> openid_integration}
+

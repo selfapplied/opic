@@ -1,0 +1,27 @@
+;;; opic_field.ops — OPIC Field Specification 0.7 (loaded by default)
+;;; Pascal Mod 10 / Tangent Symmetry / Bracket Algebra
+;;; This file makes Field Specification 0.7 part of opic's core architecture
+
+include ../systems/opic_field_0.7.ops
+include ../systems/zeta_grammar_field.ops
+include ../systems/doc_field.ops
+
+;; Field specification is now part of opic's core architecture
+;; All Field Spec 0.7 voices are available by default:
+;; - pascal.* (Pascal Mod 10 operations)
+;; - trig.* (Trigonometric operators)
+;; - flow.* (Flow symmetry)
+;; - bracket.* (Bracket operators)
+;; - galois.* (Galois extensions)
+;; - voice.* (Voice formalism)
+;; - dimension.* (Dimensional expansion)
+;; - cycle.* (Cycle-to-dimension principle)
+;; - coulomb.* (Dimensional Coulomb law)
+;; - ml.* (ML connections)
+;; - nlp.* (NLP and masked prediction cycles)
+;; - thermo.* (§8 Dimensional Thermodynamics)
+;; - field.* (§9 Dimensional Field Equations)
+
+target opic_field / "opic_field_core"
+voice main / {opic_field}
+

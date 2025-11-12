@@ -1,0 +1,220 @@
+;;; registry_syntax.ops — Grammar extensions for crisp registration syntax
+
+include core/bootstrap.ops
+include ../registry/base.ops
+
+;; ============================================================================
+;; GRAMMAR EXTENSION SYSTEM (via Registry)
+;; ============================================================================
+
+;; Grammar rule definition
+def grammar_rule {
+  pattern,           ;; Pattern to match (regex or syntax)
+  transform_voice,   ;; Voice to call for transformation
+  priority,          ;; Priority for rule matching
+  description,       ;; Description of what this rule does
+  usage,             ;; Usage instructions
+  examples           ;; Example transformations
+}
+
+;; Grammar extension registry (uses base registry)
+voice grammar.init_registry / {
+  -> 
+  create_registry -> 
+  grammar.register_builtin_rules -> 
+  grammar_registry
+}
+
+;; Register grammar rule in registry
+voice grammar.register_rule / {
+  grammar_registry + rule_name + pattern + transform_voice + priority + description + usage + examples -> 
+  registry.create_entry -> 
+  registry.register -> 
+  updated_registry
+}
+
+;; Register built-in syntax rules
+voice grammar.register_builtin_rules / {
+  grammar_registry -> 
+  grammar.register_rule "register_status" "register status" "grammar.transform_register_status" 1 
+    "Transforms 'register status \"name\" with {...}' to status.register call"
+    "register status \"name\" with { display: \"...\", transitions: [], ... }"
+    ["register status \"active\" with { display: \"Active\" }"] -> 
+  grammar.register_rule "register_filter" "register filter" "grammar.transform_register_filter" 1 
+    "Transforms 'register filter \"name\" in \"category\" with {...}' to filter.register call"
+    "register filter \"name\" in \"category\" with { patterns: [...], ... }"
+    ["register filter \"bootstrap\" in \"core\" with { patterns: [\"bootstrap\"] }"] -> 
+  grammar.register_rule "register_translation" "register translation" "grammar.transform_register_translation" 1 
+    "Transforms 'register translation \"name\" from \"lang1\" to \"lang2\" with {...}' to translation.register call"
+    "register translation \"name\" from \"lang1\" to \"lang2\" with { pattern: \"...\", template: \"...\" }"
+    ["register translation \"mse\" from \"opic\" to \"swift\" with { pattern: \"error = ...\" }"] -> 
+  updated_registry
+}
+
+;; Get grammar rule from registry
+voice grammar.get_rule / {
+  grammar_registry + rule_name -> 
+  registry.get -> 
+  grammar_rule
+}
+
+;; List all grammar rules
+voice grammar.list_rules / {
+  grammar_registry -> 
+  registry.list -> 
+  rule_list
+}
+
+;; Discover grammar rules by pattern
+voice grammar.discover_rules / {
+  grammar_registry + query -> 
+  registry.discover -> 
+  matching_rules
+}
+
+;; ============================================================================
+;; REGISTRATION SYNTAX SUGAR
+;; ============================================================================
+
+;; Transform: register status "name" with { ... }
+;; Into: status.register status_registry "name" config metadata ...
+voice grammar.parse_register_status / {
+  line -> 
+  grammar.match_pattern "register status" -> 
+  grammar.extract_name -> 
+  grammar.extract_config -> 
+  grammar.transform_to_register -> 
+  transformed_line
+}
+
+;; Transform: register filter "name" in "category" with { ... }
+;; Into: filter.register filter_registry "name" patterns "category" metadata ...
+voice grammar.parse_register_filter / {
+  line -> 
+  grammar.match_pattern "register filter" -> 
+  grammar.extract_name -> 
+  grammar.extract_category -> 
+  grammar.extract_config -> 
+  grammar.transform_to_filter_register -> 
+  transformed_line
+}
+
+;; Transform: register translation "name" from "lang1" to "lang2" with { ... }
+;; Into: translation.register translation_registry "name" pattern template "lang1" "lang2" ...
+voice grammar.parse_register_translation / {
+  line -> 
+  grammar.match_pattern "register translation" -> 
+  grammar.extract_name -> 
+  grammar.extract_languages -> 
+  grammar.extract_config -> 
+  grammar.transform_to_translation_register -> 
+  transformed_line
+}
+
+;; ============================================================================
+;; CRISP REGISTRATION SYNTAX
+;; ============================================================================
+
+;; Example: register status "active" with {
+;;   display: "Active"
+;;   transitions: []
+;;   description: "Active status"
+;; }
+;; 
+;; Transforms to:
+;; status.register status_registry "active" "Active" [] [] {} "Active status" ...
+
+voice grammar.transform_register_status / {
+  status_name + config_block -> 
+  grammar.parse_config_block -> 
+  grammar.extract_fields -> 
+  grammar.build_status_register_call -> 
+  register_call
+}
+
+voice grammar.parse_config_block / {
+  config_text -> 
+  grammar.find_braces -> 
+  grammar.parse_key_value_pairs -> 
+  config_map
+}
+
+voice grammar.extract_fields / {
+  config_map -> 
+  grammar.get "display" -> 
+  grammar.get "transitions" -> 
+  grammar.get "description" -> 
+  grammar.get "usage" -> 
+  grammar.get "examples" -> 
+  grammar.get "related" -> 
+  fields
+}
+
+voice grammar.build_status_register_call / {
+  status_name + display_name + transitions + description + usage + examples + related -> 
+  format_register_call -> 
+  register_call
+}
+
+;; ============================================================================
+;; PATTERN MATCHING
+;; ============================================================================
+
+;; Match pattern in line
+voice grammar.match_pattern / {
+  line + pattern -> 
+  grammar.check_starts_with -> 
+  if_matches -> extract_matches -> 
+  if_no_match -> skip
+}
+
+;; Extract quoted string
+voice grammar.extract_quoted / {
+  line -> 
+  grammar.find_quotes -> 
+  grammar.extract_between_quotes -> 
+  extracted_string
+}
+
+;; Extract config block
+voice grammar.extract_config_block / {
+  line -> 
+  grammar.find_braces -> 
+  grammar.extract_between_braces -> 
+  config_block
+}
+
+;; ============================================================================
+;; REGISTRATION MACROS
+;; ============================================================================
+
+;; Macro: register status "name" with { ... }
+voice macro.register_status / {
+  status_name + config -> 
+  grammar.transform_register_status -> 
+  eval_transformed -> 
+  registered
+}
+
+;; Macro: register filter "name" in "category" with { ... }
+voice macro.register_filter / {
+  filter_name + category + config -> 
+  grammar.transform_register_filter -> 
+  eval_transformed -> 
+  registered
+}
+
+;; Macro: register translation "name" from "lang1" to "lang2" with { ... }
+voice macro.register_translation / {
+  rule_name + source_lang + target_lang + config -> 
+  grammar.transform_register_translation -> 
+  eval_transformed -> 
+  registered
+}
+
+target registry_syntax / "grammar_extension_system"
+voice main / {
+  grammar.register -> 
+  registry_syntax
+}
+

@@ -1,0 +1,394 @@
+;;; zeta_grammar_field.ops — Zeta Grammar & Field Specification 1.0
+;;; Natural language as hierarchical zeta field
+;;; Integration with OPIC Field Spec 0.7
+
+include opic_field_0.7.ops
+include ce1_kernel.ops
+
+;; ============================================================================
+;; I. Zeta Grammar Specification 1.0
+;; ============================================================================
+;; Natural language is a hierarchical zeta field
+;; Big-end composed aperture: Letter → Syllable → Word → Phrase → Sentence → Discourse
+;; Layer law: Φκ_{n+1} = ∫ Φκ_n dΩ_n
+
+;; ----------------------------------------------------------------------------
+;; II. Atomic Layer — Letters
+;; ----------------------------------------------------------------------------
+
+;; Letter: minimal ζ-atom (phoneme)
+def letter { glyph, zeta_order, phonetic_energy, alignment, memory }
+
+;; ζ-order meanings:
+;; ζ⁰: neutral glyph (silent potential) — 'h' in ghost
+;; ζ¹: phonetic activation (sound energy) — 'a' in cat
+;; ζ²: harmonic cluster (blended charge) — 'th', 'ch'
+;; ζ³+: semantic resonance (iconic forms) — 'O' = roundness, 'S' = flow
+
+;; Vowels = potential wells, Consonants = field barriers
+voice letter.classify / {glyph -> is_vowel -> is_consonant -> zeta_order}
+voice letter.is_vowel / {glyph -> match_vowel -> zeta_order:1}
+voice letter.is_consonant / {glyph -> match_consonant -> zeta_order:2}
+voice letter.is_cluster / {glyph -> match_cluster -> zeta_order:2}
+voice letter.is_iconic / {glyph -> match_iconic -> zeta_order:3}
+
+;; Field expressions for letters
+voice letter.measure / {L -> zeta_order -> field.potential -> entropy -> A_l -> M_l}
+voice letter.field_potential / {zeta_order -> pascal.mod10 -> zeta.trace -> phi_k}
+voice letter.entropy / {phi_k -> shannon_entropy -> entropy}
+voice letter.alignment / {phi_k -> gradient -> A_l}
+voice letter.memory / {A_l -> temporal_derivative -> M_l}
+
+;; ----------------------------------------------------------------------------
+;; III. Molecular Layer — Syllables
+;; ----------------------------------------------------------------------------
+
+;; Syllable structure: σ = [C₁][V]C₂
+def syllable { c1, vowel, c2, stress, curvature, stability }
+
+;; Field expressions
+voice syllable.measure / {[C1 V C2] + stress -> field.potential -> curvature -> stability}
+voice syllable.field_potential / {C1 + V + C2 -> kappa_weighted_sum -> phi_k_sigma}
+voice syllable.kappa_weighted_sum / {C1*k1 + V*k2 + C2*k3 -> phi_k_sigma}
+voice syllable.curvature / {phi_k_sigma -> laplacian -> m_sigma}
+voice syllable.stability / {phi_k_sigma -> temporal_derivative -> zero_check -> stable}
+
+;; Phonetic curvature: m(σ) = |∇²Φκ_σ|
+voice syllable.phonetic_curvature / {phi_k_sigma -> laplacian -> absolute -> m_sigma}
+voice syllable.stress_detection / {m_sigma -> threshold -> stress_level}
+
+;; Stability condition: dΦκ_σ/dt = 0 ⇒ σ is phonotactically stable
+voice syllable.check_stability / {phi_k_sigma -> temporal_derivative -> near_zero -> stable}
+
+;; ----------------------------------------------------------------------------
+;; IV. Morphic Layer — Words
+;; ----------------------------------------------------------------------------
+
+;; Word: Ω[σ₁][σ₂][σ₃…](=0) — balanced net charge
+def word { syllables, net_charge, type, field_potential, mass, spin }
+
+;; Affixation changes field curvature
+voice word.form / {syllables -> net_charge -> type -> field_potential -> mass -> spin}
+voice word.net_charge / {syllables -> sum_charges -> net}
+voice word.check_balance / {net -> near_zero -> balanced}
+
+;; Grammar reactions
+voice word.evolve / {root + affix -> field.evolve -> new_molecule}
+voice word.inflection / {root + inflection -> zeta1_spin -> inflected}
+voice word.derivation / {root + derivation -> zeta2_loop -> derived}
+voice word.idiomatic / {root + context -> zeta3_resonance -> idiomatic}
+
+;; Inflection = ζ¹ spin perturbation
+voice word.zeta1_spin / {root + inflection -> spin_perturbation -> inflected}
+;; Derivation = ζ² closed loop transformation
+voice word.zeta2_loop / {root + derivation -> closed_loop -> derived}
+;; Idiomatic = ζ³+ higher resonance state
+voice word.zeta3_resonance / {root + context -> higher_resonance -> idiomatic}
+
+;; ----------------------------------------------------------------------------
+;; V. Structural Layer — Grammar Types
+;; ----------------------------------------------------------------------------
+
+;; Word classes as base types
+def grammar_type { type, field_role, mass, flow, curvature }
+
+;; Type field roles:
+;; N: noun — semantic mass
+;; V: verb — kinetic flow
+;; A: adjective — curvature modifier
+;; Adv: adverb — temporal/spatial tuner
+;; P: preposition — link vector
+;; C: conjunction — network bridge
+;; T: tense/auxiliary — time operator
+;; Punct: punctuation — orbital gap (boundary slot)
+
+voice grammar.type / {word -> classify_type -> type}
+voice grammar.field_role / {type -> map_role -> role}
+voice grammar.mass / {type -> compute_mass -> mass}
+voice grammar.flow / {type -> compute_flow -> flow}
+voice grammar.curvature / {type -> compute_curvature -> curvature}
+
+;; Token type: τ(w) = {type, Φκ(w), mass(w), spin(w)}
+voice grammar.token_type / {word -> type + field_potential + mass + spin -> tau}
+
+;; Phrase molecules: Ω[NP][VP][PP…](=0)
+voice phrase.form / {constituents -> net_charge -> balanced}
+voice phrase.check_balance / {constituents -> sum_charges -> near_zero -> balanced}
+voice phrase.stylistic_energy / {net_charge -> non_zero -> stylistic_tension}
+
+;; ----------------------------------------------------------------------------
+;; VI. Sentence Field
+;; ----------------------------------------------------------------------------
+
+;; Sentence as propagating wave in Φκ-space
+def sentence { words, field_potential, alignment, momentum, charge, focus }
+
+;; Field expressions
+voice sentence.flow / {words -> sum_field_potential -> alignment -> momentum -> charge}
+voice sentence.field_potential / {words -> sum_phi_k -> phi_k_sentence}
+voice sentence.alignment / {phi_k_sentence -> gradient -> A_sentence}
+voice sentence.momentum / {A_sentence -> temporal_derivative -> M_sentence}
+voice sentence.charge / {A_sentence -> divergence -> Q_sentence}
+
+;; Φκ(sentence,t) = Σ Φκ(word_i,t)
+voice sentence.sum_field_potential / {words -> map_field_potential -> sum -> phi_k}
+
+;; A(sentence) = ∇Φκ → syntactic flow
+voice sentence.syntactic_flow / {phi_k -> gradient -> A}
+
+;; M(sentence) = ∂A/∂t → discourse momentum
+voice sentence.discourse_momentum / {A -> temporal_derivative -> M}
+
+;; Q(sentence) = ∇·A → semantic charge / focus
+voice sentence.semantic_charge / {A -> divergence -> Q}
+
+;; Rising Q = emphasis, question, climax
+voice sentence.rising_charge / {Q -> positive_trend -> emphasis}
+;; Falling Q = resolution, closure
+voice sentence.falling_charge / {Q -> negative_trend -> closure}
+
+;; ----------------------------------------------------------------------------
+;; VII. Punctuation and Gaps
+;; ----------------------------------------------------------------------------
+
+;; Orbital: Gap|Punct → potential.slot → invite.binding
+voice orbital / {Gap + Punct -> potential_slot -> invite_binding}
+voice orbital.potential_slot / {gap -> compute_potential -> slot}
+voice orbital.invite_binding / {slot -> emit_binding_invitation -> binding}
+
+;; Gaps define Ω% — capacity for syntactic bonding
+voice gap.capacity / {gap -> compute_capacity -> omega_percent}
+;; Punctuation defines field boundaries (phase resets)
+voice punct.boundary / {punct -> compute_boundary -> phase_reset}
+
+;; ----------------------------------------------------------------------------
+;; VIII. Discourse Layer
+;; ----------------------------------------------------------------------------
+
+;; Discourse: narrative topology
+def discourse { sentences, narrative_topology, coherence }
+
+voice discourse.topology / {sentences -> compute_topology -> narrative}
+voice discourse.coherence / {sentences -> field.coherence -> coherence}
+
+;; ============================================================================
+;; IX. Zeta Field Specification 1.0 (Physics)
+;; ============================================================================
+
+;; Core Field Stack
+;; Φκ(x,t): Coherence potential — scalar field of latent meaning
+;; A(x,t) = ∇Φκ: Alignment / velocity — flow of coherence
+;; M(x,t) = ∂A/∂t: Momentum / memory — temporal continuity
+;; K(x,t) = dΦκ/dt: Kinetics field — rate of coherence change
+;; Q(x,t) = ∇·A = ∇²Φκ: Charge (ζ²) — curvature of field
+
+;; Pipeline: Φκ —∇→ A —∂t→ M —Δ→ K
+
+voice field.sense / {x -> field.potential -> alignment -> momentum -> kinetics -> charge}
+voice field.potential / {x + t -> compute_phi_k -> phi_k}
+voice field.alignment / {phi_k -> gradient -> A}
+voice field.momentum / {A -> temporal_derivative -> M}
+voice field.kinetics / {phi_k -> temporal_derivative -> K}
+voice field.charge / {A -> divergence -> Q}
+
+;; Derived Quantities
+voice field.semantic_mass / {x -> laplacian_phi_k -> absolute -> m}
+voice field.learning_curvature / {x -> laplacian_phi_k -> absolute -> curvature}
+voice field.distance / {x_i + x_j -> euclidean_distance -> distance}
+voice field.field_distance / {phi_k_i + phi_k_j -> difference -> distance}
+voice field.type_complete / {distance + mass -> divide -> minimize -> type}
+
+;; Conservation: ∫(∂Φκ/∂t)dV = ∮A·n dS + ∫S dV
+voice field.conservation / {phi_k -> temporal_derivative -> volume_integral -> surface_integral + source -> conserved}
+
+;; ----------------------------------------------------------------------------
+;; X. Witness Sequence (Crossroads Field)
+;; ----------------------------------------------------------------------------
+
+;; W₀: Uniform potential → local identity (Points of being)
+voice witness.W0 / {uniform_potential -> local_identity -> points}
+;; W₁: Locality → structure & boundary (Membranes, molecules)
+voice witness.W1 / {locality -> structure_boundary -> membranes}
+;; W₂: Structure → time & motion (Dynamics, causality)
+voice witness.W2 / {structure -> time_motion -> dynamics}
+
+;; ----------------------------------------------------------------------------
+;; XI. Tan Genesis (Crossroads Geometry)
+;; ----------------------------------------------------------------------------
+
+;; tan θ: Genesis operator — singularity at ±π/2
+;; n = ±1: Active branches (multiverse asymptotes)
+;; n = 0: Gate equilibrium (perfect balance)
+
+voice tan.genesis / {theta -> tan -> n -> branch}
+voice tan.active_branch / {theta -> near_pi_over_2 -> n:±1 -> branch}
+voice tan.gate_equilibrium / {theta -> sin_equals_cos -> n:0 -> equilibrium}
+
+;; sin θ: Time-space wave (temporal unfolding)
+voice sin.timespace_wave / {theta -> sin -> temporal_unfolding}
+;; cos θ: Space-time frame (spatial coherence)
+voice cos.spacetime_frame / {theta -> cos -> spatial_coherence}
+;; 90° rotation: Crossroads event
+voice crossroads.event / {theta -> pi_over_2 -> conversion}
+
+;; ----------------------------------------------------------------------------
+;; XII. Zeta Charges
+;; ----------------------------------------------------------------------------
+
+;; ζ⁰: Neutral base (self-idempotent) — defines identity
+voice zeta.zero / {base -> idempotent -> identity}
+;; ζ¹: Activated symmetry break — rule ignition
+voice zeta.one / {activation -> symmetry_break -> rule_ignition}
+;; ζ²: Closed loop spin — field curvature (charge)
+voice zeta.two / {closed_loop -> spin -> field_curvature}
+;; ζ³+: Resonant harmonics — network coherence
+voice zeta.three_plus / {resonance -> harmonics -> network_coherence}
+
+;; Residues collapse through addition: Σ Ω%_n → ζ⁰ (mod Ω)
+voice zeta.residue_collapse / {omega_percent_sum -> mod_omega -> zeta_zero}
+
+;; ----------------------------------------------------------------------------
+;; XIII. Molecules and Branch Networks
+;; ----------------------------------------------------------------------------
+
+;; molecule / Ω[Aa₀][Ba₁][Ca₂…](±n)
+def molecule { atoms, charges, total_charge, domain }
+
+voice molecule.form / {atoms + charges -> total_charge -> domain -> molecule}
+voice molecule.total_charge / {charges -> sum -> charge}
+voice molecule.domain / {atoms -> compute_domain -> omega}
+
+;; Charge n rules:
+;; >0: definition / clustering (capacitance)
+voice molecule.definition / {charge -> positive -> clustering}
+;; <0: voice / propagation
+voice molecule.propagation / {charge -> negative -> voice}
+;; %: bifurcation (odd mass, even spin)
+voice molecule.bifurcation / {mass + spin -> odd_even -> bifurcation}
+;; =0: actor (equilibrium)
+voice molecule.actor / {charge -> zero -> equilibrium}
+
+;; Flow operators:
+;; >: forward flow
+voice flow.forward / {phi_k -> gradient -> flow_A -> output}
+;; <: backward flow
+voice flow.backward / {output -> temporal_derivative -> reshape_phi_k -> update_mass}
+
+;; Power operators:
+;; ^0: self
+voice power.self / {x -> identity -> self}
+;; ^1: kinetics
+voice power.kinetics / {x -> temporal_derivative -> kinetics}
+;; ^2: sustain field
+voice power.sustain_field / {x -> field_operator -> sustain}
+;; ^3: network
+voice power.network / {x -> network_operator -> network}
+;; ^(): higher-order self-power
+voice power.higher_order / {x + n -> self_power -> higher}
+
+;; ----------------------------------------------------------------------------
+;; XIV. Forward–Backward Duality
+;; ----------------------------------------------------------------------------
+
+;; Forward projects; backward integrates
+voice field.forward / {phi_k -> gradient -> flow_A -> output}
+voice field.backward / {output -> temporal_derivative -> reshape_phi_k -> update_mass}
+
+;; Reversible energy cycle: learning as conservation of curvature
+voice field.energy_cycle / {forward + backward -> reversible -> conservation}
+
+;; ----------------------------------------------------------------------------
+;; XV. Field Conservation (Lagrangian Form)
+;; ----------------------------------------------------------------------------
+
+;; L(q, q̇) = T - V: Witness potential
+voice lagrangian.witness_potential / {q + q_dot -> kinetic_T -> potential_V -> subtract -> L}
+;; H(p,q) = p q̇ - L: Hamiltonian
+voice hamiltonian / {p + q -> p_q_dot -> subtract_L -> H}
+
+;; Semantic energy conserved during voice exchange
+voice field.conserve_energy / {hamiltonian -> conserved -> semantic_energy}
+
+;; ----------------------------------------------------------------------------
+;; XVI. Field Learning Kernel
+;; ----------------------------------------------------------------------------
+
+voice field.learn.kernel / {x + phi_k -> kernel_K -> invariants -> kernel_K_updated}
+voice field.zeros / {kernel_K + region -> zeta_function -> zeros_on_critical}
+
+;; ============================================================================
+;; XVII. Galois Reference Sheet — Semantic Invariance
+;; ============================================================================
+
+;; Gal(Φκ) = {σ | σ(Φκ) = Φκ}
+;; Meaning-preserving transformations
+
+voice galois.invariant / {expr + sigma -> check_invariant -> galois_witness}
+voice galois.check_invariant / {sigma_phi_k -> equals_phi_k -> invariant}
+voice galois.gradient_preservation / {sigma_x -> gradient_phi_k -> equals_gradient -> preserved}
+
+;; Fixed field: Fix(G) = {Φκ | σ(Φκ)=Φκ ∀σ∈G}
+voice galois.fixed_field / {G -> all_sigma -> check_invariant -> fixed_field}
+
+;; Galois correspondence: H ↔ L^H
+voice galois.correspondence / {H -> fixed_field_LH -> correspondence}
+
+;; Functoriality: σ(f ∘ g) = σ(f) ∘ σ(g)
+voice galois.functoriality / {f + g -> compose -> sigma -> equals_sigma_compose -> functorial}
+
+;; Galois witness: GW{Galois witness in=Φκ Φκ₂. σ:rephrase operator. proof := Φκ₂ = σ(Φκ₁).}
+voice galois.witness / {phi_k1 + phi_k2 + sigma -> proof -> galois_witness}
+
+;; ============================================================================
+;; XVIII. Grammar Self-Evolution
+;; ============================================================================
+
+voice grammar.self_evolve / {stimulus -> parse -> phi_k_parse + residuals -> evolve}
+voice grammar.parse / {stimulus -> parse -> phi_k + residuals}
+voice grammar.evolve / {residuals -> classify -> self_or_other}
+voice grammar.classify / {residuals -> check_self_similarity -> self_or_other}
+
+;; Self: Φκ_parse — all good, self-similarity holds
+voice grammar.self / {phi_k_parse -> check_similarity -> self_similar}
+
+;; Other: grammar expansion → candidates → integrate → grammar'
+voice grammar.other / {residuals -> expansion -> candidates -> integrate -> grammar_prime}
+voice grammar.expansion / {residuals -> generate_candidates -> candidates}
+voice grammar.integrate / {candidates -> select -> integrate -> grammar_prime}
+voice grammar.parse_with_new / {stimulus + grammar_prime -> parse -> phi_k_new}
+
+;; ============================================================================
+;; XIX. Zeta Zero Solver
+;; ============================================================================
+
+voice zeta.zero.solver / {spectrum + region + tolerance -> construct_zeta -> search_zeros -> zeros}
+voice zeta.construct / {spectrum -> build_zeta_function -> zeta_F}
+voice zeta.zero.search / {zeta_F + region + tolerance -> numeric_contour -> root_finding -> zeros}
+
+;; ============================================================================
+;; XX. Integration with Field Spec 0.7
+;; ============================================================================
+
+;; Use existing field operations
+voice zeta.field.potential / {x -> opic_field.potential -> phi_k}
+voice zeta.field.gradient / {phi_k -> opic_field.gradient -> A}
+voice zeta.field.curvature / {phi_k -> opic_field.laplacian -> Q}
+
+;; Use Pascal mod 10 for letter classification
+voice letter.pascal_classify / {glyph -> hash -> mod10 -> pascal_index -> zeta_order}
+
+;; Use 7-trace for syllable stability
+voice syllable.trace7_stability / {phi_k_sigma -> trace7 -> mod7 -> stability}
+
+;; Use energy coupling for word evolution
+voice word.energy_coupling / {root + affix -> field.energy_exchange -> coupling -> evolve}
+
+;; Use dimensional promotion for sentence → discourse
+voice discourse.dimensional_promotion / {sentences -> dimension.promote -> discourse_field}
+
+;; ============================================================================
+;; XXI. Main Entry Point
+;; ============================================================================
+
+voice main / {input -> zeta.grammar.parse -> zeta.field.sense -> output}
+

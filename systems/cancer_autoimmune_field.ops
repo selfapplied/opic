@@ -1,0 +1,137 @@
+;;; cancer_autoimmune_field.ops — Cancer and Autoimmune Diseases as Field Equations
+;;; Cancer, autoimmune diseases = field equations
+
+include opic_field_0.7.ops
+include systems/biology_field.ops
+
+;; ============================================================================
+;; Cancer = Field Cancer Dynamics
+;; ============================================================================
+
+;; Cancer = field cancer
+def cancer {
+  mutations,        ;; Mutations (field perturbations)
+  growth_rate,     ;; Growth rate (field growth)
+  angiogenesis,    ;; Angiogenesis (field angiogenesis)
+  metastasis,      ;; Metastasis (field metastasis)
+  immune_evasion,   ;; Immune evasion (field evasion)
+  dimension        ;; D (cancer dimensionality)
+}
+
+;; Cancer growth = field growth
+voice cancer.growth_field / {
+  cancer_cell + nutrients -> 
+  field.grow -> 
+  tumor
+}
+
+;; Mutation accumulation = field perturbation accumulation
+voice cancer.mutation_field / {
+  cell + mutation_rate -> 
+  field.perturb -> 
+  mutated_cell
+}
+
+;; Angiogenesis = field angiogenesis
+voice cancer.angiogenesis_field / {
+  tumor + hypoxia -> 
+  field.angiogenesis -> 
+  new_vessels
+}
+
+;; Metastasis = field metastasis
+voice cancer.metastasis_field / {
+  cancer_cell + invasion -> 
+  field.metastasize -> 
+  metastatic_site
+}
+
+;; Immune evasion = field evasion
+voice cancer.evasion_field / {
+  cancer_cell + immune_system -> 
+  field.evade -> 
+  evaded_immune
+}
+
+;; ============================================================================
+;; Autoimmune Diseases = Field Autoimmune Dynamics
+;; ============================================================================
+
+;; Autoimmune disease = field autoimmune
+def autoimmune {
+  self_antigen,    ;; Self-antigen (field self)
+  autoantibody,    ;; Autoantibody (field autoantibody)
+  inflammation,     ;; Inflammation (field inflammation)
+  tissue_damage,    ;; Tissue damage (field damage)
+  tolerance_breakdown,;; Tolerance breakdown (field breakdown)
+  dimension        ;; D (autoimmune dimensionality)
+}
+
+;; Tolerance breakdown = field breakdown
+voice autoimmune.tolerance_breakdown_field / {
+  self_antigen + immune_system -> 
+  field.break_tolerance -> 
+  autoimmunity
+}
+
+;; Autoantibody production = field production
+voice autoimmune.autoantibody_field / {
+  self_antigen + b_cell -> 
+  field.produce_autoantibody -> 
+  autoantibody
+}
+
+;; Inflammation = field inflammation
+voice autoimmune.inflammation_field / {
+  autoantibody + tissue -> 
+  field.inflame -> 
+  inflamed_tissue
+}
+
+;; Tissue damage = field damage
+voice autoimmune.damage_field / {
+  inflammation + tissue -> 
+  field.damage -> 
+  damaged_tissue
+}
+
+;; ============================================================================
+;; Cancer-Immune Interaction = Field Interaction
+;; ============================================================================
+
+;; Cancer-immune interaction = field interaction
+voice cancer_immune.interaction_field / {
+  cancer_cell + immune_cell -> 
+  field.interact -> 
+  immune_response
+}
+
+;; Checkpoint inhibition = field checkpoint
+voice cancer_immune.checkpoint_field / {
+  cancer_cell + checkpoint -> 
+  field.inhibit_checkpoint -> 
+  activated_immune
+}
+
+;; ============================================================================
+;; Examples: Cancer/Autoimmune → Field Equations
+;; ============================================================================
+
+;; Example: "How does cancer develop?"
+;; Answer: Cancer = field cancer, mutations = field perturbations
+voice cancer.explain_cancer / {
+  question -> 
+  cancer.mutation_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "How do autoimmune diseases work?"
+;; Answer: Autoimmune = field autoimmune, tolerance breakdown = field breakdown
+voice autoimmune.explain_autoimmune / {
+  question -> 
+  autoimmune.tolerance_breakdown_field -> 
+  field.explain -> 
+  explanation
+}
+

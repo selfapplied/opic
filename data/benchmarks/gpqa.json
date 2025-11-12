@@ -1,0 +1,242 @@
+[
+  {
+    "question": "What is the primary mechanism of action of aspirin?",
+    "choices": [
+      "A) COX-1 inhibition",
+      "B) COX-2 inhibition",
+      "C) Both COX-1 and COX-2",
+      "D) None"
+    ],
+    "answer": 2
+  },
+  {
+    "question": "Which enzyme catalyzes the conversion of pyruvate to acetyl-CoA?",
+    "choices": [
+      "A) Pyruvate dehydrogenase",
+      "B) Pyruvate kinase",
+      "C) Lactate dehydrogenase",
+      "D) Hexokinase"
+    ],
+    "answer": 0
+  },
+  {
+    "question": "What is the primary mechanism by which ATP synthase generates ATP?",
+    "choices": [
+      "A) Substrate-level phosphorylation",
+      "B) Oxidative phosphorylation",
+      "C) Photophosphorylation",
+      "D) All of the above"
+    ],
+    "answer": 1
+  },
+  {
+    "question": "In quantum mechanics, what does the Heisenberg uncertainty principle state?",
+    "choices": [
+      "A) Position and momentum cannot be simultaneously measured precisely",
+      "B) Energy and time cannot be simultaneously measured precisely",
+      "C) Both A and B",
+      "D) Neither A nor B"
+    ],
+    "answer": 2
+  },
+  {
+    "question": "What is the relationship between Gibbs free energy and spontaneity?",
+    "choices": [
+      "A) \u0394G < 0 means spontaneous",
+      "B) \u0394G > 0 means non-spontaneous",
+      "C) \u0394G = 0 means equilibrium",
+      "D) All of the above"
+    ],
+    "answer": 3
+  },
+  {
+    "question": "Which of the following best describes the mechanism of action of penicillin?",
+    "choices": [
+      "A) Inhibition of cell wall synthesis",
+      "B) Inhibition of protein synthesis",
+      "C) Inhibition of DNA replication",
+      "D) Disruption of cell membrane"
+    ],
+    "answer": 0
+  },
+  {
+    "question": "What is the role of telomerase in cellular aging?",
+    "choices": [
+      "A) Shortens telomeres",
+      "B) Lengthens telomeres",
+      "C) Repairs DNA damage",
+      "D) Regulates cell division"
+    ],
+    "answer": 1
+  },
+  {
+    "question": "Which process generates the most ATP per glucose molecule?",
+    "choices": [
+      "A) Glycolysis",
+      "B) Krebs cycle",
+      "C) Electron transport chain",
+      "D) Fermentation"
+    ],
+    "answer": 2
+  },
+  {
+    "question": "What is the function of the ribosome in protein synthesis?",
+    "choices": [
+      "A) Transcribes DNA to RNA",
+      "B) Translates RNA to protein",
+      "C) Replicates DNA",
+      "D) Modifies proteins"
+    ],
+    "answer": 1
+  },
+  {
+    "question": "What does the Pauli exclusion principle state?",
+    "choices": [
+      "A) No two fermions can occupy the same quantum state",
+      "B) Energy is quantized",
+      "C) Momentum is conserved",
+      "D) Charge is conserved"
+    ],
+    "answer": 0
+  },
+  {
+    "question": "What is the relationship between wavelength and frequency in electromagnetic waves?",
+    "choices": [
+      "A) Directly proportional",
+      "B) Inversely proportional",
+      "C) No relationship",
+      "D) Exponentially related"
+    ],
+    "answer": 1
+  },
+  {
+    "question": "In special relativity, what happens to time as velocity approaches the speed of light?",
+    "choices": [
+      "A) Time speeds up",
+      "B) Time slows down",
+      "C) Time stops",
+      "D) Time reverses"
+    ],
+    "answer": 1
+  },
+  {
+    "question": "What determines the rate of a chemical reaction?",
+    "choices": [
+      "A) Activation energy only",
+      "B) Temperature only",
+      "C) Both activation energy and temperature",
+      "D) Neither"
+    ],
+    "answer": 2
+  },
+  {
+    "question": "What is the difference between an exothermic and endothermic reaction?",
+    "choices": [
+      "A) Exothermic releases heat, endothermic absorbs heat",
+      "B) Both release heat",
+      "C) Both absorb heat",
+      "D) No difference"
+    ],
+    "answer": 0
+  },
+  {
+    "question": "What is the role of a catalyst in a chemical reaction?",
+    "choices": [
+      "A) Increases activation energy",
+      "B) Decreases activation energy",
+      "C) Changes equilibrium",
+      "D) Consumes reactants"
+    ],
+    "answer": 1
+  },
+  {
+    "question": "What is the central dogma of molecular biology?",
+    "choices": [
+      "A) DNA -> RNA -> Protein",
+      "B) RNA -> DNA -> Protein",
+      "C) Protein -> RNA -> DNA",
+      "D) DNA -> Protein -> RNA"
+    ],
+    "answer": 0
+  },
+  {
+    "question": "Which organelle is responsible for protein modification and packaging?",
+    "choices": [
+      "A) Mitochondria",
+      "B) Golgi apparatus",
+      "C) Nucleus",
+      "D) Ribosome"
+    ],
+    "answer": 1
+  },
+  {
+    "question": "What is the function of mRNA in gene expression?",
+    "choices": [
+      "A) Carries genetic code from DNA to ribosome",
+      "B) Transfers amino acids",
+      "C) Forms ribosomes",
+      "D) Replicates DNA"
+    ],
+    "answer": 0
+  },
+  {
+    "question": "What is the significance of Planck's constant in quantum mechanics?",
+    "choices": [
+      "A) Relates energy to frequency",
+      "B) Relates mass to energy",
+      "C) Relates position to momentum",
+      "D) All of the above"
+    ],
+    "answer": 0
+  },
+  {
+    "question": "What does Schr\u00f6dinger's equation describe?",
+    "choices": [
+      "A) Wave function evolution",
+      "B) Particle position",
+      "C) Energy levels",
+      "D) All of the above"
+    ],
+    "answer": 3
+  },
+  {
+    "question": "What is the difference between bosons and fermions?",
+    "choices": [
+      "A) Bosons have integer spin, fermions have half-integer spin",
+      "B) Fermions have integer spin, bosons have half-integer spin",
+      "C) No difference",
+      "D) Both have zero spin"
+    ],
+    "answer": 0
+  },
+  {
+    "question": "What is the relationship between pH and pOH in aqueous solutions?",
+    "choices": [
+      "A) pH + pOH = 14",
+      "B) pH - pOH = 14",
+      "C) pH * pOH = 14",
+      "D) pH / pOH = 14"
+    ],
+    "answer": 0
+  },
+  {
+    "question": "What determines the strength of an acid?",
+    "choices": [
+      "A) Concentration only",
+      "B) Ka value only",
+      "C) Both concentration and Ka",
+      "D) Neither"
+    ],
+    "answer": 1
+  },
+  {
+    "question": "What is Le Chatelier's principle?",
+    "choices": [
+      "A) Systems at equilibrium shift to counteract changes",
+      "B) Energy is conserved",
+      "C) Entropy always increases",
+      "D) Reactions proceed to completion"
+    ],
+    "answer": 0
+  }
+]

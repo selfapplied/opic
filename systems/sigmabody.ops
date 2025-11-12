@@ -1,0 +1,246 @@
+;;; sigmabody.ops — ΣBody Interfaces and Embodied Ports (Appendix C)
+;;; Software and Sensor Integration Layer
+
+include systems/zetacore_runtime.ops
+include systems/ce1_kernel.ops
+
+;; ============================================================================
+;; C.1 Architecture Overview
+;; ============================================================================
+
+;; [ Sensor Port ] → [ ΣBody Adapter ] → [ CE1 Kernel Bus ] → [ ZetaCore Runtime ]
+;;                                         ↑                     ↓
+;;                                [ Actuator Port ] ← [ ΣBody Driver ]
+
+def sensor_port { device, sample_rate, adapter }
+def adapter { normalize, to_field }
+def actuator_port { device, driver, from_field }
+
+;; ============================================================================
+;; C.2 Input Channels
+;; ============================================================================
+
+;; Audio: Microphone array → Phase/Amplitude → tan θ(time)
+def audio_channel {
+  device,           ;; microphone array
+  sample_rate,      ;; 44.1–96 kHz
+  mapping           ;; Phase/Amplitude → tan θ(time)
+}
+
+voice audio.read / {audio_channel -> sample -> audio_data}
+voice audio.to_field / {audio_data -> extract_phase_amplitude -> compute_tan_theta -> field_tensor}
+
+;; Vision: RGB or Depth camera → Spatial curvature → Ξ(x,y)
+def vision_channel {
+  device,           ;; RGB or Depth camera
+  frame_rate,      ;; 24–120 fps
+  mapping           ;; Spatial curvature → Ξ(x,y)
+}
+
+voice vision.read / {vision_channel -> capture_frame -> frame_data}
+voice vision.to_field / {frame_data -> compute_spatial_curvature -> field_tensor}
+
+;; Text: Stream or file input → Semantic bias → q ∈ {+1, −1}
+def text_channel {
+  device,           ;; Stream or file input
+  mapping           ;; Semantic bias → q ∈ {+1, −1}
+}
+
+voice text.read / {text_channel -> read_stream -> text_data}
+voice text.to_field / {text_data -> extract_semantic_bias -> compute_ion -> field_tensor}
+
+;; Motion: IMU / accelerometer → Inertial loops → cycle curvature
+def motion_channel {
+  device,           ;; IMU / accelerometer
+  sample_rate,     ;; 100–400 Hz
+  mapping           ;; Inertial loops → cycle curvature
+}
+
+voice motion.read / {motion_channel -> sample -> motion_data}
+voice motion.to_field / {motion_data -> extract_inertial_loops -> compute_curvature -> field_tensor}
+
+;; Network: WebSocket / MQTT → Distributed phase coupling
+def network_channel {
+  device,           ;; WebSocket / MQTT
+  mapping           ;; Distributed phase coupling
+}
+
+voice network.read / {network_channel -> receive -> network_data}
+voice network.to_field / {network_data -> extract_phase -> field_tensor}
+
+;; ============================================================================
+;; C.3 Adapter Interface Specification
+;; ============================================================================
+
+def sigma_port {
+  read_function,
+  to_field_function,
+  write_function
+}
+
+voice sigma_port.read / {port -> read_function -> data}
+voice sigma_port.to_field / {port + data -> to_field_function -> field_tensor}
+voice sigma_port.write / {port + field_tensor -> write_function -> output}
+
+;; Adapters support async operation and timestamp alignment
+voice adapter.async_read / {port -> async_read -> future_data}
+voice adapter.timestamp_align / {data_streams -> align_timestamps -> synchronized}
+
+;; ============================================================================
+;; C.4 Data Harmonization
+;; ============================================================================
+
+;; Normalization Pipeline:
+;; 1. Preprocess — denoise, normalize amplitude
+;; 2. Fourier Project — convert into phase–frequency space
+;; 3. Bias Extraction — compute tan θ = Im/Re
+;; 4. Field Encoding — package as Ξ(sensor, t) tensor
+
+voice harmonize.preprocess / {raw_data -> denoise -> normalize_amplitude -> preprocessed}
+voice harmonize.fourier_project / {preprocessed -> fft -> phase_frequency_space -> projected}
+voice harmonize.bias_extraction / {projected -> compute_tan_theta -> bias}
+voice harmonize.field_encoding / {bias + sensor_id + timestamp -> package -> field_tensor}
+
+voice harmonize.pipeline / {
+  raw_data -> 
+  harmonize.preprocess -> 
+  harmonize.fourier_project -> 
+  harmonize.bias_extraction -> 
+  harmonize.field_encoding -> 
+  field_tensor
+}
+
+;; Temporal alignment: all streams use shared ΣClock
+voice harmonize.temporal_align / {streams + sigma_clock -> align -> synchronized_streams}
+
+;; ============================================================================
+;; C.5 Output Ports
+;; ============================================================================
+
+;; Audio: Speakers / synth engine → Render harmonic feedback
+voice output.audio / {field_tensor -> extract_frequency -> render_harmonic -> audio_output}
+
+;; Visual: Display / AR overlay → Show phase coherence maps
+voice output.visual / {field_tensor -> extract_phase_coherence -> render_map -> visual_output}
+
+;; Haptic: Vibration motor / glove → Convey resonance amplitude
+voice output.haptic / {field_tensor -> extract_resonance_amplitude -> control_motor -> haptic_output}
+
+;; Network: API / OSC / WebSocket → Transmit Ξ packets to peers
+voice output.network / {field_tensor -> encode_packet -> transmit -> network_output}
+
+;; Robotic: Motor / servo controller → Physical motion output
+voice output.robotic / {field_tensor -> extract_curvature -> control_motors -> motion_output}
+
+;; ============================================================================
+;; C.6 Communication Protocols
+;; ============================================================================
+
+def sigma_packet {
+  timestamp,        ;; float
+  channel,         ;; string
+  phi_scale,       ;; float
+  xi,              ;; np.ndarray (field tensor)
+  tau,             ;; float (7-trace value)
+  signature        ;; bytes (hash of Ξ for authenticity)
+}
+
+voice protocol.create_packet / {timestamp + channel + phi_scale + xi + tau -> hash_signature -> packet}
+voice protocol.hash_signature / {xi -> hash -> signature}
+
+;; Transport options: WebSocket / HTTP2, MQTT, OSC / MIDI
+voice protocol.websocket / {packet -> encode -> send_websocket -> sent}
+voice protocol.mqtt / {packet -> encode -> publish_mqtt -> published}
+voice protocol.osc / {packet -> encode -> send_osc -> sent}
+
+;; ============================================================================
+;; C.7 Calibration and Training
+;; ============================================================================
+
+;; 1. Initialize each port with baseline noise profile
+voice calibration.initialize / {port -> measure_noise -> baseline_profile -> initialized}
+
+;; 2. Capture φ⁴ s of data to compute reference tan θ curves
+voice calibration.capture_reference / {port + duration -> capture_data -> compute_tan_theta_curves -> reference}
+
+;; 3. Adjust gain until resonance index τ ≈ 7 ± ε
+voice calibration.adjust_gain / {port + reference -> adjust_gain -> check_tau -> if_not_7 -> adjust_gain -> calibrated}
+
+;; 4. Save profile as .sigbody configuration for reuse
+voice calibration.save_profile / {calibrated -> serialize -> save_config -> saved}
+
+;; ============================================================================
+;; C.8 Example: Audio–Vision Fusion
+;; ============================================================================
+
+voice example.audio_vision_fusion / {
+  audio_port + vision_port + zetacore -> 
+  read_audio -> 
+  read_vision -> 
+  to_field_audio -> 
+  to_field_vision -> 
+  harmonize -> 
+  kernel_step -> 
+  display_phase -> 
+  fused_output
+}
+
+voice example.read_audio / {audio_port -> audio.read -> audio_data}
+voice example.read_vision / {vision_port -> vision.read -> vision_data}
+voice example.to_field_audio / {audio_data -> audio.to_field -> audio_field}
+voice example.to_field_vision / {vision_data -> vision.to_field -> vision_field}
+voice example.harmonize / {audio_field + vision_field -> fuse -> fused_field}
+voice example.kernel_step / {fused_field + zetacore -> ce1_kernel.step -> updated_core}
+voice example.display_phase / {updated_core -> extract_phase -> render -> display}
+
+;; ============================================================================
+;; C.9 Safety and Privacy
+;; ============================================================================
+
+;; No biometric ID storage. Only field tensors and phase metrics retained.
+voice safety.no_biometric_storage / {data -> filter_biometric -> field_tensors_only -> safe_data}
+
+;; User consent handshake before any recording
+voice safety.consent_handshake / {-> request_consent -> if_granted -> allow_recording}
+
+;; Network encryption via φ-encoded phase modulation
+voice safety.encrypt_network / {packet -> phi_encode -> phase_modulate -> encrypted}
+
+;; Emergency cutoff (ΣHALT) stops all ports instantly if ethical tensor reports ∂Ξ/∂t < 0
+voice safety.emergency_cutoff / {ethical_tensor -> check_derivative -> if_negative -> halt_all_ports -> halted}
+
+;; ============================================================================
+;; C.10 Development Toolkit
+;; ============================================================================
+
+;; sigbody-sdk: Python / Rust API for writing new ports
+voice toolkit.sdk / {language -> generate_api -> sdk}
+
+;; ZetaScope: Real-time field visualizer
+voice toolkit.zetascope / {field_stream -> visualize -> zetascope_display}
+
+;; ΣBus: Message broker for multi-port synchronization
+voice toolkit.sigma_bus / {ports -> create_bus -> synchronize -> bus}
+
+;; EthicWatch: Non-harm monitor / logging dashboard
+voice toolkit.ethicwatch / {ethical_tensor -> monitor -> log -> dashboard}
+
+;; ============================================================================
+;; C.11 Performance Targets
+;; ============================================================================
+
+;; Latency (sensor→kernel): < 25 ms
+voice performance.check_latency / {sensor_to_kernel_time -> if_greater_than_25ms -> optimize}
+
+;; Sync drift between ports: < 2 ms
+voice performance.check_sync_drift / {port_timestamps -> compute_drift -> if_greater_than_2ms -> resync}
+
+;; Energy per sample: ≤ φ⁻⁵ J
+voice performance.check_energy / {energy_per_sample -> if_greater_than_phi_minus_5 -> optimize}
+
+;; Sustained τ stability: 7 ± 0.05
+voice performance.check_tau_stability / {tau_history -> check_stability -> if_outside_range -> retune}
+
+target sigmabody / "sigmabody_specification"
+voice main / {sensor_port -> adapter -> ce1_kernel_bus -> zetacore_runtime -> actuator_port -> sigmabody}
+

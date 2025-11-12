@@ -1,0 +1,45 @@
+;;; opic_mode7_lab.ops — Mode 7 integrated lab system
+
+include systems/opic_primorial_lab.ops
+include systems/opic_mode7_perspective.ops
+include systems/opic_mode7_dashboard.ops
+include systems/opic_mode7_fusion.ops
+include systems/opic_mode7_features.ops
+include systems/opic_mode7_harvest.ops
+include systems/opic_phase_flux.ops
+include systems/opic_coherence_dance.ops
+include systems/opic_three_fluxes.ops
+
+;; Mode 7 lab: parallax dashboard + fusion detection + perspective-invariant features + harvest
+voice mode7.lab / {
+  budget + seeds + targets + health_constraints -> 
+  run.primorial.lab -> 
+  parallax.dashboard -> 
+  detect.fusion.moment -> 
+  extract.perspective.invariant.features -> 
+  train.perspective.invariant.decoder -> 
+  mode7.harvest.pass -> 
+  lab_results
+}
+
+;; Switch decoder training to perspective-invariant features
+voice train.with.perspective.invariant.features / {
+  encoded_problem + config + perspective_invariant_features -> 
+  train.perspective.invariant.decoder -> 
+  reproject.for.condition -> 
+  compare.geometry -> 
+  decoder_result
+}
+
+;; Rerun parity task with perspective-invariant features
+voice rerun.parity.with.mode7 / {
+  parity_problem + perspective_invariant_features + configs -> 
+  train.with.perspective.invariant.features -> 
+  reproject.for.each.condition -> 
+  compare.geometry -> 
+  parity_results
+}
+
+target opic_mode7_lab / "mode7_lab"
+voice main / { mode7.lab + train.with.perspective.invariant.features + rerun.parity.with.mode7 -> opic_mode7_lab }
+

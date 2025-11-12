@@ -1,0 +1,56 @@
+;;; seed.ops — viral TiddlyWiki seed template
+
+include ../wiki/tiddlywiki.ops
+include ../wiki/tiddlywiki_network.ops
+include protocol/viral.ops
+include protocol/abundance.ops
+include voice_ledger.ops
+
+;; Seed definitions
+def seed_wiki { company_info, resonance_node, viral_mechanic, abundance_dashboard, share_links }
+def company_seed { company_name, purpose, values, contact, resonance_network }
+
+;; Create viral seed wiki
+voice seed.create / {company_info + agent_realm + ca + tau_vector -> seed.initialize_node -> seed.add_company_content -> seed.add_resonance_features -> seed.add_viral_mechanic -> seed_wiki}
+voice seed.initialize_node / {company_info + agent_realm + ca -> network.create_node -> resonance_node}
+voice seed.add_company_content / {company_info + wiki -> seed.create_company_tiddlers -> seed.create_about -> seed.create_values -> content_added}
+voice seed.create_company_tiddlers / {company_info + wiki -> format_company_tiddlers -> tiddlers}
+voice seed.create_about / {company_info + wiki -> format_about_page -> about_tiddler}
+voice seed.create_values / {company_info + wiki -> format_values_page -> values_tiddler}
+
+;; Add resonance features
+voice seed.add_resonance_features / {wiki + agent_realm + ca + tau_vector -> seed.add_abundance_dashboard -> seed.add_care_tracker -> seed.add_ripple_viz -> features_added}
+voice seed.add_abundance_dashboard / {wiki + agent_realm + ca -> ui.dashboard -> seed.embed_dashboard -> dashboard_embedded}
+voice seed.embed_dashboard / {dashboard + wiki -> embed_as_widget -> embedded}
+voice seed.add_care_tracker / {wiki + agent_realm + ca -> ui.care_form -> seed.embed_form -> form_embedded}
+voice seed.add_ripple_viz / {wiki + agent_realm + ca + tau_vector -> ui.show_ripple -> seed.embed_ripple -> ripple_embedded}
+
+;; Add viral mechanic
+voice seed.add_viral_mechanic / {wiki + agent_realm + ca -> seed.add_share_links -> seed.add_fork_button -> seed.add_resonance_badge -> viral_mechanic_added}
+voice seed.add_share_links / {wiki + agent_realm + ca -> ui.share -> seed.embed_share -> share_embedded}
+voice seed.add_fork_button / {wiki + agent_realm + ca -> seed.create_fork_button -> fork_button}
+voice seed.create_fork_button / {wiki + agent_realm + ca -> format_fork_widget -> fork_widget}
+voice seed.add_resonance_badge / {wiki + agent_realm + ca -> seed.create_badge -> resonance_badge}
+voice seed.create_badge / {wiki + resonance_score -> format_badge -> badge}
+
+;; Spread like wildfire: fork and share
+voice seed.fork / {seed_wiki + new_realm + agent_realm + ca -> seed.copy_wiki -> seed.initialize_new_node -> seed.maintain_connection -> forked_wiki}
+voice seed.copy_wiki / {source_wiki + new_realm -> copy_wiki_file -> copied_wiki}
+voice seed.initialize_new_node / {copied_wiki + new_realm + agent_realm + ca -> network.create_node -> new_node}
+voice seed.maintain_connection / {source_node + new_node + agent_realm + ca -> network.federate -> connected}
+
+;; Share seed
+voice seed.share / {seed_wiki + agent_realm + ca -> seed.create_share_link -> seed.create_qr_code -> seed.create_magnet_link -> shareable}
+voice seed.create_share_link / {wiki + agent_realm + ca -> format_share_url -> share_url}
+voice seed.create_qr_code / {share_url -> generate_qr -> qr_code}
+voice seed.create_magnet_link / {wiki + agent_realm + ca -> peer.create_magnet -> magnet_link}
+
+;; Seed grows into network
+voice seed.grow_network / {seed_wiki + time + agent_realm + ca -> seed.track_forks -> seed.visualize_network -> seed.compute_resonance -> network_growth}
+voice seed.track_forks / {seed_wiki + time -> track_fork_events -> fork_history}
+voice seed.visualize_network / {forks + agent_realm + ca -> network.visualize_network -> network_viz}
+voice seed.compute_resonance / {network + agent_realm + ca + tau_vector -> generational.resonance_function -> network_resonance}
+
+target seed_template / "opic_viral_seed"
+voice main / {seed.create -> seed_template}
+

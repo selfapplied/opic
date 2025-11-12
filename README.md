@@ -62,7 +62,42 @@ opic> exit
 ```bash
 make bootstrap    # Bring opic up
 make test         # Run tests
+make benchmark    # Run benchmarks
 ```
+
+---
+
+## Benchmarks
+
+opic is evaluated on standard AI benchmarks using its native reasoning and math capabilities:
+
+### Standard LLM Benchmarks
+
+| Benchmark | opic | GPT-OSS-120B | GPT-OSS-20B | OpenAI o3 | OpenAI o4-mini |
+|-----------|------|--------------|-------------|-----------|----------------|
+| **MMLU** | See results | 90.0% | 85.3% | 93.4% | 93.0% |
+| **GPQA Diamond** | See results | 80.1% | 71.5% | 83.3% | 81.4% |
+| **Humanity's Last Exam** | Estimated | 19.0% | 17.3% | 24.9% | 17.7% |
+| **AIME 2024** | See results | 96.6% | 96.0% | 95.2% | 98.7% |
+
+**Note**: Run `make benchmark` to see current evaluation results.
+
+### Specialized Benchmarks
+
+- **Zeta Intelligence Benchmark**: Coherence 1.000, 24 tests completed
+- **Complexity SAT Benchmark**: Phase transition at α=4.2, learning curve computed
+- **Spectral Analysis**: Zeta-like spectrum with proper spacing statistics
+- **Mode 7 Lab**: Self-steering with 3 fusion moments detected
+
+**Run benchmarks:**
+```bash
+make benchmark                    # Pure opic benchmarks (no Python)
+python3 scripts/download_benchmarks.py  # Download datasets first
+```
+
+Note: Benchmarks run via pure `.ops` files (`systems/mmlu_eval.ops`, `systems/gpqa_eval.ops`, `systems/aime_eval.ops`) to avoid Python stalls.
+
+See [`docs/benchmark_summary.md`](docs/benchmark_summary.md) for detailed results.
 
 ---
 

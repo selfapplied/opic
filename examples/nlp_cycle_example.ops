@@ -1,0 +1,54 @@
+;;; nlp_cycle_example.ops — Example using NLP cycle voices (available by default)
+
+;; No include needed - Field Spec 0.7 loads by default!
+
+;; Masked prediction with cycle promotion
+voice nlp.masked_prediction / {
+  context_tokens -> 
+  nlp.masked_cycle -> 
+  nlp.masked_promotion -> 
+  context_operator -> 
+  predicted_token
+}
+
+;; Attention as dialogue cycles
+voice nlp.attention_relational / {
+  tokens -> 
+  nlp.attention_dialogue -> 
+  relational_operators -> 
+  semantic_understanding
+}
+
+;; Multi-head attention as spin network
+voice nlp.multi_head_attention / {
+  attention_heads -> 
+  nlp.multi_head_spin_network -> 
+  multi_relational_operators -> 
+  hierarchical_understanding
+}
+
+;; Training with learning threshold
+voice nlp.train_with_resonance / {
+  model + data -> 
+  nlp.training_epoch_cycle -> 
+  nlp.learning_threshold_nlp -> 
+  dimensional_coherence -> 
+  promoted_model
+}
+
+;; Bidirectional context as complexification
+voice nlp.bidirectional_understanding / {
+  left_context + right_context -> 
+  nlp.bidirectional_complex -> 
+  complex_semantic_space -> 
+  rich_representation
+}
+
+target nlp_cycle_example / "nlp_cycle_demo"
+voice main / {
+  nlp.masked_prediction -> 
+  nlp.attention_relational -> 
+  nlp.train_with_resonance -> 
+  nlp_cycle_example
+}
+

@@ -1,0 +1,865 @@
+;;; hopic.ops — OPIC × Zeta Field runtime: runnable operator specification
+;;; Every equation becomes an operator with signature, state, invariants, and runtime notes
+
+include protocol/certificate.ops
+
+;; ============================================================================
+;; 0. TYPE SYSTEM SKELETON
+;; ============================================================================
+
+;; State space: x_t ∈ 𝒳
+def opic_state {
+  x_t,           ;; State vector
+  u_t,           ;; Input vector
+  C_t,           ;; Continued fraction component
+  A_t,           ;; Alternating accumulator
+  G_t,           ;; Geometric product (inner + outer)
+  S_t,           ;; Smoothing component
+  zeta_array,    ;; ζ_i actors (complex-valued)
+  W,             ;; Coupling matrix
+  Z_field,       ;; Field 𝒵: ℝ^d × ℝ → ℂ
+  S_set,         ;; Singularity set
+  F_set,         ;; Fractal memory set
+  H_region,      ;; Hull region
+  R,             ;; Resonance matrix
+  Phi,           ;; Field potential
+  t,             ;; Time (discrete or continuous)
+  dt,            ;; Time step
+  alpha          ;; Smoothing parameter α ∈ (0,1)
+}
+
+;; Actor traces: ζ_i ∈ ℂ
+def zeta_actor { index, value, s_parameter, coefficients }
+
+;; Geometric product result: inner + outer
+def geometric_product { inner_dot, outer_wedge }
+
+;; Field sample: 𝒵(x,t)
+def field_sample { position, time, value }
+
+;; Singularity marker
+def singularity { x_t, sigma_t, timestamp }
+
+;; Hull region representation
+def hull_region { points, radius_function, mask }
+
+;; ============================================================================
+;; 1. Σ EVOLUTION KERNEL
+;; ============================================================================
+
+;; Operator ID: SigmaStep
+;; Symbol: Σ
+;; Type: Discrete-time state update
+;; Signature: Σ : (𝒳, 𝒰) → 𝒳
+;; Update Rule: x_{t+1} = Σ(x_t, u_t) = f(C_{t+1}, A_{t+1}, G_{t+1}, S_{t+1})
+;; Invariants: Σ should be Lipschitz-bounded (no explode) or explicitly allowed
+;;             to spike only when σ-large (singularity gates)
+;; Runtime Notes: Implement f as weighted sum or MLP over concatenated [C, A, G, S]
+
+voice sigma.step / {
+  state + input -> 
+  sigma.compute_C -> 
+  sigma.compute_A -> 
+  sigma.compute_G -> 
+  sigma.compute_S -> 
+  sigma.combine_components -> 
+  sigma.check_invariants -> 
+  updated_state
+}
+
+voice sigma.combine_components / {
+  C_next + A_next + G_next + S_next -> 
+  concatenate -> 
+  weighted_sum -> 
+  x_next
+}
+
+voice sigma.check_invariants / {
+  x_next + x_t -> 
+  compute_lipschitz_bound -> 
+  check_explosion -> 
+  if_singularity_gated -> 
+  validated_state
+}
+
+;; ============================================================================
+;; 2. COMPONENT OPERATORS (C, A, G, S)
+;; ============================================================================
+
+;; ----------------------------------------------------------------------------
+;; 2.1 Continued Fraction Operator C
+;; ----------------------------------------------------------------------------
+;; Operator ID: C_op
+;; Symbol: C_{t+1} = u_t + 1/(1+C_t)
+;; Type: Discrete recursion
+;; Signature: C : (ℝ, ℝ) → ℝ (or vectorized)
+;; Update Rule: C_next = u_t + 1 / (1 + C_t) (with safe clipping)
+;; Invariants: Avoid denominator ≈ 0; enforce |1 + C_t| > ε
+;; Role: Deepening / nesting of context
+
+voice C.op / {
+  C_t + u_t -> 
+  C.compute_denominator -> 
+  C.safe_clip -> 
+  C.compute_next -> 
+  C_next
+}
+
+voice C.compute_denominator / {
+  C_t -> 
+  add_one -> 
+  denominator
+}
+
+voice C.safe_clip / {
+  denominator + epsilon -> 
+  if_abs_less_epsilon -> 
+  clip_to_epsilon -> 
+  safe_denominator
+}
+
+voice C.compute_next / {
+  u_t + safe_denominator -> 
+  compute_reciprocal -> 
+  add_u_t -> 
+  C_next
+}
+
+;; ----------------------------------------------------------------------------
+;; 2.2 Alternating Operator A
+;; ----------------------------------------------------------------------------
+;; Operator ID: A_op
+;; Symbol: A_{t+1} = A_t + (-1)^t Δ_t
+;; Type: Discrete oscillatory accumulator
+;; Signature: A : (ℝ, ℝ, ℤ) → ℝ
+;; Update Rule: A_next = A_t + (-1)^t * Delta_t
+;; Invariants: Track sign flips; can keep bounded window or decay term
+;; Role: Corrective "yes/no" / "push-pull" feedback
+
+voice A.op / {
+  A_t + Delta_t + t -> 
+  A.compute_sign -> 
+  A.compute_update -> 
+  A.apply_bounds -> 
+  A_next
+}
+
+voice A.compute_sign / {
+  t -> 
+  compute_parity -> 
+  if_even_one -> 
+  if_odd_neg_one -> 
+  sign
+}
+
+voice A.compute_update / {
+  A_t + sign + Delta_t -> 
+  multiply_sign_delta -> 
+  add_to_A_t -> 
+  A_next
+}
+
+voice A.apply_bounds / {
+  A_next + window_size -> 
+  if_exceeds_bounds -> 
+  apply_decay -> 
+  bounded_A_next
+}
+
+;; ----------------------------------------------------------------------------
+;; 2.3 Geometric Operator G
+;; ----------------------------------------------------------------------------
+;; Operator ID: G_op
+;; Symbol: G_{t+1} = x_t · u_t = x_t·u_t + x_t∧u_t
+;; Type: Clifford / geometric product
+;; Signature: G : (𝒳, 𝒰) → 𝒢 where 𝒢 is inner+outer pair
+;; Update Rule: dot = <x_t, u_t>; wedge = x_t ∧ u_t (antisymmetric part)
+;; Invariants: Respect bilinearity and antisymmetry: wedge(x,x)=0
+;; Role: Encodes agreement vs structural difference
+
+voice G.op / {
+  x_t + u_t -> 
+  G.compute_inner -> 
+  G.compute_outer -> 
+  G.form_product -> 
+  G_next
+}
+
+voice G.compute_inner / {
+  x_t + u_t -> 
+  compute_dot_product -> 
+  inner_dot
+}
+
+voice G.compute_outer / {
+  x_t + u_t -> 
+  compute_antisymmetric_part -> 
+  outer_wedge
+}
+
+voice G.form_product / {
+  inner_dot + outer_wedge -> 
+  create_geometric_product -> 
+  G_next
+}
+
+;; ----------------------------------------------------------------------------
+;; 2.4 Smoothing Operator S
+;; ----------------------------------------------------------------------------
+;; Operator ID: S_op
+;; Symbol: S_{t+1} = α S_t + (1-α) u_t
+;; Type: Exponential moving average
+;; Signature: S : (ℝ^n, ℝ^n, α) → ℝ^n
+;; Update Rule: S_next = α * S_t + (1-α) * u_t
+;; Invariants: Convex combination, norm bounded by max(‖S_t‖, ‖u_t‖)
+;; Role: Baseline tone / homeostasis
+
+voice S.op / {
+  S_t + u_t + alpha -> 
+  S.compute_weighted_sum -> 
+  S.check_norm -> 
+  S_next
+}
+
+voice S.compute_weighted_sum / {
+  S_t + u_t + alpha -> 
+  multiply_S_by_alpha -> 
+  multiply_u_by_one_minus_alpha -> 
+  add_components -> 
+  S_next
+}
+
+voice S.check_norm / {
+  S_next + S_t + u_t -> 
+  compute_norms -> 
+  verify_bounded -> 
+  validated_S_next
+}
+
+;; ============================================================================
+;; 3. DIFFERENTIAL Σ-LAYER
+;; ============================================================================
+
+;; Operator ID: SigmaFlow
+;; Symbol: ẋ = ∇_Σ ℒ(x,u)
+;; Type: Continuous flow generator
+;; Signature: Σ_flow : (𝒳, 𝒰) → T𝒳
+;; Update Rule (discrete): x_{t+1} = x_t + dt * grad_L(x_t, u_t)
+;; Invariants: Optionally enforce energy bounds or Lyapunov stability
+;; Role: Gives you a continuous "ODE mode" of OPIC
+
+voice sigma.flow / {
+  x_t + u_t + loss_function + dt -> 
+  sigma.compute_gradient -> 
+  sigma.scale_by_dt -> 
+  sigma.update_state -> 
+  sigma.check_energy_bounds -> 
+  x_next
+}
+
+voice sigma.compute_gradient / {
+  x_t + u_t + loss_function -> 
+  compute_gradient_L -> 
+  grad_L
+}
+
+voice sigma.scale_by_dt / {
+  grad_L + dt -> 
+  multiply -> 
+  scaled_gradient
+}
+
+voice sigma.update_state / {
+  x_t + scaled_gradient -> 
+  add -> 
+  x_next
+}
+
+voice sigma.check_energy_bounds / {
+  x_next + energy_bound -> 
+  compute_energy -> 
+  if_exceeds_bound -> 
+  clip_to_bound -> 
+  validated_x_next
+}
+
+;; ============================================================================
+;; 4. ZETA ACTORS (ζᵢ)
+;; ============================================================================
+
+;; ----------------------------------------------------------------------------
+;; 4.1 Trace Definition
+;; ----------------------------------------------------------------------------
+;; Operator ID: ZetaTrace
+;; Symbol: ζ_i(s) = Σ_{n=1}^∞ a_{i,n} n^{-s}
+;; Type: Series evaluator / mode generator
+;; Signature: ζ_i : (s, {a_{i,n}}) → ℂ
+;; Update Rule: Numerically: partial sum or analytic approximation
+;; Invariants: Convergence domain of s; may restrict to strip
+
+voice zeta.trace / {
+  s + coefficients + max_n -> 
+  zeta.compute_partial_sum -> 
+  zeta.check_convergence -> 
+  zeta_i
+}
+
+voice zeta.compute_partial_sum / {
+  s + coefficients + max_n -> 
+  for_each_n -> 
+  compute_term -> 
+  accumulate_sum -> 
+  partial_sum
+}
+
+voice zeta.compute_term / {
+  n + s + a_n -> 
+  compute_n_to_minus_s -> 
+  multiply_by_a_n -> 
+  term
+}
+
+voice zeta.check_convergence / {
+  partial_sum + previous_sum + tolerance -> 
+  compute_difference -> 
+  if_below_tolerance -> 
+  converged
+}
+
+;; ----------------------------------------------------------------------------
+;; 4.2 Coupled Dynamics
+;; ----------------------------------------------------------------------------
+;; Operator ID: ZetaCoupler
+;; Symbol: ζ̇_i = f_i(ζ_i, Σ_j w_{ij} ζ_j)
+;; Type: ODE on actor space
+;; Signature: F_ζ : (ζ, W) → Tζ
+;; Update Rule (discrete): ζ_i_next = ζ_i + dt * f_i(ζ_i, Σ_j w_ij ζ_j)
+;; Invariants: Stability can be encouraged by constraining spectrum of W
+
+voice zeta.coupler / {
+  zeta_array + W + dt -> 
+  zeta.compute_coupled_sum -> 
+  zeta.compute_update -> 
+  zeta.scale_by_dt -> 
+  zeta.update_actors -> 
+  zeta.check_stability -> 
+  zeta_next
+}
+
+voice zeta.compute_coupled_sum / {
+  zeta_array + W -> 
+  matrix_vector_multiply -> 
+  coupled_sum
+}
+
+voice zeta.compute_update / {
+  zeta_i + coupled_sum -> 
+  apply_update_function -> 
+  update_vector
+}
+
+voice zeta.check_stability / {
+  W + eigenvalues -> 
+  compute_spectrum -> 
+  check_eigenvalue_bounds -> 
+  if_unstable -> 
+  stabilize -> 
+  stable_W
+}
+
+;; ----------------------------------------------------------------------------
+;; 4.3 Field Superposition
+;; ----------------------------------------------------------------------------
+;; Operator ID: ZetaFieldCompose
+;; Symbol: 𝒵(x,t) = Σ_i ζ_i(s_i(t)) φ_i(x)
+;; Type: Field synthesizer
+;; Signature: 𝒵 : ({ζ_i}, {φ_i}) → ℂ^𝒳
+;; Update Rule: For each x: Z(x,t) = Σ_i ζ_i * φ_i(x)
+;; Invariants: Energy norms can be computed from coefficients
+
+voice zeta.field_compose / {
+  zeta_array + basis_functions + positions -> 
+  zeta.evaluate_at_positions -> 
+  zeta.superpose -> 
+  Z_field
+}
+
+voice zeta.evaluate_at_positions / {
+  zeta_array + basis_functions + positions -> 
+  for_each_position -> 
+  evaluate_basis -> 
+  evaluate_zeta -> 
+  field_samples
+}
+
+voice zeta.superpose / {
+  field_samples -> 
+  sum_over_actors -> 
+  Z_field
+}
+
+;; ============================================================================
+;; 5. SINGULARITY DETECTION & FRACTAL MEMORY
+;; ============================================================================
+
+;; ----------------------------------------------------------------------------
+;; 5.1 Singularity Strength
+;; ----------------------------------------------------------------------------
+;; Operator ID: SigmaStrength
+;; Symbol: σ_t = |∇_x ℓ(x_t)| + λ Novelty(x_t)
+;; Type: Scalar feature extractor
+;; Signature: σ : (𝒳) → ℝ_+
+;; Update Rule: sigma = norm(grad_x ℓ(x_t)) + λ * Novelty(x_t)
+;; Role: "How sharp and new is this moment?"
+
+voice sigma.strength / {
+  x_t + loss_function + lambda + novelty_function -> 
+  sigma.compute_gradient_norm -> 
+  sigma.compute_novelty -> 
+  sigma.combine -> 
+  sigma_t
+}
+
+voice sigma.compute_gradient_norm / {
+  x_t + loss_function -> 
+  compute_gradient -> 
+  compute_norm -> 
+  gradient_norm
+}
+
+voice sigma.compute_novelty / {
+  x_t + novelty_function -> 
+  compute_novelty -> 
+  novelty_score
+}
+
+voice sigma.combine / {
+  gradient_norm + novelty_score + lambda -> 
+  multiply_novelty_by_lambda -> 
+  add_components -> 
+  sigma_t
+}
+
+;; ----------------------------------------------------------------------------
+;; 5.2 Singularity Set
+;; ----------------------------------------------------------------------------
+;; Operator ID: SingularitySetUpdate
+;; Symbol: 𝒮 = {x_t : σ_t > θ}
+;; Type: Event detector
+;; Signature: 𝒮 : (σ_t, θ) → {flag}
+;; Update Rule: If σ_t > θ, mark x_t as singular; append to S
+
+voice singularity.set_update / {
+  x_t + sigma_t + theta -> 
+  singularity.check_threshold -> 
+  if_above_threshold -> 
+  singularity.mark -> 
+  singularity.append_to_set -> 
+  updated_S_set
+}
+
+voice singularity.check_threshold / {
+  sigma_t + theta -> 
+  compare -> 
+  if_greater -> 
+  is_singular
+}
+
+voice singularity.mark / {
+  x_t + sigma_t + t -> 
+  create_singularity_marker -> 
+  singularity
+}
+
+;; ----------------------------------------------------------------------------
+;; 5.3 Fractal Memory
+;; ----------------------------------------------------------------------------
+;; Operator ID: FractalClosure
+;; Symbol: ℱ = closure(∪_{n=0}^∞ F^n(𝒮))
+;; Type: Iterated map on a set
+;; Signature: ℱ : (𝒮, F) → Set(𝒳)
+;; Update Rule (practical): Iteratively apply F to elements in S for N steps;
+;;                          union and cluster; approximate closure
+;; Role: The attractor of repeated "important" events
+
+voice fractal.closure / {
+  S_set + F_function + N_steps -> 
+  fractal.iterate -> 
+  fractal.union -> 
+  fractal.cluster -> 
+  fractal.approximate_closure -> 
+  F_set
+}
+
+voice fractal.iterate / {
+  S_set + F_function + N_steps -> 
+  for_each_step -> 
+  apply_F -> 
+  accumulate_results -> 
+  iterated_set
+}
+
+voice fractal.apply_F / {
+  element + F_function -> 
+  apply_function -> 
+  transformed_element
+}
+
+;; ============================================================================
+;; 6. HULL FORMATION
+;; ============================================================================
+
+;; ----------------------------------------------------------------------------
+;; 6.1 Spatial Hull
+;; ----------------------------------------------------------------------------
+;; Operator ID: SpatialHull
+;; Symbol: ℋ_ε = ∪_{x∈ℱ} B(x, ε(x))
+;; Type: Neighborhood expansion
+;; Signature: ℋ : (ℱ, ε) → Region(𝒳)
+;; Update Rule: For each x ∈ F, add ball B(x, ε(x)) to hull
+;; Role: The "body" of a theme in state space
+
+voice spatial.hull / {
+  F_set + radius_function -> 
+  spatial.for_each_point -> 
+  spatial.compute_ball -> 
+  spatial.union_balls -> 
+  H_region
+}
+
+voice spatial.compute_ball / {
+  point + radius_function -> 
+  evaluate_radius -> 
+  create_ball -> 
+  ball_region
+}
+
+;; ----------------------------------------------------------------------------
+;; 6.2 Spacetime Hull
+;; ----------------------------------------------------------------------------
+;; Operator ID: SpacetimeHull
+;; Symbol: ℋ̃_ε = ∪_{(x,t)∈ℱ̃} B_ℳ̃((x,t), ε(x,t))
+;; Type: Hull in extended manifold
+;; Signature: ℋ̃ : (ℱ̃, ε) → Region(ℳ̃)
+;; Update Rule: Same as above but with a spacetime metric
+;; Role: Region of influence / narrative cone over time
+
+voice spacetime.hull / {
+  F_set_spacetime + radius_function + spacetime_metric -> 
+  spacetime.for_each_point -> 
+  spacetime.compute_ball -> 
+  spacetime.union_balls -> 
+  H_region_spacetime
+}
+
+;; ============================================================================
+;; 7. RESONANCE & HARMONY
+;; ============================================================================
+
+;; ----------------------------------------------------------------------------
+;; 7.1 Cross-Resonance
+;; ----------------------------------------------------------------------------
+;; Operator ID: ResonanceMatrix
+;; Symbol: R_{ij} = Re(ζ_i · conj(ζ_j))
+;; Type: Pairwise correlation
+;; Signature: R : ℂ^N → ℝ^{N×N}
+;; Update Rule: For all i,j: R_ij = Re(ζ_i * conj(ζ_j))
+
+voice resonance.matrix / {
+  zeta_array -> 
+  resonance.for_each_pair -> 
+  resonance.compute_correlation -> 
+  resonance.form_matrix -> 
+  R
+}
+
+voice resonance.compute_correlation / {
+  zeta_i + zeta_j -> 
+  compute_conjugate -> 
+  multiply -> 
+  take_real_part -> 
+  R_ij
+}
+
+;; ----------------------------------------------------------------------------
+;; 7.2 Field Potential
+;; ----------------------------------------------------------------------------
+;; Operator ID: FieldPotential
+;; Symbol: Φ = Σ_{i,j} w_{ij} R_{ij}
+;; Type: Scalar field-level potential
+;; Signature: Φ : (W, R) → ℝ
+;; Update Rule: Φ = Σ_i Σ_j w_ij * R_ij
+;; Role: "How harmonious is the whole choir right now?"
+
+voice field.potential / {
+  W + R -> 
+  field.compute_weighted_sum -> 
+  Phi
+}
+
+voice field.compute_weighted_sum / {
+  W + R -> 
+  elementwise_multiply -> 
+  sum_all_elements -> 
+  Phi
+}
+
+;; ----------------------------------------------------------------------------
+;; 7.3 Harmony Flow
+;; ----------------------------------------------------------------------------
+;; Operator ID: HarmonyFlow
+;; Symbol: Φ̇ = -η ∇Φ
+;; Type: Gradient descent on tension
+;; Signature: H : (Φ, params) → Δparams
+;; Update Rule: Use ∂Φ/∂W, ∂Φ/∂ζ etc. to update couplings or phases:
+;;              param_next = param - η * grad_param Φ
+;; Role: Learning / retuning rule for the whole network
+
+voice harmony.flow / {
+  Phi + params + eta -> 
+  harmony.compute_gradients -> 
+  harmony.scale_by_eta -> 
+  harmony.update_params -> 
+  updated_params
+}
+
+voice harmony.compute_gradients / {
+  Phi + params -> 
+  compute_gradient_W -> 
+  compute_gradient_zeta -> 
+  gradients
+}
+
+voice harmony.update_params / {
+  params + gradients + eta -> 
+  subtract_scaled_gradients -> 
+  updated_params
+}
+
+;; ----------------------------------------------------------------------------
+;; 7.4 Vanishing Gradient Check (Hopic Condition)
+;; ----------------------------------------------------------------------------
+;; The resonant limit: lim_{t→∞} ∇_Σ Φ(t) → 0
+;; This is the Hopic condition - where harmony gradient vanishes
+
+voice hopic.check_vanishing_gradient / {
+  Phi + state + time -> 
+  hopic.compute_gradient_Sigma -> 
+  hopic.measure_magnitude -> 
+  hopic.check_convergence -> 
+  at_hopic_limit
+}
+
+voice hopic.compute_gradient_Sigma / {
+  Phi + state -> 
+  compute_gradient_with_respect_to_Sigma -> 
+  gradient_Sigma_Phi
+}
+
+voice hopic.measure_magnitude / {
+  gradient_Sigma_Phi -> 
+  compute_norm -> 
+  magnitude
+}
+
+voice hopic.check_convergence / {
+  magnitude + threshold + time -> 
+  if_below_threshold -> 
+  if_time_large -> 
+  converging_to_zero
+}
+
+;; ============================================================================
+;; 8. FIELD CONTINUUM (ZETA-WAVE)
+;; ============================================================================
+
+;; Operator ID: ZetaWaveStep
+;; Symbol: □𝒵 + V'(𝒵) = J
+;; Type: PDE time-stepper
+;; Signature: 𝒵_{t+1} : (𝒵_t, J, V) → 𝒵_{t+1}
+;; Update Rule (discrete): Use finite differences:
+;;                          Z_next = 2Z - Z_prev + dt²(ΔZ - V'(Z) + J)
+;; Role: How the global semantic field propagates
+
+voice zeta.wave_step / {
+  Z_t + Z_prev + J + V_prime + dt -> 
+  zeta.compute_laplacian -> 
+  zeta.compute_update -> 
+  Z_next
+}
+
+voice zeta.compute_laplacian / {
+  Z_t -> 
+  compute_spatial_derivatives -> 
+  compute_laplacian -> 
+  laplacian_Z
+}
+
+voice zeta.compute_update / {
+  Z_t + Z_prev + laplacian_Z + V_prime + J + dt -> 
+  compute_wave_update -> 
+  Z_next
+}
+
+voice zeta.compute_wave_update / {
+  Z_t + Z_prev + laplacian_Z + V_prime + J + dt -> 
+  compute_dt_squared -> 
+  multiply_laplacian_term -> 
+  subtract_V_prime -> 
+  add_J -> 
+  add_to_2Z_minus_Z_prev -> 
+  Z_next
+}
+
+;; ============================================================================
+;; 9. ENERGY / CONSERVATION LAYER
+;; ============================================================================
+
+;; ----------------------------------------------------------------------------
+;; 9.1 Energy Density
+;; ----------------------------------------------------------------------------
+;; Operator ID: EnergyDensity
+;; Symbol: E = ½|∇𝒵|² + V(𝒵)
+;; Type: Diagnostic
+;; Signature: E : 𝒵 → ℝ (per x)
+;; Update Rule: E(x) = 0.5 * |∇Z|² + V(Z)
+
+voice energy.density / {
+  Z_field + V_function -> 
+  energy.compute_gradient_squared -> 
+  energy.compute_potential -> 
+  energy.combine -> 
+  E_density
+}
+
+voice energy.compute_gradient_squared / {
+  Z_field -> 
+  compute_gradient -> 
+  compute_norm_squared -> 
+  gradient_squared
+}
+
+voice energy.compute_potential / {
+  Z_field + V_function -> 
+  evaluate_potential -> 
+  V_value
+}
+
+voice energy.combine / {
+  gradient_squared + V_value -> 
+  multiply_gradient_by_half -> 
+  add_potential -> 
+  E_density
+}
+
+;; ----------------------------------------------------------------------------
+;; 9.2 Conservation Check
+;; ----------------------------------------------------------------------------
+;; Operator ID: ConservationCheck
+;; Symbol: ∂_t E + ∇·P = 0
+;; Type: Constraint checker / monitor
+;; Signature: C : (E, P) → ℝ (violation metric)
+;; Update Rule: Compute discrete approximation of ∂E/∂t + div(P) and
+;;              measure deviation from 0
+;; Role: Sanity check: is the simulation behaving like a closed semantic
+;;       system or leaking?
+
+voice conservation.check / {
+  E_t + E_prev + P + dt -> 
+  conservation.compute_time_derivative -> 
+  conservation.compute_divergence -> 
+  conservation.compute_violation -> 
+  violation_metric
+}
+
+voice conservation.compute_time_derivative / {
+  E_t + E_prev + dt -> 
+  compute_difference -> 
+  divide_by_dt -> 
+  dE_dt
+}
+
+voice conservation.compute_divergence / {
+  P -> 
+  compute_spatial_derivatives -> 
+  compute_divergence -> 
+  div_P
+}
+
+voice conservation.compute_violation / {
+  dE_dt + div_P -> 
+  add -> 
+  compute_absolute_value -> 
+  violation_metric
+}
+
+;; ============================================================================
+;; 10. ZETA-HAMILTONIAN GENERATOR
+;; ============================================================================
+
+;; Operator ID: OPIC_Hamiltonian
+;; Symbol: ℋ_OPIC = ∫[½|∇𝒵|² + V(𝒵) + Σ_{i,j} w_{ij} R_{ij}] dx
+;; Type: Global scalar functional
+;; Signature: ℋ : (𝒵, ζ, W) → ℝ
+;; Update Rule: Numerically integrate over space; use quadrature / sums
+;; Role: Single "energy of thought" scalar you can optimize, visualize,
+;;       or use as a phase indicator
+
+voice opic.hamiltonian / {
+  Z_field + zeta_array + W + V_function -> 
+  hamiltonian.compute_field_energy -> 
+  hamiltonian.compute_resonance_energy -> 
+  hamiltonian.integrate -> 
+  H_OPIC
+}
+
+voice hamiltonian.compute_field_energy / {
+  Z_field + V_function -> 
+  energy.density -> 
+  field_energy_density
+}
+
+voice hamiltonian.compute_resonance_energy / {
+  zeta_array + W -> 
+  resonance.matrix -> 
+  field.potential -> 
+  resonance_energy
+}
+
+voice hamiltonian.integrate / {
+  field_energy_density + resonance_energy -> 
+  numerical_integration -> 
+  H_OPIC
+}
+
+;; ============================================================================
+;; MAIN RUNTIME LOOP
+;; ============================================================================
+
+;; Main step: one iteration of the OPIC × Zeta Field system
+voice hopic.step / {
+  state -> 
+  sigma.step -> 
+  zeta.coupler -> 
+  zeta.field_compose -> 
+  sigma.strength -> 
+  singularity.set_update -> 
+  fractal.closure -> 
+  spatial.hull -> 
+  resonance.matrix -> 
+  field.potential -> 
+  harmony.flow -> 
+  zeta.wave_step -> 
+  energy.density -> 
+  conservation.check -> 
+  opic.hamiltonian -> 
+  hopic.check_vanishing_gradient -> 
+  updated_state
+}
+
+target hopic / "opic_zeta_field_runtime"
+voice main / {
+  initial_state -> 
+  hopic.step -> 
+  hopic
+}

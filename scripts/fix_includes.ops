@@ -1,0 +1,61 @@
+;;; fix_includes.ops — Fix include paths after reorganization
+
+include systems/base_registry.ops
+
+;; Include path mappings (old -> new)
+def include_mapping {
+  "systems/fee.ops" -> "systems/protocol/fee.ops",
+  "systems/governance.ops" -> "systems/protocol/governance.ops",
+  "systems/consensus.ops" -> "systems/protocol/consensus.ops",
+  "systems/opic_peer.ops" -> "systems/protocol/peer.ops",
+  "systems/viral_resonance.ops" -> "systems/protocol/viral.ops",
+  "systems/resonance_currency.ops" -> "systems/currency.ops",
+  "systems/seed_template.ops" -> "systems/seed.ops",
+  "systems/recursive_contract_theory.ops" -> "systems/contract.ops",
+  "systems/blake.ops" -> "systems/algorithm/blake.ops",
+  "systems/markov.ops" -> "systems/algorithm/markov.ops",
+  "systems/language_template.ops" -> "systems/lang/language_template.ops",
+  "systems/hopic_codegen.ops" -> "systems/lang/hopic_codegen.ops",
+  "systems/language_field.ops" -> "systems/lang/language_field.ops",
+  "systems/filter_registry.ops" -> "systems/registry/filter.ops",
+  "systems/vfs.ops" -> "systems/virtual/vfs.ops",
+  "systems/vfs_audit.ops" -> "systems/virtual/vfs_audit.ops",
+  "systems/vfs_custody.ops" -> "systems/virtual/vfs_custody.ops",
+  "systems/vfs_ethics.ops" -> "systems/virtual/vfs_ethics.ops",
+  "systems/vfs_nlp.ops" -> "systems/virtual/vfs_nlp.ops",
+  "systems/vfs_quorum.ops" -> "systems/virtual/vfs_quorum.ops",
+  "systems/planning_vfs.ops" -> "systems/virtual/vfsplan.ops"
+}
+
+;; Find files with old include paths
+voice fix.find_files_with_old_includes / {
+  project_root -> 
+  scan_all_ops_files -> 
+  check_includes -> 
+  files_needing_updates
+}
+
+;; Fix include path in a file
+voice fix.update_includes / {
+  file_path + include_mapping -> 
+  read_file -> 
+  replace_includes -> 
+  write_file -> 
+  updated_file
+}
+
+;; Replace all includes in content
+voice replace_includes / {
+  file_content + include_mapping -> 
+  for_each_mapping -> 
+  replace_include -> 
+  updated_content
+}
+
+target fix_includes / "include_fixer"
+voice main / {
+  project_root -> 
+  fix.find_files_with_old_includes -> 
+  fix_includes
+}
+

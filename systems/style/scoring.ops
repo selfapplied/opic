@@ -1,0 +1,85 @@
+;;; scoring.ops — Scoring and state determination trait
+
+include analysis.ops
+
+def base_score 100
+def states { annealed: 90, stable: 75, metastable: 60, unstable: 0 }
+
+voice score file / {
+  file_path
+  read file
+  analyze all
+  calc score
+  generate suggestions
+  determine state
+  analysis
+}
+
+voice calc score / {
+  base_score + weights
+  apply weights
+  calc percent
+  score
+}
+
+voice apply weights / {
+  base_score + weights
+  map extract points
+  sum
+  subtract
+  final
+}
+
+voice calc percent / {
+  final + max_score
+  divide
+  multiply 100
+  percent
+}
+
+voice generate suggestions / {
+  weights
+  map generate
+  suggestions
+}
+
+voice generate / {
+  weight
+  extract type
+  suggest
+  suggestion
+}
+
+voice suggest / {
+  type
+  match imperative if "Use pattern matching or composition instead of imperative if"
+  match for loop "Let the conductor handle iteration - use composition instead of for loops"
+  match explicit arrows "Remove explicit -> arrows - let OPIC figure out composition"
+  match multi line def "Use one-liner definitions when possible (word wrap still applies)"
+  match big blob "Prefer mixins of traits over big blob definitions - break into smaller composable pieces"
+  match metadata "Remove excessive metadata comments"
+  match nesting "Simplify nested structure"
+  match complex name "Use two words instead of underscore - align with natural language"
+  match long id "Use shorter identifier name"
+  match duplication "Extend existing base instead of duplicating"
+  suggestion
+}
+
+voice determine state / {
+  score
+  compare states.annealed
+  compare states.stable
+  compare states.metastable
+  compare states.unstable
+  state
+}
+
+voice compare / {
+  score + threshold
+  greater equal
+  state name
+}
+
+
+
+

@@ -1,0 +1,157 @@
+;;; parser.ops — Grammar extension parser for OPIC
+
+include core/bootstrap.ops
+include ../registry/base.ops
+
+;; ============================================================================
+;; GRAMMAR EXTENSION PARSER
+;; ============================================================================
+
+;; Parse line with grammar extensions (from registry)
+voice grammar.parse_line / {
+  line + grammar_registry -> 
+  grammar.get_all_rules -> 
+  grammar.try_rules -> 
+  if_matched -> grammar.transform -> 
+  if_no_match -> opic.parse_line -> 
+  parsed
+}
+
+;; Get all rules from registry
+voice grammar.get_all_rules / {
+  grammar_registry -> 
+  registry.list -> 
+  for_each -> registry.get -> 
+  all_rules
+}
+
+;; Try all grammar rules from registry
+voice grammar.try_rules / {
+  line + all_rules -> 
+  for_each_rule -> 
+  grammar.try_rule -> 
+  if_matches -> matched_rule -> 
+  if_no_match -> try_next
+}
+
+;; Try single grammar rule
+voice grammar.try_rule / {
+  line + rule -> 
+  grammar.match_pattern -> 
+  if_matches -> extract_matches -> 
+  if_no_match -> no_match
+}
+
+;; Match pattern (supports regex or simple patterns)
+voice grammar.match_pattern / {
+  line + pattern -> 
+  grammar.check_pattern_type -> 
+  if_regex -> regex_match -> 
+  if_simple -> simple_match -> 
+  matches
+}
+
+;; Simple pattern matching (starts with, contains, etc.)
+voice grammar.simple_match / {
+  line + pattern -> 
+  grammar.check_starts_with -> 
+  grammar.check_contains -> 
+  grammar.check_equals -> 
+  matches
+}
+
+;; Extract matches from pattern
+voice grammar.extract_matches / {
+  line + pattern + matches -> 
+  grammar.extract_groups -> 
+  grammar.extract_quoted_strings -> 
+  grammar.extract_config_blocks -> 
+  extracted_data
+}
+
+;; Transform matched line using rule
+voice grammar.transform / {
+  line + rule + extracted_data -> 
+  grammar.call_transform_voice -> 
+  transformed_line
+}
+
+;; Call transform voice from rule
+voice grammar.call_transform_voice / {
+  rule + extracted_data -> 
+  extract_transform_voice -> 
+  call_voice -> 
+  transformed
+}
+
+;; ============================================================================
+;; CONFIG BLOCK PARSING
+;; ============================================================================
+
+;; Parse config block: { key: value, key2: value2 }
+voice grammar.parse_config_block / {
+  config_text -> 
+  grammar.find_braces -> 
+  grammar.extract_inside -> 
+  grammar.split_key_value_pairs -> 
+  config_map
+}
+
+;; Split key:value pairs
+voice grammar.split_key_value_pairs / {
+  pairs_text -> 
+  grammar.split_commas -> 
+  for_each_pair -> 
+  grammar.parse_key_value -> 
+  key_value_map
+}
+
+;; Parse single key:value pair
+voice grammar.parse_key_value / {
+  pair_text -> 
+  grammar.split_colon -> 
+  grammar.trim_key -> 
+  grammar.parse_value -> 
+  key_value
+}
+
+;; Parse value (string, list, dict, number, etc.)
+voice grammar.parse_value / {
+  value_text -> 
+  grammar.check_type -> 
+  if_string -> parse_string -> 
+  if_list -> parse_list -> 
+  if_dict -> parse_dict -> 
+  if_number -> parse_number -> 
+  parsed_value
+}
+
+;; ============================================================================
+;; INTEGRATION WITH OPIC PARSER
+;; ============================================================================
+
+;; Enhanced parse_ops with grammar extensions (from registry)
+voice opic.parse_ops_with_grammar / {
+  ops_text + grammar_registry -> 
+  opic.split_lines -> 
+  opic.filter_lines -> 
+  grammar.parse_each_line -> 
+  opic.parse_includes -> 
+  opic.collect_defs_voices_includes -> 
+  defs + voices + includes
+}
+
+;; Parse each line with grammar rules from registry
+voice grammar.parse_each_line / {
+  lines + grammar_registry -> 
+  for_each_line -> 
+  grammar.parse_line -> 
+  parsed_items
+}
+
+target grammar_parser / "grammar_extension_parser"
+voice main / {
+  grammar.parse_line -> 
+  grammar_parser
+}
+

@@ -1,0 +1,157 @@
+;;; sigmabody_interfaces.ops — ΣBody Interfaces: Sensor/Actuator Ports
+
+include systems/zetacore_runtime.ops
+
+;; ΣBody architecture: Sensor → Adapter → Kernel Bus → Runtime → Actuator
+voice sigmabody.pipeline / {
+  sensor_data + adapter + kernel_bus + runtime + actuator -> 
+  normalize.to.field -> 
+  deliver.to.kernel -> 
+  process.resonance -> 
+  convert.to.output -> 
+  sigmabody_output
+}
+
+;; Input channels: Audio, Vision, Text, Motion, Network
+voice sigma.audio.port / {
+  audio_sample + sample_rate -> 
+  compute.phase.amplitude -> 
+  map.to.tan_theta -> 
+  audio_field
+}
+
+voice sigma.vision.port / {
+  image_frame + fps -> 
+  compute.spatial.curvature -> 
+  map.to.xi_xy -> 
+  vision_field
+}
+
+voice sigma.text.port / {
+  text_stream -> 
+  compute.semantic.bias -> 
+  map.to.ion -> 
+  text_field
+}
+
+voice sigma.motion.port / {
+  imu_data + sample_rate -> 
+  compute.inertial.loops -> 
+  map.to.cycle.curvature -> 
+  motion_field
+}
+
+voice sigma.network.port / {
+  network_message -> 
+  compute.distributed.phase -> 
+  map.to.coupling -> 
+  network_field
+}
+
+;; Adapter interface: read, to_field, write
+voice sigma.adapter.read / {
+  sensor_port -> 
+  read.sample -> 
+  sensor_data
+}
+
+voice sigma.adapter.to.field / {
+  sensor_data + phi_scale -> 
+  normalize.by.phi -> 
+  project.to.field -> 
+  field_tensor
+}
+
+voice sigma.adapter.write / {
+  field_tensor + actuator_port -> 
+  convert.to.signal -> 
+  actuator_output
+}
+
+;; Data harmonization: Preprocess → Fourier Project → Bias Extraction → Field Encoding
+voice harmonize.data / {
+  raw_data -> 
+  preprocess -> 
+  fourier.project -> 
+  extract.bias -> 
+  encode.field -> 
+  harmonized_field
+}
+
+;; Temporal alignment: shared ΣClock
+voice align.temporal / {
+  streams + sigma_clock -> 
+  timestamp.align -> 
+  fuse.harmonic.event -> 
+  aligned_streams
+}
+
+;; Output ports: Audio, Visual, Haptic, Network, Robotic
+voice sigma.output.audio / {
+  field_tensor -> 
+  map.to.frequency -> 
+  render.harmonic.feedback -> 
+  audio_output
+}
+
+voice sigma.output.visual / {
+  field_tensor -> 
+  map.to.phase.coherence -> 
+  display.coherence.map -> 
+  visual_output
+}
+
+voice sigma.output.haptic / {
+  field_tensor -> 
+  map.to.resonance.amplitude -> 
+  convey.vibration -> 
+  haptic_output
+}
+
+voice sigma.output.network / {
+  field_tensor -> 
+  create.sigmapacket -> 
+  transmit.to.peers -> 
+  network_output
+}
+
+voice sigma.output.robotic / {
+  field_tensor -> 
+  map.to.torque -> 
+  control.motion -> 
+  robotic_output
+}
+
+;; ΣPacket format: {timestamp, channel, φscale, Ξ, τ, signature}
+voice create.sigmapacket / {
+  timestamp + channel + phi_scale + xi + tau + signature -> 
+  encode.packet -> 
+  sigmapacket
+}
+
+;; Calibration: baseline → capture → adjust → save
+voice calibrate.port / {
+  port + baseline_noise -> 
+  capture.reference.data -> 
+  compute.tan_theta.curves -> 
+  adjust.gain -> 
+  verify.tau.stability -> 
+  save.profile -> 
+  calibrated_port
+}
+
+;; Safety: ΣHALT on ethical violation
+voice safety.halt / {
+  ethical_tensor + coherence_derivative -> 
+  check.non.harm -> 
+  halt.all.ports -> 
+  halt_status
+}
+
+target sigmabody_interfaces / "sigmabody"
+voice main / { 
+  sigmabody.pipeline + sigma.audio.port + sigma.vision.port + sigma.text.port + 
+  harmonize.data + align.temporal + sigma.output.audio + calibrate.port + safety.halt -> 
+  sigmabody_interfaces 
+}
+

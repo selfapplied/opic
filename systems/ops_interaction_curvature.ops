@@ -1,0 +1,56 @@
+;;; ops.interaction.curvature — Field interaction: computational curvature
+
+include systems/flow3d_core.ops
+
+;; Inputs: ε, coupling matrices, observables
+voice interaction.curvature / {
+  epsilon + C_zx + C_xz + observables -> 
+  evolve.coupled.fields -> 
+  estimate.fisher.metric -> 
+  compute.curvature.proxy -> 
+  compute.transfer.entropy -> 
+  compute.lyapunov.exponents -> 
+  results
+}
+
+;; Steps: estimate Fisher metric from decoder likelihood; compute curvature proxy; transfer entropy
+voice evolve.coupled.fields / {
+  z_field + x_field + epsilon + C_zx + C_xz -> 
+  zeta.field.evolution -> 
+  np.field.evolution -> 
+  apply.coupling -> 
+  z_evolved + x_evolved
+}
+
+voice estimate.fisher.metric / {
+  decoder_likelihood + theta -> 
+  compute.hessian.of.log.likelihood -> 
+  compute.expected.value -> 
+  fisher_metric
+}
+
+voice compute.curvature.proxy / {
+  fisher_metric -> 
+  compute.ricci.scalar -> 
+  compute.scalar.curvature -> 
+  curvature
+}
+
+voice compute.transfer.entropy / {
+  z_history + x_history -> 
+  compute.mutual.information -> 
+  transfer_entropy_zx + transfer_entropy_xz
+}
+
+;; Outputs: curvature vs ε; TE vs ε; null comparisons
+voice generate.outputs / {
+  curvature_results + transfer_entropy_results + null_comparisons -> 
+  plot.curvature.vs.epsilon -> 
+  plot.transfer.entropy.vs.epsilon -> 
+  plot.null.comparisons -> 
+  outputs
+}
+
+target ops_interaction_curvature / "interaction_curvature"
+voice main / { interaction.curvature + generate.outputs -> ops_interaction_curvature }
+

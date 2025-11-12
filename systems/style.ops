@@ -1,0 +1,238 @@
+;;; style.ops — OPIC style guide with validation scoring
+
+include registry/base.ops
+include style/ions.ops
+include style/analysis.ops
+include style/nesting.ops
+include style/names.ops
+include style/imperative.ops
+include style/definitions.ops
+include style/duplication.ops
+include style/scoring.ops
+
+;; ============================================================================
+;; DEFINITIONS
+;; ============================================================================
+
+def score { total, max, percent, weights, suggestions }
+def example { good, avoid }
+def rule { description, weight_points }
+def weights { excessive_metadata: 2, nested_structure: 3, complex_voice_name: 5, long_identifier: 1, duplication: 10, missing_extension: 5, imperative_if: 20, for_loop: 20, explicit_arrows: 3, multi_line_def: 2, big_blob: 5 }
+
+;; Traits for examples
+def simple_voice { voice register / { input transform output } }
+def composed_voice { voice process / { items map transform collect } }
+def two_word_name { voice analyze metadata }
+def underscore_name { voice analyze_metadata }
+def arrow_chain { input -> transform -> output }
+def clean_chain { input transform output }
+def imperative_pattern { input if_valid register if_invalid reject }
+def for_loop_pattern { items for_each transform_item accumulate }
+def compose_pattern { registry + entries compose result }
+def small_def { def base { name, value } }
+def extended_def { def extended { base + extra } }
+def big_def { def big_blob { name, value, extra, metadata, tags, labels, annotations, comments, notes, warnings, errors, violations } }
+
+;; ============================================================================
+;; COMPOSED ANALYSIS USING IONS
+;; ============================================================================
+
+voice analyze all / {
+  content + project files
+  analyze imperative ifs
+  analyze for loops
+  analyze explicit arrows
+  analyze multi line defs
+  analyze big blobs
+  analyze metadata
+  analyze nesting
+  analyze voice names
+  analyze identifiers
+  analyze duplication
+  weights to ions
+  evolve ions
+  calc density
+  measure coherence
+  all weights
+}
+
+;; ============================================================================
+;; VALIDATION
+;; ============================================================================
+
+voice validate / {
+  file_path + project files
+  analyze with ions
+  score file
+  report state
+  result
+}
+
+voice report state / {
+  analysis
+  extract score
+  extract state
+  extract ion_field
+  format report
+  report
+}
+
+voice format report / {
+  analysis
+  extract score
+  extract state
+  extract weights
+  extract ion_density
+  extract coherence
+  extract suggestions
+  format
+  report
+}
+
+;; ============================================================================
+;; BATCH VALIDATION
+;; ============================================================================
+
+voice validate project / {
+  project root + options
+  scan files
+  map validate
+  aggregate
+  project analysis
+}
+
+voice scan files / {
+  project root
+  list recursive
+  filter ops
+  files
+}
+
+voice aggregate / {
+  results
+  calc avg
+  find worst
+  find best
+  aggregate ion_fields
+  generate summary
+  summary
+}
+
+voice calc avg / {
+  results
+  extract scores
+  average
+  avg
+}
+
+voice find worst / {
+  results + limit
+  sort score
+  take bottom
+  worst
+}
+
+voice find best / {
+  results + limit
+  sort score
+  take top
+  best
+}
+
+voice aggregate ion_fields / {
+  results
+  extract ion_fields
+  combine densities
+  calc global_coherence
+  global_field
+}
+
+voice generate summary / {
+  avg + worst + best + total + global_field
+  format
+  summary
+}
+
+;; ============================================================================
+;; STYLE GUIDE DOCUMENTATION
+;; ============================================================================
+
+voice generate guide / {
+  format
+  guide
+}
+
+voice format / {
+  add intro
+  add rules
+  add examples
+  add scoring
+  add ion_explanation
+  guide
+}
+
+voice add intro / {
+  "OPIC Style Guide - Scoring System for Finding Annealed State"
+  intro
+}
+
+voice add ion_explanation / {
+  "Style violations are modeled as ions - quanta of relational charge that move through the Σ-field. Each violation creates an ion with potential (p), charge (q), phase (φ), and lifespan (τ). Ions propagate, recombine, and create density fields that measure semantic coherence."
+  explanation
+}
+
+;; Rules as language structures
+def rules [
+  rule { description: "NO IMPERATIVE IF - weight 20 points per if statement (OPIC is declarative!)", weight_points: weights.imperative_if },
+  rule { description: "NO FOR LOOPS - weight 20 points per for loop (let the conductor do its job!)", weight_points: weights.for_loop },
+  rule { description: "NO EXPLICIT ARROWS - weight 3 points per -> arrow (let OPIC figure out composition)", weight_points: weights.explicit_arrows },
+  rule { description: "Use one-liner definitions when possible - weight 2 points per multi-line def (word wrap still applies)", weight_points: weights.multi_line_def },
+  rule { description: "Prefer mixins of traits over big blob definitions - weight 5 points per def with 8+ fields", weight_points: weights.big_blob },
+  rule { description: "Use two words instead of underscores - align with natural language", weight_points: weights.complex_voice_name },
+  rule { description: "Avoid excessive metadata - weight 2 points per excessive comment/field", weight_points: weights.excessive_metadata },
+  rule { description: "Simplify nested structures - weight 3 points per excessive nesting level", weight_points: weights.nested_structure },
+  rule { description: "Keep identifiers short - weight 1 point per character over 8", weight_points: weights.long_identifier },
+  rule { description: "Extend instead of duplicate - weight 10 points for duplication", weight_points: weights.duplication }
+]
+
+voice add rules / {
+  rules
+  format rules
+  formatted_rules
+}
+
+;; Examples as language structures using traits
+def examples [
+  example { good: simple_voice, avoid: voice register / { arrow_chain } },
+  example { good: simple_voice, avoid: voice register / { imperative_pattern } },
+  example { good: two_word_name / { content count comments weights }, avoid: underscore_name / { content count_comments weights } },
+  example { good: small_def, avoid: def score { total, max, percent, weights, suggestions, violations, errors, warnings } },
+  example { good: extended_def, avoid: big_def },
+  example { good: voice check name / { name check underscore complex }, avoid: voice check_name / { name check_underscore complex } },
+  example { good: composed_voice, avoid: voice process / { for_loop_pattern } },
+  example { good: voice apply / { compose_pattern }, avoid: voice apply / { registry + entries for_each process_entry combine } },
+  example { good: voice calc score / { base + weights subtract final }, avoid: voice calculate_score / { base_score + weight_list subtract_points final_score } }
+]
+
+voice add examples / {
+  examples
+  format examples
+  formatted_examples
+}
+
+voice add scoring / {
+  format scoring [
+    "90-100: Annealed (optimal low-energy state)",
+    "75-89: Stable (good stable state)",
+    "60-74: Metastable (can improve but functional)",
+    "Below 60: Unstable (high energy, needs work)"
+  ]
+  scoring
+}
+
+target style / "style"
+voice main / {
+  file_path + project files
+  validate
+  result
+}

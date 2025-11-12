@@ -1,0 +1,9 @@
+;;; flow3d_descent.ops — Energy descent: D = -ηΠ(u - αΔu)
+
+include systems/flow3d_core.ops
+
+;; ops.flow3d.descent.energy: D = -eta * Π(U - alpha*(-|k|^2)U)
+voice descent.energy / { U + eta + alpha + k_squared + N + kx + ky + kz -> compute.laplacian.term -> compute.u.minus.alpha.laplacian -> helmholtz_project -> multiply.by.negative.eta -> D }
+
+target flow3d_descent / "flow3d_descent"
+voice main / { descent.energy -> flow3d_descent }

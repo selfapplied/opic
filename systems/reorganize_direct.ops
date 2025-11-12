@@ -1,0 +1,93 @@
+;;; reorganize_direct.ops — Direct Reorganization Implementation
+
+;; Step 1: Create directory structure
+voice create.structure / {
+  "core" -> dir.create -> 
+  "systems/00_core" -> dir.create -> 
+  "systems/01_ce1" -> dir.create -> 
+  "systems/02_runtime" -> dir.create -> 
+  "systems/03_flow" -> dir.create -> 
+  "systems/04_mode7" -> dir.create -> 
+  "systems/05_experiments" -> dir.create -> 
+  "docs/00_specification" -> dir.create -> 
+  "docs/01_theory" -> dir.create -> 
+  "docs/02_implementation" -> dir.create -> 
+  "docs/03_reference" -> dir.create -> 
+  "archive/python_experiments" -> dir.create -> 
+  structure_created
+}
+
+;; Step 2: Backup and move core files
+voice migrate.core.files / {
+  "scripts/opic_executor.py" -> file.backup -> 
+  "scripts/opic_executor.py" + "core/opic_executor.py" -> file.move -> 
+  "scripts/generate.py" + "core/parser.py" -> file.move -> 
+  core_migrated
+}
+
+;; Step 3: Move core systems
+voice migrate.core.systems / {
+  "systems/opic_field_0.7.ops" + "systems/00_core/opic_field_0.7.ops" -> file.move -> 
+  "systems/opic_cosmogenesis.ops" + "systems/00_core/opic_cosmogenesis.ops" -> file.move -> 
+  "systems/opic_phase_flux.ops" + "systems/00_core/opic_phase_flux.ops" -> file.move -> 
+  "systems/opic_three_fluxes.ops" + "systems/00_core/opic_three_fluxes.ops" -> file.move -> 
+  "systems/opic_coherence_dance.ops" + "systems/00_core/opic_coherence_dance.ops" -> file.move -> 
+  core_systems_migrated
+}
+
+;; Step 4: Move CE1 systems
+voice migrate.ce1.systems / {
+  "systems/ce1_field_kernel.ops" + "systems/01_ce1/ce1_field_kernel.ops" -> file.move -> 
+  "systems/ce1_pascal_kernel.ops" + "systems/01_ce1/ce1_pascal_kernel.ops" -> file.move -> 
+  "systems/ce1_zeta_core.ops" + "systems/01_ce1/ce1_zeta_core.ops" -> file.move -> 
+  "systems/ce1_ethical_enforcement.ops" + "systems/01_ce1/ce1_ethical_enforcement.ops" -> file.move -> 
+  "systems/ce1_resonant_attention.ops" + "systems/01_ce1/ce1_resonant_attention.ops" -> file.move -> 
+  "systems/ce1_implementation_stack.ops" + "systems/01_ce1/ce1_implementation_stack.ops" -> file.move -> 
+  ce1_systems_migrated
+}
+
+;; Step 5: Move runtime systems
+voice migrate.runtime.systems / {
+  "systems/zetacore_runtime.ops" + "systems/02_runtime/zetacore_runtime.ops" -> file.move -> 
+  "systems/sigmabody_interfaces.ops" + "systems/02_runtime/sigmabody_interfaces.ops" -> file.move -> 
+  "systems/signetwork_governance.ops" + "systems/02_runtime/signetwork_governance.ops" -> file.move -> 
+  runtime_systems_migrated
+}
+
+;; Step 6: Move flow systems
+voice migrate.flow.systems / {
+  "systems/flow3d_core.ops" + "systems/03_flow/flow3d_core.ops" -> file.move -> 
+  "systems/flow3d_mask.ops" + "systems/03_flow/flow3d_mask.ops" -> file.move -> 
+  "systems/flow3d_descent.ops" + "systems/03_flow/flow3d_descent.ops" -> file.move -> 
+  "systems/flow3d_benchmarks.ops" + "systems/03_flow/flow3d_benchmarks.ops" -> file.move -> 
+  "systems/flow3d_caba.ops" + "systems/03_flow/flow3d_caba.ops" -> file.move -> 
+  "systems/flow3d_main.ops" + "systems/03_flow/flow3d_main.ops" -> file.move -> 
+  flow_systems_migrated
+}
+
+;; Step 7: Move Mode 7 systems
+voice migrate.mode7.systems / {
+  "systems/opic_mode7_perspective.ops" + "systems/04_mode7/opic_mode7_perspective.ops" -> file.move -> 
+  "systems/opic_mode7_dashboard.ops" + "systems/04_mode7/opic_mode7_dashboard.ops" -> file.move -> 
+  "systems/opic_mode7_fusion.ops" + "systems/04_mode7/opic_mode7_fusion.ops" -> file.move -> 
+  "systems/opic_mode7_features.ops" + "systems/04_mode7/opic_mode7_features.ops" -> file.move -> 
+  "systems/opic_mode7_harvest.ops" + "systems/04_mode7/opic_mode7_harvest.ops" -> file.move -> 
+  "systems/opic_mode7_lab.ops" + "systems/04_mode7/opic_mode7_lab.ops" -> file.move -> 
+  mode7_systems_migrated
+}
+
+;; Main execution
+voice execute.reorganization / {
+  create.structure -> 
+  migrate.core.files -> 
+  migrate.core.systems -> 
+  migrate.ce1.systems -> 
+  migrate.runtime.systems -> 
+  migrate.flow.systems -> 
+  migrate.mode7.systems -> 
+  reorganization_complete
+}
+
+target reorganize_direct / "reorganize"
+voice main / { execute.reorganization -> reorganize_direct }
+

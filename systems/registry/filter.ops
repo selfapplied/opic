@@ -1,0 +1,246 @@
+;;; filter.ops — Extensible filter/categorization registry
+
+include base.ops
+
+;; ============================================================================
+;; DEFINITIONS
+;; ============================================================================
+
+def filter {
+  name,
+  patterns,
+  category,
+  metadata,
+  priority
+}
+
+def category {
+  name,
+  display_name,
+  filters,
+  metadata
+}
+
+def filter_registry {
+  registry,
+  filters,
+  categories,
+  default_category
+}
+
+;; ============================================================================
+;; OPERATIONS
+;; ============================================================================
+
+voice register / {
+  filter_registry + filter_name + patterns + category + metadata + priority + description + usage + examples + related_entries -> 
+  create_entry -> 
+  register -> 
+  updated_registry
+}
+
+voice create_entry / {
+  filter_name + patterns + category + metadata + priority + description + usage + examples + related_entries -> 
+  build_filter_config -> 
+  create_entry -> 
+  filter_entry
+}
+
+voice build_filter_config / {
+  filter_name + patterns + category + metadata + priority -> 
+  combine_fields -> 
+  config
+}
+
+voice register_category / {
+  filter_registry + category_name + display_name + filters + metadata + description + usage + examples + related_entries -> 
+  create_entry -> 
+  register -> 
+  updated_registry
+}
+
+voice create_category_entry / {
+  category_name + display_name + filters + metadata + description + usage + examples + related_entries -> 
+  build_category_config -> 
+  create_entry -> 
+  category_entry
+}
+
+voice build_category_config / {
+  category_name + display_name + filters + metadata -> 
+  combine_fields -> 
+  config
+}
+
+voice get / {
+  filter_registry + filter_name -> 
+  get -> 
+  filter_entry
+}
+
+voice apply / {
+  filter_registry + filter_name + items -> 
+  get -> 
+  match_items -> 
+  filtered_items
+}
+
+voice match_items / {
+  filter + items -> 
+  extract_patterns -> 
+  for_each_item -> 
+  check_match -> 
+  matching_items
+}
+
+voice apply_category / {
+  filter_registry + category_name + items -> 
+  get_category -> 
+  get_filters -> 
+  apply_all -> 
+  categorized_items
+}
+
+voice get_category / {
+  filter_registry + category_name -> 
+  get -> 
+  category_entry
+}
+
+voice get_filters / {
+  category -> 
+  extract_filters -> 
+  filters
+}
+
+voice apply_all / {
+  filters + items -> 
+  for_each_filter -> 
+  apply -> 
+  union_results -> 
+  all_matching_items
+}
+
+voice compose / {
+  filter_registry + filter_names + logic -> 
+  get_all -> 
+  apply_composition -> 
+  composed_filter
+}
+
+voice get_all / {
+  filter_registry + filter_names -> 
+  for_each -> get -> 
+  filters
+}
+
+voice apply_composition / {
+  filters + logic + items -> 
+  if_and -> apply_all_filters -> 
+  if_or -> apply_any_filter -> 
+  result_items
+}
+
+voice list_filters / {
+  filter_registry + category_name -> 
+  get_category -> 
+  extract_filters -> 
+  filter_list
+}
+
+voice help / {
+  filter_registry -> 
+  help -> 
+  filter_help
+}
+
+voice help_filter / {
+  filter_registry + filter_name -> 
+  help_entry -> 
+  filter_help
+}
+
+voice discover / {
+  filter_registry + query -> 
+  discover -> 
+  matching_filters
+}
+
+voice help_category / {
+  filter_registry + category_name -> 
+  help_entry -> 
+  category_help
+}
+
+voice init_registry / {
+  -> 
+  create "filter_registry" null -> 
+  register_core -> 
+  register_systems -> 
+  register_launch -> 
+  register_examples -> 
+  filter_registry
+}
+
+voice register_core / {
+  filter_registry -> 
+  register "bootstrap" ["bootstrap"] "core" {} 1 
+    "Bootstrap files - core initialization" 
+    "plan.filter_core files" 
+    ["plan.filter_core ops_files"] 
+    ["parse" "load" "execute"] -> 
+  register "parse" ["parse"] "core" {} 1 
+    "Parser files - language parsing" 
+    "plan.filter_core files" 
+    ["plan.filter_core ops_files"] 
+    ["bootstrap" "load"] -> 
+  register "load" ["load"] "core" {} 1 
+    "Loader files - file loading" 
+    "plan.filter_core files" 
+    ["plan.filter_core ops_files"] 
+    ["parse" "execute"] -> 
+  register "execute" ["execute"] "core" {} 1 
+    "Executor files - code execution" 
+    "plan.filter_core files" 
+    ["plan.filter_core ops_files"] 
+    ["load" "compile"] -> 
+  register "compile" ["compile"] "core" {} 1 
+    "Compiler files - code compilation" 
+    "plan.filter_core files" 
+    ["plan.filter_core ops_files"] 
+    ["execute"] -> 
+  updated_registry
+}
+
+voice register_systems / {
+  filter_registry -> 
+  register "fee" ["fee"] "systems" {} -> 
+  register "rct" ["recursive_contract"] "systems" {} -> 
+  register "governance" ["governance"] "systems" {} -> 
+  register "certificate" ["certificate"] "systems" {} -> 
+  register "ledger" ["ledger"] "systems" {} -> 
+  updated_registry
+}
+
+voice register_launch / {
+  filter_registry -> 
+  register "whitepaper" ["whitepaper"] "launch" {} -> 
+  register "getting_started" ["getting_started"] "launch" {} -> 
+  register "gallery" ["gallery"] "launch" {} -> 
+  register "service" ["service"] "launch" {} -> 
+  register "seed" ["seed"] "launch" {} -> 
+  updated_registry
+}
+
+voice register_examples / {
+  filter_registry -> 
+  register "example" ["example"] "examples" {} -> 
+  updated_registry
+}
+
+target filter_registry / "filter_system"
+voice main / {
+  filter_registry + filter_name -> 
+  get -> 
+  filter_registry
+}

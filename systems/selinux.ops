@@ -1,0 +1,44 @@
+;;; selinux_integration.ops — align opic realms with SELinux security policies
+
+include protocol/certificate.ops
+include protocol/signed.ops
+
+;; SELinux integration definitions
+def selinux_context { user, role, type, level }
+def selinux_policy { source_context, target_context, class, permissions }
+def opic_selinux_mapping { opic_realm, selinux_context, policy_voice }
+
+;; Map opic realm to SELinux context
+voice selinux.realm_to_context / {opic_realm + agent -> selinux.create_context -> selinux_context}
+voice selinux.create_context / {realm + agent -> format_context -> context}
+voice selinux.format_context / {realm + agent -> "opic_u:opic_r:" + realm + "_t:s0" -> context}
+
+;; Map SELinux policy to opic permission
+voice selinux.policy_to_permission / {selinux_policy + opic_realm -> cert.create_permission -> permission}
+voice selinux.create_permission / {policy + realm -> extract_permissions -> create_permission -> permission}
+
+;; Opic certificate as SELinux policy
+voice selinux.cert_to_policy / {certificate + selinux_context -> selinux.create_policy -> selinux_policy}
+voice selinux.create_policy / {cert + context -> extract_permissions -> format_policy -> policy}
+
+;; Enforce SELinux policy via opic certificate
+voice selinux.enforce_via_cert / {action + resource + agent_realm + ca -> selinux.get_context -> cert.check_permission -> selinux.check_policy -> if_allowed -> if_denied}
+voice selinux.get_context / {agent_realm -> selinux.realm_to_context -> context}
+voice selinux.check_policy / {action + resource + context + policy -> check_selinux_policy -> allowed}
+
+;; Realm boundary as SELinux type enforcement
+voice selinux.realm_boundary / {agent_realm + target_realm + ca -> selinux.check_type_transition -> cert.enforce_boundary -> boundary_enforced}
+voice selinux.check_type_transition / {source_context + target_context -> check_transition_allowed -> allowed}
+
+;; SELinux mandatory access control via opic
+voice selinux.mac_via_opic / {subject + object + action + agent_realm + ca -> selinux.get_subject_context -> selinux.get_object_context -> selinux.check_policy -> cert.check_permission -> mac_decision}
+voice selinux.get_subject_context / {subject + agent_realm -> selinux.realm_to_context -> subject_context}
+voice selinux.get_object_context / {object + target_realm -> selinux.realm_to_context -> object_context}
+
+;; Generate SELinux policy from opic certificates
+voice selinux.generate_policy / {certificates + agent_realm -> for_each -> selinux.cert_to_policy -> collect_policies -> selinux_policy_file}
+voice selinux.collect_policies / {policies -> format_policy_file -> policy_file}
+
+target selinux_integration / "opic_selinux_alignment"
+voice main / {selinux.enforce_via_cert -> selinux_integration}
+

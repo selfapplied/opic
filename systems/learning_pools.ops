@@ -1,9 +1,9 @@
 ;;; learning_pools.ops — Learning Pools (DAO-like funds) for FEE
 
-include systems/fee.ops
-include systems/governance.ops
-include systems/consensus.ops
-include systems/recursive_contract_theory.ops
+include protocol/fee.ops
+include protocol/governance.ops
+include protocol/consensus.ops
+include protocol/contract.ops
 
 ;; Learning pool definitions
 def pool_domain { domain_name, description, target_coherence, staking_requirements }

@@ -1,0 +1,228 @@
+;;; organic_chemistry_field.ops — Organic Chemistry Laws as Field Equations
+;;; Molecular reactions, bonding, mechanisms = field equations
+
+include opic_field_0.7.ops
+include systems/biology_field.ops
+
+;; ============================================================================
+;; Organic Chemistry = Field Chemistry
+;; ============================================================================
+
+;; Core insight: Organic chemistry laws = field equations
+;; Reactions, bonding, mechanisms all follow field equations
+
+;; ============================================================================
+;; I. Chemical Bonds → Field Bonds
+;; ============================================================================
+
+;; Chemical bond = field bond
+def chemical_bond {
+  atom1,           ;; Atom 1 (field source)
+  atom2,           ;; Atom 2 (field target)
+  bond_type,       ;; Bond type (covalent, ionic, etc.)
+  bond_energy,     ;; Bond energy (field potential)
+  bond_length,     ;; Bond length (field distance)
+  dimension         ;; D (molecular dimensionality)
+}
+
+;; Covalent bond = field bond
+voice chemistry.covalent_field / {
+  atom1 + atom2 -> 
+  coulomb.compute_potential -> 
+  covalent_bond
+}
+
+;; Ionic bond = field bond
+voice chemistry.ionic_field / {
+  cation + anion -> 
+  coulomb.compute_force -> 
+  ionic_bond
+}
+
+;; Hydrogen bond = field bond
+voice chemistry.hydrogen_bond_field / {
+  donor + acceptor -> 
+  coulomb.compute_potential -> 
+  hydrogen_bond
+}
+
+;; ============================================================================
+;; II. Chemical Reactions → Field Reactions
+;; ============================================================================
+
+;; Chemical reaction = field reaction
+def chemical_reaction {
+  reactants,        ;; Reactants (field sources)
+  products,         ;; Products (field targets)
+  mechanism,        ;; Reaction mechanism (field pathway)
+  activation_energy,;; Activation energy (field barrier)
+  rate_constant,    ;; Rate constant (field rate)
+  dimension         ;; D (reaction dimensionality)
+}
+
+;; SN2 reaction = field substitution
+voice chemistry.sn2_field / {
+  substrate + nucleophile -> 
+  field.substitute -> 
+  product
+}
+
+;; SN1 reaction = field substitution
+voice chemistry.sn1_field / {
+  substrate -> 
+  field.dissociate -> 
+  carbocation + 
+  field.substitute -> 
+  product
+}
+
+;; E2 elimination = field elimination
+voice chemistry.e2_field / {
+  substrate + base -> 
+  field.eliminate -> 
+  alkene
+}
+
+;; E1 elimination = field elimination
+voice chemistry.e1_field / {
+  substrate -> 
+  field.dissociate -> 
+  carbocation + 
+  field.eliminate -> 
+  alkene
+}
+
+;; Addition reaction = field addition
+voice chemistry.addition_field / {
+  alkene + reagent -> 
+  field.add -> 
+  product
+}
+
+;; ============================================================================
+;; III. Reaction Mechanisms → Field Mechanisms
+;; ============================================================================
+
+;; Reaction mechanism = field mechanism
+voice chemistry.mechanism_field / {
+  reaction -> 
+  field.pathway -> 
+  mechanism_steps
+}
+
+;; Transition state = field transition state
+voice chemistry.transition_state_field / {
+  reactants -> 
+  field.transition -> 
+  transition_state
+}
+
+;; Intermediate = field intermediate
+voice chemistry.intermediate_field / {
+  reaction_pathway -> 
+  field.intermediate -> 
+  intermediate
+}
+
+;; ============================================================================
+;; IV. Stereochemistry → Field Stereochemistry
+;; ============================================================================
+
+;; Stereochemistry = field stereochemistry
+def stereochemistry {
+  molecule,         ;; Molecule (field configuration)
+  chirality,        ;; Chirality (field handedness)
+  enantiomer,       ;; Enantiomer (field mirror)
+  diastereomer,     ;; Diastereomer (field variant)
+  dimension         ;; D (stereochemical dimensionality)
+}
+
+;; Chirality = field handedness
+voice chemistry.chirality_field / {
+  molecule -> 
+  field.handedness -> 
+  chiral_center
+}
+
+;; Enantiomer = field mirror
+voice chemistry.enantiomer_field / {
+  molecule -> 
+  field.mirror -> 
+  enantiomer
+}
+
+;; ============================================================================
+;; V. Functional Groups → Field Groups
+;; ============================================================================
+
+;; Functional group = field group
+def functional_group {
+  group_type,       ;; Group type (field type)
+  reactivity,       ;; Reactivity (field reactivity)
+  electronic_effect,;; Electronic effect (field effect)
+  dimension         ;; D (group dimensionality)
+}
+
+;; Electron-withdrawing = field withdrawal
+voice chemistry.electron_withdrawing_field / {
+  functional_group -> 
+  field.withdraw -> 
+  electron_withdrawing
+}
+
+;; Electron-donating = field donation
+voice chemistry.electron_donating_field / {
+  functional_group -> 
+  field.donate -> 
+  electron_donating
+}
+
+;; ============================================================================
+;; VI. Aromaticity → Field Aromaticity
+;; ============================================================================
+
+;; Aromaticity = field aromaticity
+voice chemistry.aromaticity_field / {
+  ring_system -> 
+  field.aromatic -> 
+  aromatic_compound
+}
+
+;; Hückel's rule = field rule
+voice chemistry.huckel_field / {
+  ring_system -> 
+  count_electrons -> 
+  if_4n_plus_2 -> aromatic
+}
+
+;; ============================================================================
+;; VII. Examples: Organic Chemistry → Field Equations
+;; ============================================================================
+
+;; Example: "How do SN2 reactions work?"
+;; Answer: SN2 = field substitution, follows field substitution equations
+voice chemistry.explain_sn2 / {
+  question -> 
+  chemistry.sn2_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "What is aromaticity?"
+;; Answer: Aromaticity = field aromaticity, follows Hückel's rule
+voice chemistry.explain_aromaticity / {
+  question -> 
+  chemistry.aromaticity_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "How do functional groups affect reactivity?"
+;; Answer: Functional groups = field groups, electronic effects = field effects
+voice chemistry.explain_functional_groups / {
+  question -> 
+  chemistry.electron_withdrawing_field -> 
+  field.explain -> 
+  explanation
+}
+

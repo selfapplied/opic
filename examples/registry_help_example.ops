@@ -1,0 +1,112 @@
+;;; registry_help_example.ops — Example of using registry help/discoverability
+
+include systems/registry/status.ops
+include systems/registry/filter.ops
+include systems/registry/music.ops
+include systems/registry/translation.ops
+
+;; Example: Get help for status registry
+voice example.status_help / {
+  realm_status_registry -> 
+  status.help -> 
+  help_output
+}
+
+;; Example: Discover statuses by query
+voice example.discover_statuses / {
+  realm_status_registry + "temporary" -> 
+  status.discover -> 
+  matching_statuses
+}
+
+;; Example: Get help for specific status
+voice example.status_info / {
+  realm_status_registry + "suspended" -> 
+  status.help_status -> 
+  status_help
+}
+
+;; Example: Show usage examples
+voice example.status_examples / {
+  realm_status_registry -> 
+  status.show_examples -> 
+  examples
+}
+
+;; Example: List all available statuses
+voice example.list_statuses / {
+  realm_status_registry -> 
+  status.list -> 
+  status_list
+}
+
+;; Example: Interactive discovery
+voice example.interactive_status / {
+  realm_status_registry -> 
+  registry.interactive_discover -> 
+  discovery_results
+}
+
+;; Example: Get help for filter registry
+voice example.filter_help / {
+  plan_filter_registry -> 
+  filter.help -> 
+  filter_help
+}
+
+;; Example: Discover filters
+voice example.discover_filters / {
+  plan_filter_registry + "core" -> 
+  filter.discover -> 
+  matching_filters
+}
+
+;; Example: Get help for music registry
+voice example.music_help / {
+  music_impl_registry -> 
+  music.help -> 
+  music_help
+}
+
+;; Example: List all scales
+voice example.list_scales / {
+  music_impl_registry -> 
+  music.list_scales -> 
+  scale_list
+}
+
+;; Example: Discover musical elements
+voice example.discover_music / {
+  music_impl_registry + "minor" -> 
+  music.discover -> 
+  matching_elements
+}
+
+;; Example: Get help for translation registry
+voice example.translation_help / {
+  translation_registry -> 
+  translation.help -> 
+  translation_help
+}
+
+;; Example: List available language pairs
+voice example.list_languages / {
+  translation_registry -> 
+  translation.list_languages -> 
+  language_pairs
+}
+
+;; Example: Generate discoverability data (for agents)
+voice example.generate_discoverability / {
+  realm_status_registry -> 
+  registry.generate_discoverability -> 
+  discoverability_json
+}
+
+target example / "registry_help_demo"
+voice main / {
+  realm_status_registry -> 
+  status.help -> 
+  example
+}
+

@@ -1,16 +1,23 @@
 ;;; registry.ops — Realm Registry Ledger for legal standing and status
 
-include systems/governance.ops
-include systems/certificate.ops
-include systems/voice_ledger.ops
-include systems/consensus.ops
-include systems/witness_summons.ops
+include protocol/governance.ops
+include certificate.ops
+include voice_ledger.ops
+include protocol/consensus.ops
+include protocol/summons.ops
+include registry/status.ops
 
 ;; Registry definitions
 def realm_registry_entry { realm, status, registered_date, last_audit, certificate_of_standing, charter_hash, ledger_hash }
-def realm_status { active, suspended, dissolved, pending }
 def certificate_of_good_standing { realm, issued_date, expires_date, status, audit_hash, witness_signatures }
 def registry_audit { realm, audit_date, auditor, findings, compliance_status, recommendations }
+
+;; Initialize realm status registry
+voice registry.init_status_registry / {
+  -> 
+  status.init_registry -> 
+  realm_status_registry
+}
 
 ;; Register realm in registry
 voice registry.register_realm / {realm + charter + agent_realm + ca -> registry.create_entry -> registry.verify_charter -> registry.notarize -> registry.add_to_ledger -> registered}
@@ -23,7 +30,12 @@ voice registry.add_to_ledger / {registry_entry + ledger -> ledger.add_certificat
 ;; Verify realm status
 voice registry.verify_status / {realm + registry_ledger -> registry.find_entry -> registry.check_status -> registry.verify_chain -> status_verified}
 voice registry.find_entry / {realm + registry_ledger -> filter_by_realm -> registry_entry}
-voice registry.check_status / {registry_entry -> extract_status -> status}
+voice registry.check_status / {
+  registry_entry + realm_status_registry -> 
+  extract_status -> 
+  status.get -> 
+  status
+}
 voice registry.verify_chain / {registry_entry + registry_ledger -> ledger.verify_chain_complete -> chain_valid}
 
 ;; Generate certificate of good standing
@@ -43,22 +55,57 @@ voice registry.generate_findings / {compliance + integrity + governance + fiduci
 voice registry.compile_findings / {checks -> evaluate_compliance -> generate_recommendations -> audit_findings}
 
 ;; Update realm status
-voice registry.update_status / {realm + new_status + reason + agent_realm + ca -> registry.verify_authority -> registry.create_status_change -> registry.notarize_change -> registry.add_to_ledger -> updated}
+voice registry.update_status / {
+  realm + new_status + reason + agent_realm + ca + realm_status_registry -> 
+  registry.verify_authority -> 
+  registry.get_current_status -> 
+  status.can_transition -> 
+  status.transition -> 
+  registry.create_status_change -> 
+  registry.notarize_change -> 
+  registry.add_to_ledger -> 
+  updated
+}
 voice registry.verify_authority / {agent_realm + ca + realm -> cert.check_permission "registry" + "update_status" -> authorized}
+voice registry.get_current_status / {
+  realm + registry_ledger -> 
+  registry.find_entry -> 
+  extract_status -> 
+  current_status
+}
 voice registry.create_status_change / {realm + new_status + reason + timestamp -> status_change_entry}
 voice registry.notarize_change / {status_change + previous_hash -> blake.hash_witness -> change_hash}
 
 ;; Suspend realm
-voice registry.suspend_realm / {realm + reason + agent_realm + ca + quorum -> registry.verify_authority -> consensus.federated_consensus -> registry.update_status "suspended" -> suspended}
+voice registry.suspend_realm / {
+  realm + reason + agent_realm + ca + quorum + realm_status_registry -> 
+  registry.verify_authority -> 
+  consensus.federated_consensus -> 
+  registry.update_status "suspended" -> 
+  suspended
+}
 voice registry.verify_suspension / {realm + reason + quorum -> consensus.check_quorum -> quorum_met}
 
 ;; Dissolve realm
-voice registry.dissolve_realm / {realm + dissolution_proposal + agent_realm + ca + quorum -> governance.dissolve_realm -> registry.update_status "dissolved" -> registry.archive_ledger -> registry.transfer_assets -> dissolved}
+voice registry.dissolve_realm / {
+  realm + dissolution_proposal + agent_realm + ca + quorum + realm_status_registry -> 
+  governance.dissolve_realm -> 
+  registry.update_status "dissolved" -> 
+  registry.archive_ledger -> 
+  registry.transfer_assets -> 
+  dissolved
+}
 voice registry.archive_ledger / {realm + ledger -> archive_to_public -> archived}
 voice registry.transfer_assets / {realm + assets + federated_commons -> governance.transfer_assets -> transferred}
 
 ;; Reactivate realm
-voice registry.reactivate_realm / {realm + reactivation_proposal + agent_realm + ca + quorum -> registry.verify_compliance -> consensus.federated_consensus -> registry.update_status "active" -> reactivated}
+voice registry.reactivate_realm / {
+  realm + reactivation_proposal + agent_realm + ca + quorum + realm_status_registry -> 
+  registry.verify_compliance -> 
+  consensus.federated_consensus -> 
+  registry.update_status "active" -> 
+  reactivated
+}
 voice registry.verify_compliance / {realm + registry_ledger -> registry.audit_registry -> compliance_verified}
 
 ;; Certificate of good standing verification

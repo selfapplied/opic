@@ -1,0 +1,510 @@
+;;; refactor.ops — Generic refactoring system
+
+include registry/base.ops
+
+;; ============================================================================
+;; DEFINITIONS
+;; ============================================================================
+
+def refactoring_plan {
+  name,
+  description,
+  file_moves,
+  include_updates,
+  consolidations,
+  system_changes,
+  verification_rules
+}
+
+def file_move {
+  from_path,
+  to_path,
+  reason,
+  status
+}
+
+def include_update {
+  old_pattern,
+  new_pattern,
+  scope,
+  status
+}
+
+def consolidation {
+  source_files,
+  target_file,
+  reason,
+  status
+}
+
+def system_change {
+  system_name,
+  changes,
+  rationale,
+  status
+}
+
+def verification_rule {
+  name,
+  check_function,
+  expected_result,
+  status
+}
+
+;; ============================================================================
+;; OPERATIONS
+;; ============================================================================
+
+voice create_plan / {
+  name + description + file_moves + include_updates + consolidations + system_changes + verification_rules -> 
+  build_plan -> 
+  plan
+}
+
+voice register_move / {
+  plan + from_path + to_path + reason -> 
+  create_move -> 
+  add_to_plan -> 
+  updated_plan
+}
+
+voice create_move / {
+  from_path + to_path + reason -> 
+  build_move "pending" -> 
+  move
+}
+
+voice register_include_update / {
+  plan + old_pattern + new_pattern + scope -> 
+  create_include_update -> 
+  add_to_plan -> 
+  updated_plan
+}
+
+voice create_include_update / {
+  old_pattern + new_pattern + scope -> 
+  build_update "pending" -> 
+  update
+}
+
+voice register_consolidation / {
+  plan + source_files + target_file + reason -> 
+  create_consolidation -> 
+  add_to_plan -> 
+  updated_plan
+}
+
+voice create_consolidation / {
+  source_files + target_file + reason -> 
+  build_consolidation "pending" -> 
+  consolidation
+}
+
+voice register_system_change / {
+  plan + system_name + changes + rationale -> 
+  create_system_change -> 
+  add_to_plan -> 
+  updated_plan
+}
+
+voice create_system_change / {
+  system_name + changes + rationale -> 
+  build_change "pending" -> 
+  change
+}
+
+voice register_verification / {
+  plan + rule_name + check_function + expected_result -> 
+  create_verification -> 
+  add_to_plan -> 
+  updated_plan
+}
+
+voice create_verification / {
+  rule_name + check_function + expected_result -> 
+  build_rule "pending" -> 
+  rule
+}
+
+;; ============================================================================
+;; FILE OPERATIONS
+;; ============================================================================
+
+voice move_file / {
+  move + dry_run -> 
+  if_dry_run -> simulate_move -> 
+  if_real -> execute_move -> 
+  result
+}
+
+voice simulate_move / {
+  move -> 
+  check_source_exists -> 
+  check_target_exists -> 
+  preview -> 
+  simulation
+}
+
+voice execute_move / {
+  move -> 
+  check_source_exists -> 
+  create_target_directory -> 
+  copy_file -> 
+  update_status "completed" -> 
+  result
+}
+
+voice check_source_exists / {
+  move -> 
+  extract_from_path -> 
+  file.exists -> 
+  exists
+}
+
+voice check_target_exists / {
+  move -> 
+  extract_to_path -> 
+  file.exists -> 
+  exists
+}
+
+voice create_target_directory / {
+  move -> 
+  extract_to_path -> 
+  extract_directory -> 
+  directory.create_if_missing -> 
+  created
+}
+
+voice copy_file / {
+  move -> 
+  extract_from_path -> 
+  extract_to_path -> 
+  file.copy -> 
+  copied
+}
+
+voice update_status / {
+  move + new_status -> 
+  update_field -> 
+  updated
+}
+
+;; ============================================================================
+;; INCLUDE UPDATES
+;; ============================================================================
+
+voice find_files_with_pattern / {
+  project_root + old_pattern -> 
+  scan_files -> 
+  match_pattern -> 
+  matching_files
+}
+
+voice scan_files / {
+  project_root -> 
+  file.list_recursive -> 
+  filter_ops_files -> 
+  files
+}
+
+voice match_pattern / {
+  file_path + old_pattern -> 
+  file.read -> 
+  search -> 
+  matches
+}
+
+voice update_include / {
+  file_path + old_pattern + new_pattern + dry_run -> 
+  if_dry_run -> simulate_update -> 
+  if_real -> execute_update -> 
+  result
+}
+
+voice simulate_update / {
+  file_path + old_pattern + new_pattern -> 
+  file.read -> 
+  find_matches -> 
+  preview_replacements -> 
+  simulation
+}
+
+voice execute_update / {
+  file_path + old_pattern + new_pattern -> 
+  file.read -> 
+  replace_all_matches -> 
+  file.write -> 
+  result
+}
+
+voice replace_all_matches / {
+  content + old_pattern + new_pattern -> 
+  replace -> 
+  updated
+}
+
+;; ============================================================================
+;; CONSOLIDATION
+;; ============================================================================
+
+voice consolidate_files / {
+  consolidation + dry_run -> 
+  if_dry_run -> simulate_consolidation -> 
+  if_real -> execute_consolidation -> 
+  result
+}
+
+voice simulate_consolidation / {
+  consolidation -> 
+  read_source_files -> 
+  analyze_content -> 
+  preview_merge -> 
+  simulation
+}
+
+voice execute_consolidation / {
+  consolidation -> 
+  read_source_files -> 
+  merge_content -> 
+  write_target -> 
+  remove_sources -> 
+  result
+}
+
+voice read_source_files / {
+  consolidation -> 
+  extract_source_files -> 
+  for_each -> file.read -> 
+  contents
+}
+
+voice merge_content / {
+  contents + target_file -> 
+  remove_duplicates -> 
+  combine -> 
+  merged
+}
+
+voice remove_duplicates / {
+  contents -> 
+  identify_duplicates -> 
+  remove -> 
+  unique
+}
+
+voice write_target / {
+  consolidation + merged -> 
+  extract_target_file -> 
+  file.write -> 
+  written
+}
+
+voice remove_sources / {
+  consolidation -> 
+  extract_source_files -> 
+  for_each -> file.delete -> 
+  removed
+}
+
+;; ============================================================================
+;; VERIFICATION
+;; ============================================================================
+
+voice verify_moves / {
+  plan -> 
+  extract_file_moves -> 
+  for_each -> verify_move -> 
+  results
+}
+
+voice verify_move / {
+  move -> 
+  check_source_exists -> 
+  check_target_exists -> 
+  compare_status -> 
+  result
+}
+
+voice verify_includes / {
+  plan + project_root -> 
+  extract_include_updates -> 
+  for_each -> verify_include_update -> 
+  results
+}
+
+voice verify_include_update / {
+  update + project_root -> 
+  find_files_with_pattern -> 
+  check_no_matches -> 
+  result
+}
+
+voice check_no_matches / {
+  matching_files -> 
+  if_empty -> "passed" -> 
+  if_not_empty -> "failed" -> 
+  result
+}
+
+voice verify_consolidations / {
+  plan -> 
+  extract_consolidations -> 
+  for_each -> verify_consolidation -> 
+  results
+}
+
+voice verify_consolidation / {
+  consolidation -> 
+  check_target_exists -> 
+  check_sources_removed -> 
+  result
+}
+
+voice check_sources_removed / {
+  consolidation -> 
+  extract_source_files -> 
+  for_each -> file.exists -> 
+  if_all_missing -> "passed" -> 
+  if_any_exists -> "failed" -> 
+  result
+}
+
+voice verify_all / {
+  plan -> 
+  extract_verification_rules -> 
+  for_each -> run_verification -> 
+  results
+}
+
+voice run_verification / {
+  rule -> 
+  extract_check_function -> 
+  execute -> 
+  compare_with_expected -> 
+  result
+}
+
+;; ============================================================================
+;; EXECUTION
+;; ============================================================================
+
+voice execute_plan / {
+  plan + dry_run -> 
+  execute_moves -> 
+  execute_include_updates -> 
+  execute_consolidations -> 
+  verify_all -> 
+  result
+}
+
+voice execute_moves / {
+  plan + dry_run -> 
+  extract_file_moves -> 
+  for_each -> move_file -> 
+  results
+}
+
+voice execute_include_updates / {
+  plan + project_root + dry_run -> 
+  extract_include_updates -> 
+  for_each -> update_include -> 
+  results
+}
+
+voice execute_consolidations / {
+  plan + dry_run -> 
+  extract_consolidations -> 
+  for_each -> consolidate_files -> 
+  results
+}
+
+;; ============================================================================
+;; REPORTING
+;; ============================================================================
+
+voice report / {
+  plan + execution_results -> 
+  format_summary -> 
+  format_moves -> 
+  format_includes -> 
+  format_consolidations -> 
+  format_verification -> 
+  report
+}
+
+voice format_summary / {
+  plan -> 
+  extract_name -> 
+  extract_description -> 
+  format_section -> 
+  summary
+}
+
+voice format_moves / {
+  plan + execution_results -> 
+  extract_file_moves -> 
+  format_table -> 
+  moves
+}
+
+voice format_includes / {
+  plan + execution_results -> 
+  extract_include_updates -> 
+  format_table -> 
+  includes
+}
+
+voice format_consolidations / {
+  plan + execution_results -> 
+  extract_consolidations -> 
+  format_table -> 
+  consolidations
+}
+
+voice format_verification / {
+  results -> 
+  format_table -> 
+  verification
+}
+
+;; ============================================================================
+;; HELPERS
+;; ============================================================================
+
+voice extract_directory / {
+  file_path -> 
+  split_path -> 
+  take_directory -> 
+  directory
+}
+
+voice extract_filename / {
+  file_path -> 
+  split_path -> 
+  take_filename -> 
+  filename
+}
+
+voice is_ops_file / {
+  file_path -> 
+  extract_extension -> 
+  if_equals "ops" -> true -> 
+  if_not_equals -> false -> 
+  is_ops
+}
+
+voice filter_ops_files / {
+  file_list -> 
+  for_each -> is_ops_file -> 
+  filter_true -> 
+  ops_files
+}
+
+target refactor / "refactoring"
+voice main / {
+  plan + dry_run -> 
+  execute_plan -> 
+  report -> 
+  complete
+}

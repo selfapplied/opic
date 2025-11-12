@@ -1,0 +1,71 @@
+;;; syntax.ops — Grammar syntax registry and registration
+
+include registry_syntax.ops
+include parser.ops
+
+;; ============================================================================
+;; SYNTAX REGISTRY INITIALIZATION
+;; ============================================================================
+
+voice init / {
+  -> 
+  grammar.init_registry -> 
+  register_status_syntax -> 
+  register_filter_syntax -> 
+  register_translation_syntax -> 
+  syntax_registry
+}
+
+voice register_status_syntax / {
+  syntax_registry -> 
+  grammar.register_rule "register_status" 
+    "register status" 
+    "grammar.transform_register_status" 
+    1 
+    "Crisp syntax for registering statuses: register status \"name\" with { ... }"
+    "register status \"active\" with { display: \"Active\", transitions: [], ... }"
+    ["register status \"active\" with { display: \"Active\" }"] -> 
+  updated_registry
+}
+
+voice register_filter_syntax / {
+  syntax_registry -> 
+  grammar.register_rule "register_filter" 
+    "register filter" 
+    "grammar.transform_register_filter" 
+    1 
+    "Crisp syntax for registering filters: register filter \"name\" in \"category\" with { ... }"
+    "register filter \"bootstrap\" in \"core\" with { patterns: [\"bootstrap\"], ... }"
+    ["register filter \"bootstrap\" in \"core\" with { patterns: [\"bootstrap\"] }"] -> 
+  updated_registry
+}
+
+voice register_translation_syntax / {
+  syntax_registry -> 
+  grammar.register_rule "register_translation" 
+    "register translation" 
+    "grammar.transform_register_translation" 
+    1 
+    "Crisp syntax for registering translations: register translation \"name\" from \"lang1\" to \"lang2\" with { ... }"
+    "register translation \"mse\" from \"opic\" to \"swift\" with { pattern: \"...\", template: \"...\" }"
+    ["register translation \"mse\" from \"opic\" to \"swift\" with { pattern: \"error = ...\" }"] -> 
+  updated_registry
+}
+
+voice help / {
+  syntax_registry -> 
+  registry.help -> 
+  syntax_help
+}
+
+voice discover / {
+  syntax_registry + query -> 
+  registry.discover -> 
+  matching_rules
+}
+
+target syntax / "syntax_registry"
+voice main / {
+  init -> 
+  syntax
+}

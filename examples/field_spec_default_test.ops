@@ -1,0 +1,24 @@
+;;; Test that Field Spec 0.7 is loaded by default
+
+voice test_pascal / {pascal.add -> output}
+voice test_trig / {trig.tan_theta -> output}
+voice test_cycle / {cycle.promote_to_operator -> output}
+voice test_flow / {flow.hermitian_flow -> output}
+voice test_bracket / {bracket.scope -> output}
+voice test_galois / {galois.golden_ratio_extension -> output}
+voice test_dimension / {dimension.symmetry_break -> output}
+voice test_coulomb / {coulomb.force -> output}
+
+voice main / {
+  "Field Spec 0.7 voices available:" -> 
+  test_pascal -> 
+  test_trig -> 
+  test_cycle -> 
+  test_flow -> 
+  test_bracket -> 
+  test_galois -> 
+  test_dimension -> 
+  test_coulomb -> 
+  "✓ All Field Spec 0.7 voices loaded by default!"
+}
+

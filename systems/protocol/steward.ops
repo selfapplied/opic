@@ -1,0 +1,61 @@
+;;; land_stewardship.ops — land back and sacred connection to earth/universe
+
+include protocol/resonance.ops
+include protocol/governance.ops
+include protocol/certificate.ops
+
+;; Land stewardship definitions
+def land_stewardship { realm, land_acknowledgment, traditional_territory, stewardship_obligations, seven_generation_commitment }
+def sacred_connection { realm, earth_relationship, universe_relationship, reciprocity_obligations }
+def land_back { realm, traditional_territory, return_obligations, ongoing_stewardship }
+
+;; Land acknowledgment in realm charter
+voice land.acknowledge / {realm + traditional_territory + original_peoples -> land.create_acknowledgment -> land_acknowledgment}
+voice land.create_acknowledgment / {realm + territory + peoples -> format_acknowledgment -> acknowledgment}
+
+;; Sacred connection to earth and universe
+voice land.sacred_connection / {realm + earth_relationship + universe_relationship -> land.establish_connection -> sacred_connection}
+voice land.establish_connection / {realm + earth + universe -> land.define_reciprocity -> land.define_stewardship -> connection}
+voice land.define_reciprocity / {realm + earth -> define_reciprocal_obligations -> reciprocity_obligations}
+voice land.define_stewardship / {realm + earth + seven_generations -> define_stewardship_obligations -> stewardship_obligations}
+
+;; Seven-generation commitment to land
+voice land.seven_generation_commitment / {realm + land + tau_vector -> generational.resonance_function -> land.project_land_impact -> land.commit_to_preservation -> seven_generation_commitment}
+voice land.project_land_impact / {realm_actions + land + tau -> generational.project_forward -> land_impact_projection}
+voice land.commit_to_preservation / {land_impact + tau -> generational.preserve_seven -> preservation_commitment}
+
+;; Land back obligations
+voice land.land_back / {realm + traditional_territory + original_peoples + agent_realm + ca -> land.acknowledge_territory -> land.establish_return -> land.ongoing_stewardship -> land_back}
+voice land.acknowledge_territory / {realm + territory + peoples -> land.acknowledge -> acknowledged}
+voice land.establish_return / {realm + territory + peoples -> define_return_obligations -> return_obligations}
+voice land.ongoing_stewardship / {realm + territory + peoples -> define_ongoing_stewardship -> ongoing_stewardship}
+
+;; Land as sacred, not commodity
+voice land.sacred_not_commodity / {realm + land -> land.establish_sacred_status -> land.prohibit_commodification -> sacred_status}
+voice land.establish_sacred_status / {realm + land -> set_sacred -> sacred}
+voice land.prohibit_commodification / {realm + land -> prohibit_sale -> prohibit_extraction -> protected}
+
+;; Reciprocity with earth
+voice land.earth_reciprocity / {realm + earth + actions -> land.compute_reciprocity -> land.enforce_reciprocity -> reciprocated}
+voice land.compute_reciprocity / {actions + earth -> compute_earth_impact -> compute_reciprocity_score -> reciprocity_score}
+voice land.enforce_reciprocity / {reciprocity_score + threshold -> if_reciprocal -> allow -> if_not_reciprocal -> require_restoration}
+
+;; Long-term stewardship
+voice land.stewardship / {realm + land + tau_vector -> generational.resonance_function -> land.compute_stewardship_score -> stewardship_score}
+voice land.compute_stewardship_score / {land_impact + tau -> generational.compute_coherence -> stewardship_score}
+
+;; Respect natural cycles and boundaries
+voice land.respect_cycles / {realm + land + natural_cycles -> land.identify_cycles -> land.respect_boundaries -> cycles_respected}
+voice land.identify_cycles / {land + natural_systems -> identify_seasons -> identify_cycles -> cycles}
+voice land.respect_boundaries / {realm + land + boundaries -> respect_ecological_boundaries -> boundaries_respected}
+
+;; Compute earth reciprocity for field equation
+voice land.compute_earth_reciprocity / {realm + actions + earth -> land.compute_reciprocity -> earth_reciprocity_score}
+voice land.earth_reciprocity_score / {reciprocity_score -> earth_reciprocity}
+
+;; Integrate land stewardship into realm charter
+voice land.charter_with_stewardship / {realm + charter + traditional_territory + tau_vector -> land.acknowledge -> land.sacred_connection -> land.seven_generation_commitment -> charter_with_stewardship}
+
+target land_stewardship / "opic_land_stewardship"
+voice main / {land.sacred_connection -> land_stewardship}
+

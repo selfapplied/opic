@@ -1,0 +1,28 @@
+{
+  "N": 64,
+  "primorial_values": [
+    210,
+    2310,
+    30030
+  ],
+  "results": [
+    {
+      "primorial": 210,
+      "kept_fraction": 0.25,
+      "snr": 0.7500000000000001,
+      "decoder_accuracy": 1.0
+    },
+    {
+      "primorial": 2310,
+      "kept_fraction": 0.21875,
+      "snr": 0.78125,
+      "decoder_accuracy": 0.9375
+    },
+    {
+      "primorial": 30030,
+      "kept_fraction": 0.1875,
+      "snr": 0.8125,
+      "decoder_accuracy": 0.875
+    }
+  ]
+}

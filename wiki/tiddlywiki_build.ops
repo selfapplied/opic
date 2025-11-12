@@ -2,7 +2,7 @@
 
 include wiki/tiddlywiki.ops
 include systems/voice_ledger.ops
-include systems/signed.ops
+include systems/protocol/signed.ops
 include wiki/tiddlywiki_network.ops
 
 ;; Build TiddlyWiki from source (with seed support)

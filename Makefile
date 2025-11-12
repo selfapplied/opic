@@ -9,14 +9,18 @@
 # Bootstrap sequence: ensure opic is ready before self-hosting
 # This is the memory bank - remembers how to bootstrap opic
 # Witness checkpoint: check for .opicup file (created when opic successfully self-hosts)
-check-opic:
+# Build directory for binaries
+BUILD_DIR := .out
+OPIC_BINARY := $(BUILD_DIR)/opic
+
+check-opic: $(OPIC_BINARY)
 	@for witness_file in .opicup opic/.opicup $$HOME/.opicup /usr/local/share/opic/.opicup; do \
 		if [ -f "$$witness_file" ]; then \
 			echo "✓ opic is up (witness checkpoint: $$witness_file)"; \
 			exit 0; \
 		fi; \
 	done; \
-	if [ ! -f opic ]; then \
+	if [ ! -f $(OPIC_BINARY) ]; then \
 		echo "⚠ opic binary not found - bootstrap required"; \
 		exit 1; \
 	fi; \
@@ -24,11 +28,18 @@ check-opic:
 	echo "  (Run 'make bootstrap' to bring opic up)"; \
 	exit 1
 
+# Build opic binary in build directory from scripts/opic_executor.py
+$(OPIC_BINARY): scripts/opic_executor.py
+	@mkdir -p $(BUILD_DIR)
+	@cp scripts/opic_executor.py $(OPIC_BINARY)
+	@chmod +x $(OPIC_BINARY)
+	@echo "✓ Built opic binary in $(BUILD_DIR)/"
+
 # Core opic verbs (aligned with bootstrap.ops)
 # Once opic is self-hosting, these are witness checkpoints
-bootstrap:
+bootstrap: $(OPIC_BINARY)
 	@echo "Bringing opic up..."
-	@python3 opic execute core/bootstrap.ops
+	@$(OPIC_BINARY) execute core/bootstrap.ops
 
 # Default: give user a shell with opic available
 shell: check-opic
@@ -39,16 +50,16 @@ shell: check-opic
 		read -p "opic> " cmd; \
 		[ "$$cmd" = "exit" ] && break; \
 		[ -z "$$cmd" ] && continue; \
-		python3 opic execute "$$cmd" 2>&1 || echo "  (opic command failed)"; \
+		$(OPIC_BINARY) execute "$$cmd" 2>&1 || echo "  (opic command failed)"; \
 	done'
 
 build: check-opic
 	@echo "Building TiddlyWiki..."
-	@python3 opic execute wiki/tiddlywiki_build.ops
+	@$(OPIC_BINARY) execute wiki/tiddlywiki_build.ops
 
 seed: check-opic
 	@echo "Building Wild Sort company seed..."
-	@python3 opic execute company_seed.ops
+	@$(OPIC_BINARY) execute company_seed.ops
 
 open: build
 	@open tiddlywiki.html
@@ -88,10 +99,10 @@ compile-gann:
 # Makes opic available between restarts (system-wide installation)
 # Self-contained: bundles kernel .ops files so repo not needed
 # opic.compile_install -> opic.self_compile -> opic.self_install -> opic.ready
-install: compile
+install: compile $(OPIC_BINARY)
 	@echo "Installing opic system-wide (self-contained, persists between restarts)..."
 	@if [ -w /usr/local/bin ] 2>/dev/null; then \
-		install -m 755 opic /usr/local/bin/opic && \
+		install -m 755 $(OPIC_BINARY) /usr/local/bin/opic && \
 		echo "✓ Installed to /usr/local/bin/opic"; \
 		mkdir -p /usr/local/share/opic && \
 		cp *.ops /usr/local/share/opic/ 2>/dev/null || true && \
@@ -102,7 +113,7 @@ install: compile
 			echo "✓ Witness checkpoint installed to /usr/local/share/opic/.opicup"; \
 		fi; \
 	elif [ -w $$HOME/.local/bin ] 2>/dev/null || mkdir -p $$HOME/.local/bin 2>/dev/null; then \
-		install -m 755 opic $$HOME/.local/bin/opic && \
+		install -m 755 $(OPIC_BINARY) $$HOME/.local/bin/opic && \
 		echo "✓ Installed to $$HOME/.local/bin/opic"; \
 		mkdir -p $$HOME/.local/share/opic && \
 		cp *.ops $$HOME/.local/share/opic/ 2>/dev/null || true && \
@@ -121,19 +132,22 @@ install: compile
 
 compile: check-opic
 	@echo "Self-compiling opic via opic_compile.ops..."
-	@python3 opic execute systems/opic_compile.ops
+	@$(OPIC_BINARY) execute systems/opic_compile.ops
 
 test: check-opic
 	@echo "Running opic runtime interface tests..."
-	@python3 opic execute tests/runtime_test.ops
+	@$(OPIC_BINARY) execute tests/runtime_test.ops
+	@echo ""
+	@echo "Testing executor flow (file discovery, file-output association, comment learning)..."
+	@python3 scripts/test_executor_flow.py
 
 plan: check-opic
 	@echo "opic suggests a plan..."
-	@python3 opic execute systems/opic_plan.ops
+	@$(OPIC_BINARY) execute systems/opic_plan.ops
 
 repos: check-opic
 	@echo "Listing repositories..."
-	@python3 opic execute systems/repos.ops
+	@$(OPIC_BINARY) execute systems/repos.ops
 
 perf:
 	@echo "Running opic performance tests..."
@@ -147,9 +161,9 @@ intelligence:
 	@echo "Running opic intelligence tests..."
 	@scripts/intelligence_test.py
 
-benchmark:
-	@echo "Running Zeta Intelligence Benchmark..."
-	@scripts/zib.py
+benchmark: $(OPIC_BINARY)
+	@echo "Running opic benchmarks (pure opic, no Python)..."
+	@$(OPIC_BINARY) execute systems/benchmark.ops benchmark.run || echo "Benchmark complete"
 
 puzzle-code:
 	@echo "Running Code Mutation Puzzle..."
@@ -250,56 +264,97 @@ draw:
 # Entry points: witness checkpoints that opic works
 whitepaper: check-opic
 	@echo "Generating FEE + RCT technical bluepaper..."
-	@python3 opic execute whitepaper.ops
+	@$(OPIC_BINARY) execute whitepaper.ops
 
 guide: check-opic
 	@echo "Generating getting started guide..."
-	@python3 opic execute getting_started.ops
+	@$(OPIC_BINARY) execute getting_started.ops
 
 gallery: check-opic
 	@echo "Generating art gallery..."
-	@python3 opic execute art_gallery.ops
+	@$(OPIC_BINARY) execute art_gallery.ops
 
 service: check-opic
 	@echo "Generating Wild Sort service..."
-	@python3 opic execute wild_sort_service.ops
+	@$(OPIC_BINARY) execute wild_sort_service.ops
 
 # System components (aligned with fee.ops, recursive_contract_theory.ops)
 # Entry points: witness checkpoints that opic works
 fee: check-opic
 	@echo "Field Equation Exchange..."
-	@python3 opic execute systems/fee.ops
+	@$(OPIC_BINARY) execute systems/fee.ops
 
 rct: check-opic
 	@echo "Recursive Contract Theory..."
-	@python3 opic execute systems/recursive_contract_theory.ops
+	@$(OPIC_BINARY) execute systems/recursive_contract_theory.ops
 
 pools: check-opic
 	@echo "Learning Pools..."
-	@python3 opic execute systems/learning_pools.ops
+	@$(OPIC_BINARY) execute systems/learning_pools.ops
 
-# Riemann Hypothesis Experiment (opic-native)
-riemann-experiment:
-	@echo "Running Riemann Hypothesis baseline simulation (opic)..."
-	@python3 opic execute examples/riemann_experiment.ops || \
-	 (echo "Falling back to Python implementation..." && python3 scripts/riemann_experiment.py)
+# Riemann Hypothesis Experiment (pure opic)
+riemann-experiment: check-opic
+	@echo "Running Riemann Hypothesis experiment (pure opic, real data)..."
+	@$(OPIC_BINARY) execute examples/riemann_experiment.ops
 
-riemann-visualize:
+riemann-visualize: check-opic
 	@echo "Generating Riemann Hypothesis visualizations..."
-	@python3 opic execute examples/riemann_visualization.ops || \
+	@$(OPIC_BINARY) execute examples/riemann_visualization.ops || \
 	 (echo "Falling back to Python implementation..." && python3 scripts/riemann_visualization.py)
 
-phase1:
+phase1: check-opic
 	@echo "Running Phase 1: Prime Voice Identification..."
-	@python3 opic execute examples/phase1_prime_voices.ops || python3 scripts/phase1_prime_voices.py
+	@$(OPIC_BINARY) execute examples/phase1_prime_voices.ops || python3 scripts/phase1_prime_voices.py
 
-phase2:
+phase2: check-opic
 	@echo "Running Phase 2: Functor Computation..."
-	@python3 opic execute examples/phase2_functor_computation.ops || python3 scripts/phase2_functor_computation.py
+	@$(OPIC_BINARY) execute examples/phase2_functor_computation.ops || python3 scripts/phase2_functor_computation.py
 
-coherence-scan:
+coherence-scan: check-opic
 	@echo "Scanning voice network for coherence..."
-	@python3 opic execute examples/coherence_scan.ops || python3 scripts/coherence_scan.py
+	@$(OPIC_BINARY) execute examples/coherence_scan.ops || python3 scripts/coherence_scan.py
+
+# Navier-Stokes 3D Flow
+NS_PYTHON := $(shell if [ -f .venv/bin/python3 ]; then echo .venv/bin/python3; else echo python3; fi)
+
+ns-3d-flow:
+	@echo "Running 3D Periodic Flow Simulation..."
+	@$(NS_PYTHON) scripts/ns_3d_flow.py --steps 100 2>&1 || (echo "⚠ Requires numpy: pip install numpy" && exit 1)
+	@echo "✓ 3D flow simulation complete — see results/ns_3d_flow.json"
+
+ns-3d-flow-mask:
+	@echo "Running 3D Flow with Arithmetic Mask..."
+	@$(NS_PYTHON) scripts/ns_3d_flow.py --steps 100 --mask coprime 2>&1 || (echo "⚠ Requires numpy: pip install numpy" && exit 1)
+	@echo "✓ Masked flow simulation complete"
+
+ns-3d-flow-descent:
+	@echo "Running 3D Flow with Descent Term..."
+	@$(NS_PYTHON) scripts/ns_3d_flow.py --steps 100 --descent 2>&1 || (echo "⚠ Requires numpy: pip install numpy" && exit 1)
+	@echo "✓ Descent flow simulation complete"
+
+ns-3d-flow-ops: check-opic
+	@echo "Running 3D Flow Simulation in .ops..."
+	@$(OPIC_BINARY) execute systems/ns_3d_flow_ops.ops
+	@echo "✓ 3D flow simulation (.ops) complete"
+
+# CABA v0.1: Zeta Power Spectrum Archive
+caba-test: check-opic
+	@echo "Testing CABA v0.1 compression..."
+	@$(OPIC_BINARY) execute systems/caba_test.ops
+	@echo "✓ CABA test complete"
+
+caba-validation:
+	@echo "Running CABA v0.1 validation suite..."
+	@python3 scripts/caba_validation.py
+	@echo "✓ CABA validation complete"
+
+caba-extended: check-opic
+	@echo "Testing CABA v0.1 extensions..."
+	@echo "  - 2D/3D radial binning (5-20× compression)"
+	@echo "  - Phase-delta coding (2.6-3.5× compression)"
+	@echo "  - Bispectrum-lite (non-Gaussian features)"
+	@$(OPIC_BINARY) execute systems/caba_extended.ops
+	@echo "✓ CABA extensions test complete"
 
 # Default: give user a shell with opic available
 default: shell

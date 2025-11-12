@@ -1,0 +1,35 @@
+;;; aime_eval.ops — AIME evaluation using opic's math system (pure opic, no Python)
+
+;; Load AIME dataset
+voice aime.load / {"data/benchmarks/aime.json" -> file_read -> json_decode}
+
+;; Get problems for year 2024
+voice aime.get_2024 / {aime_data -> get_key "2024" -> problems}
+
+;; Solve problem using math system
+voice aime.solve / {problem -> math.solve -> solution}
+
+;; Compare solution to correct answer
+voice aime.compare / {solution + correct_answer -> equals -> is_correct}
+
+;; Evaluate one problem
+voice aime.eval_one / {
+  problem + answer -> 
+  aime.solve -> 
+  aime.compare -> 
+  score
+}
+
+;; Main evaluation
+voice aime.evaluate / {
+  aime.load -> 
+  aime.get_2024 -> 
+  problems -> 
+  evaluate_all -> 
+  count_correct -> 
+  calculate_percentage -> 
+  aime_score
+}
+
+target aime_eval / "aime_evaluation"
+voice main / {aime.evaluate -> aime_eval}

@@ -1,0 +1,22 @@
+;;; actions.ops — action family tiddlers
+
+def save { name, handler, mass:2 }
+
+def load { name, handler, mass:2 }
+
+def compose { name, handler, mass:2 }
+
+voice generate.save / {save -> tiddler}
+
+voice generate.load / {load -> tiddler}
+
+voice generate.compose / {compose -> tiddler}
+
+# Default actions
+
+save default / { name: "SaveTiddler", handler: "opic.save" }
+
+load default / { name: "LoadTiddler", handler: "opic.load" }
+
+compose default / { name: "ComposeWiki", handler: "opic.compose" }
+

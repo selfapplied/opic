@@ -1,0 +1,42 @@
+;;; ce1_example.ops — Example usage of CE1 Kernel, ZetaCore Runtime, and ΣBody
+
+include systems/ce1_kernel.ops
+include systems/zetacore_runtime.ops
+include systems/sigmabody.ops
+
+;; Example: Complete CE1 pipeline
+voice example.ce1_pipeline / {
+  ce1.pipeline -> 
+  ce1_kernel.step -> 
+  updated_kernel
+}
+
+;; Example: ZetaCore synchronization
+voice example.zetacore_sync / {
+  zetacore.bootstrap -> 
+  zetacore.phase_lock -> 
+  zetacore.cycle_exchange -> 
+  zetacore.sync_loop -> 
+  synchronized_core
+}
+
+;; Example: ΣBody audio–vision fusion
+voice example.multimodal / {
+  audio_port + vision_port + zetacore -> 
+  example.audio_vision_fusion -> 
+  fused_output
+}
+
+;; Example: Full stack integration
+voice example.full_stack / {
+  sensor_data -> 
+  sigmabody.adapter -> 
+  ce1_kernel.step -> 
+  zetacore.sync_loop -> 
+  sigmabody.actuator -> 
+  output
+}
+
+target ce1_example / "ce1_example_usage"
+voice main / {example.full_stack -> ce1_example}
+

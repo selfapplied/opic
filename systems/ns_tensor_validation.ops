@@ -1,0 +1,367 @@
+;;; ns_tensor_validation.ops — Navier-Stokes × Tensor Descent Validation Protocol v0.1
+;;; Falsifiable, unit-consistent experiments — no grand claims, only measurable effects
+
+;; ============================================================================
+;; Domain & State
+;; ============================================================================
+
+;; Domain: 2D torus T² (well-posed) or 3D T³ (exploratory)
+def domain { dimension, size, grid_points }
+def state { velocity, vorticity, time }
+
+;; State: velocity u(x,t), divergence-free. Vorticity ω = ∇ × u
+voice state.initialize / {
+  domain -> 
+  spectral.representation -> 
+  helmholtz.leray.projection -> 
+  initial.velocity -> 
+  ⟨state⟩
+}
+
+;; Spectral representation with Helmholtz-Leray projection Π
+voice spectral.representation / {
+  domain -> 
+  fourier.basis -> 
+  wave.number.grid -> 
+  spectral.grid
+}
+
+;; ============================================================================
+;; Operators — Morphism Roles
+;; ============================================================================
+
+;; {} scope — Projection operators
+;; () morphism — Nonlinear operators  
+;; [] memory — Spectral history
+;; <> witness — Diagnostics
+
+;; Nonlinearity: N(u) = Π(-u·∇u) — morphism
+voice nonlinear.operator / {
+  velocity -> 
+  compute.advection -> 
+  helmholtz.leray.projection -> 
+  nonlinear.term
+}
+
+;; Viscous: L(u) = νΔu — morphism
+voice viscous.operator / {
+  velocity + viscosity -> 
+  compute.laplacian -> 
+  viscous.term
+}
+
+;; Forcing: f(k) supported on narrow shell |k| ≈ k_f — morphism
+voice forcing.operator / {
+  wave.number + forcing.shell -> 
+  compute.forcing -> 
+  forcing.term
+}
+
+;; Primorial filter Φ_k — arithmetic mask in Fourier space — scope {}
+voice primorial.filter / {
+  wave.number + filter.type + filter.params -> 
+  compute.mask -> 
+  arithmetic.mask
+}
+
+;; Filter types:
+;; 1. Coprime mask: M(n) = 1 if gcd(|n|, p#) = 1, else 0
+voice coprime.mask / {
+  wave.number + primorial -> 
+  compute.gcd -> 
+  check.coprime -> 
+  mask.value
+}
+
+;; 2. Von Mangoldt weight: M(n) = 1 + α·Λ(|n|)
+voice von.mangoldt.mask / {
+  wave.number + alpha + von.mangoldt.function -> 
+  compute.weight -> 
+  mask.value
+}
+
+;; 3. Prime-shell window: keep modes with |n| ∈ {primes ≤ p_max}
+voice prime.shell.mask / {
+  wave.number + prime.max + beta -> 
+  check.prime.shell -> 
+  attenuate.by.beta -> 
+  mask.value
+}
+
+;; Apply filter as post-projection multiplicative mask — scope {}
+voice apply.filter / {
+  spectral.field + arithmetic.mask -> 
+  multiply.mask -> 
+  filtered.field
+}
+
+;; Tensor descent potential — morphism ()
+voice tensor.descent / {
+  velocity + descent.params -> 
+  compute.lyapunov.functional -> 
+  compute.gradient -> 
+  helmholtz.leray.projection -> 
+  descent.term
+}
+
+;; Lyapunov functional: T[u] = ∫(½|u|² + α|∇u|²)dx + γ·Ψ(u)
+voice lyapunov.functional / {
+  velocity + alpha + gamma + sparsity.prior -> 
+  compute.energy.term -> 
+  compute.gradient.term -> 
+  compute.sparsity.term -> 
+  functional.value
+}
+
+;; ============================================================================
+;; Equations — Baseline NS
+;; ============================================================================
+
+;; Baseline: ∂_t u = Π(-u·∇u) + νΔu + f
+voice navier.stokes.equation / {
+  velocity + time + viscosity + forcing -> 
+  nonlinear.operator -> 
+  viscous.operator -> 
+  forcing.operator -> 
+  sum.terms -> 
+  time.derivative
+}
+
+;; NS + Φ_k filter
+voice ns.with.filter / {
+  velocity + time + viscosity + forcing + filter -> 
+  navier.stokes.equation -> 
+  apply.filter -> 
+  filtered.derivative
+}
+
+;; NS + tensor descent
+voice ns.with.descent / {
+  velocity + time + viscosity + forcing + descent.params -> 
+  navier.stokes.equation -> 
+  tensor.descent -> 
+  add.descent.term -> 
+  descent.derivative
+}
+
+;; NS + Φ_k + descent (full model)
+voice ns.full.model / {
+  velocity + time + viscosity + forcing + filter + descent.params -> 
+  navier.stokes.equation -> 
+  apply.filter -> 
+  tensor.descent -> 
+  combine.terms -> 
+  full.derivative
+}
+
+;; ============================================================================
+;; Invariants & Diagnostics — Witness <>
+;; ============================================================================
+
+;; Check divergence: ||∇·u||_2 < 10^-12 — witness
+voice check.divergence / {
+  velocity -> 
+  compute.divergence -> 
+  compute.l2.norm -> 
+  verify.threshold -> 
+  ⟨divergence_check⟩
+}
+
+;; Energy: E = ½∫|u|² — witness
+voice compute.energy / {
+  velocity -> 
+  compute.kinetic.energy -> 
+  energy.value
+}
+
+;; Enstrophy: Z = ½∫|ω|² (2D) — witness
+voice compute.enstrophy / {
+  vorticity -> 
+  compute.enstrophy -> 
+  enstrophy.value
+}
+
+;; Spectra: E(k), transfer T(k), flux Π_E(k) — witness
+voice compute.spectra / {
+  velocity -> 
+  compute.energy.spectrum -> 
+  compute.transfer.function -> 
+  compute.energy.flux -> 
+  spectral.diagnostics
+}
+
+;; Intermittency: flatness F = ⟨ω⁴⟩/⟨ω²⟩² — witness
+voice compute.flatness / {
+  vorticity -> 
+  compute.moments -> 
+  compute.flatness -> 
+  flatness.value
+}
+
+;; Blowup proxies (3D): ||ω||_∞(t), ∫₀ᵗ ||ω||_∞ dt — witness
+voice compute.blowup.proxies / {
+  vorticity + time -> 
+  compute.max.vorticity -> 
+  compute.time.integral -> 
+  blowup.proxies
+}
+
+;; Galilean invariance check — witness
+voice check.galilean.invariance / {
+  velocity + uniform.boost -> 
+  apply.boost -> 
+  run.simulation -> 
+  compare.results -> 
+  invariance.verified
+}
+
+;; ============================================================================
+;; Comparative Runs — Memory []
+;; ============================================================================
+
+;; Run 1: Baseline NS (no Φ_k, no descent)
+voice run.baseline / {
+  initial.conditions + parameters -> 
+  navier.stokes.equation -> 
+  time.integration -> 
+  store.diagnostics -> 
+  ⟨baseline_results⟩
+}
+
+;; Run 2: NS + Φ_k (arithmetic mask)
+voice run.with.filter / {
+  initial.conditions + parameters + filter.params -> 
+  ns.with.filter -> 
+  time.integration -> 
+  store.diagnostics -> 
+  ⟨filter_results⟩
+}
+
+;; Run 3: NS + descent (η > 0, no Φ_k)
+voice run.with.descent / {
+  initial.conditions + parameters + descent.params -> 
+  ns.with.descent -> 
+  time.integration -> 
+  store.diagnostics -> 
+  ⟨descent_results⟩
+}
+
+;; Run 4: NS + Φ_k + descent (full model)
+voice run.full.model / {
+  initial.conditions + parameters + filter.params + descent.params -> 
+  ns.full.model -> 
+  time.integration -> 
+  store.diagnostics -> 
+  ⟨full_results⟩
+}
+
+;; Comparative analysis — witness <>
+voice compare.runs / {
+  baseline_results + filter_results + descent_results + full_results -> 
+  compare.stability -> 
+  compare.spectra -> 
+  compare.energy.budget -> 
+  comparative.analysis
+}
+
+;; ============================================================================
+;; Acceptance Criteria — Witness <>
+;; ============================================================================
+
+;; Stability gain: Higher Re before crash without increasing numerical diffusion
+voice check.stability.gain / {
+  baseline_results + filtered_results + viscosity -> 
+  compare.max.reynolds -> 
+  check.numerical.diffusion -> 
+  stability.gain.verified
+}
+
+;; Spectral structure: Arithmetic fingerprints in E(k)
+voice check.spectral.fingerprints / {
+  energy.spectrum + filter.params -> 
+  detect.prime.shells -> 
+  statistical.significance -> 
+  fingerprints.verified
+}
+
+;; Energy budget honesty: Suppression accounted for by explicit terms
+voice check.energy.budget / {
+  energy.spectrum + filter.term + descent.term + viscous.term -> 
+  verify.balance -> 
+  budget.honest
+}
+
+;; ============================================================================
+;; Reporting — Witness <>
+;; ============================================================================
+
+;; Log hyperparameters: ν, η, α, γ, β, p#, k_f, dt, N
+voice log.hyperparameters / {
+  parameters -> 
+  format.parameter.log -> 
+  hyperparameter.log
+}
+
+;; Generate plots: E(t), Z(t), ||ω||_∞(t); spectra E(k); PDFs; structure functions
+voice generate.plots / {
+  diagnostics -> 
+  plot.energy.time -> 
+  plot.enstrophy.time -> 
+  plot.vorticity.max -> 
+  plot.energy.spectrum -> 
+  plot.vorticity.pdf -> 
+  plot.structure.functions -> 
+  all.plots
+}
+
+;; Reproducibility: seed + commit hash
+voice ensure.reproducibility / {
+  seed + commit.hash -> 
+  log.reproducibility.info -> 
+  reproducibility.log
+}
+
+;; ============================================================================
+;; 1D Burgers Toy Model — Sandbox
+;; ============================================================================
+
+;; 1D viscous Burgers: ∂_t u + u·∂_x u = ν·∂_xx u
+voice burgers.equation / {
+  velocity + time + viscosity -> 
+  compute.advection.1d -> 
+  compute.viscous.1d -> 
+  burgers.derivative
+}
+
+;; Burgers + Φ_k filter
+voice burgers.with.filter / {
+  velocity + time + viscosity + filter -> 
+  burgers.equation -> 
+  apply.filter -> 
+  filtered.burgers.derivative
+}
+
+;; Burgers shock diagnostics — witness <>
+voice burgers.shock.diagnostics / {
+  velocity -> 
+  compute.shock.location -> 
+  compute.shock.steepness -> 
+  compare.with.viscosity -> 
+  shock.diagnostics
+}
+
+target ns_tensor_validation / "ns_tensor_validation_protocol"
+voice main / {
+  run.baseline + 
+  run.with.filter + 
+  run.with.descent + 
+  run.full.model -> 
+  compare.runs -> 
+  check.stability.gain + 
+  check.spectral.fingerprints + 
+  check.energy.budget -> 
+  generate.plots -> 
+  ns_tensor_validation
+}
+
+

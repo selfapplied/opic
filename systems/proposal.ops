@@ -1,8 +1,8 @@
 ;;; proposal.ops — governance proposal system for OPIC
 
-include systems/governance.ops
-include systems/consensus.ops
-include systems/witness_summons.ops
+include protocol/governance.ops
+include protocol/consensus.ops
+include protocol/summons.ops
 
 ;; Proposal definitions
 def proposal { id, title, description, proposer, realm, type, status }

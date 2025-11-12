@@ -1,0 +1,193 @@
+;;; fluid_ecological_field.ops — Jetstreams, Algal Blooms, Viruses as Field Equations
+;;; Atmospheric flow, population dynamics, viral propagation = field equations
+
+include opic_field_0.7.ops
+include systems/biology_field.ops
+
+;; ============================================================================
+;; Jetstreams = Atmospheric Field Flow
+;; ============================================================================
+
+;; Jetstream = atmospheric field flow
+def jetstream {
+  velocity_field,   ;; Velocity field (field flow)
+  pressure_field,   ;; Pressure field (field potential)
+  temperature_field,;; Temperature field (field energy)
+  vorticity,        ;; Vorticity (field rotation)
+  dimension         ;; D (atmospheric dimensionality)
+}
+
+;; Jetstream flow = field flow
+voice jetstream.field_flow / {
+  pressure_gradient + coriolis -> 
+  field.flow -> 
+  jetstream_velocity
+}
+
+;; Atmospheric dynamics = field dynamics
+voice jetstream.atmospheric_field / {
+  temperature + pressure + rotation -> 
+  field.evolve -> 
+  atmospheric_flow
+}
+
+;; Coriolis effect = field rotation
+voice jetstream.coriolis_field / {
+  velocity + rotation -> 
+  field.rotate -> 
+  coriolis_force
+}
+
+;; ============================================================================
+;; Algal Blooms = Population Field Dynamics
+;; ============================================================================
+
+;; Algal bloom = population field
+def algal_bloom {
+  population_density,;; Population density (field amplitude)
+  growth_rate,       ;; Growth rate (field evolution rate)
+  nutrients,         ;; Nutrients (field source)
+  predators,         ;; Predators (field sink)
+  environment,       ;; Environment (field state)
+  dimension          ;; D (ecological dimensionality)
+}
+
+;; Population growth = field growth
+voice bloom.population_field / {
+  initial_population + growth_rate + nutrients -> 
+  field.grow -> 
+  population_density
+}
+
+;; Logistic growth = field logistic growth
+voice bloom.logistic_field / {
+  population + carrying_capacity -> 
+  field.logistic -> 
+  logistic_growth
+}
+
+;; Nutrient uptake = field source
+voice bloom.nutrient_field / {
+  nutrients + population -> 
+  field.source -> 
+  nutrient_uptake
+}
+
+;; Predator-prey = field interaction
+voice bloom.predator_prey_field / {
+  prey_population + predator_population -> 
+  coulomb.compute_force -> 
+  interaction_force
+}
+
+;; ============================================================================
+;; Viruses = Molecular Field Propagation
+;; ============================================================================
+
+;; Virus = molecular field propagator
+def virus {
+  structure,         ;; Viral structure (field configuration)
+  receptor_binding,  ;; Receptor binding (field coupling)
+  replication,       ;; Replication (field replication)
+  propagation,       ;; Propagation (field propagation)
+  mutation,          ;; Mutation (field perturbation)
+  dimension          ;; D (molecular dimensionality)
+}
+
+;; Viral infection = field infection
+voice virus.infection_field / {
+  virus + host_cell -> 
+  field.couple -> 
+  infection
+}
+
+;; Receptor binding = field binding
+voice virus.binding_field / {
+  virus_receptor + host_receptor -> 
+  coulomb.compute_potential -> 
+  binding_affinity
+}
+
+;; Viral replication = field replication
+voice virus.replication_field / {
+  viral_rna + host_machinery -> 
+  field.replicate -> 
+  viral_progeny
+}
+
+;; Viral mutation = field perturbation
+voice virus.mutation_field / {
+  viral_genome + error_rate -> 
+  field.perturb -> 
+  mutation
+}
+
+;; Viral evolution = field evolution
+voice virus.evolution_field / {
+  viral_population + selection_pressure -> 
+  field.evolve -> 
+  viral_evolution
+}
+
+;; ============================================================================
+;; Unified Field Equations
+;; ============================================================================
+
+;; All follow dimensional Coulomb law:
+;; F = k(q₁q₂)/R^D where:
+;; - Jetstreams: q = pressure/temperature, R = distance, D ≈ 2-3
+;; - Algal blooms: q = population density, R = spatial distance, D ≈ 2-3
+;; - Viruses: q = viral charge, R = molecular distance, D ≈ 2.5
+
+;; Jetstream interaction
+voice fluid.jetstream_interaction / {
+  pressure1 + pressure2 + distance -> 
+  coulomb.compute_force -> 
+  flow_force
+}
+
+;; Algal bloom interaction
+voice ecology.bloom_interaction / {
+  population1 + population2 + distance -> 
+  coulomb.compute_force -> 
+  ecological_force
+}
+
+;; Viral interaction
+voice molecular.viral_interaction / {
+  virus1 + virus2 + distance -> 
+  coulomb.compute_force -> 
+  molecular_force
+}
+
+;; ============================================================================
+;; Examples: Complex Systems → Field Equations
+;; ============================================================================
+
+;; Example: "How do jetstreams form?"
+;; Answer: Jetstreams = atmospheric field flow, pressure gradients → flow
+voice fluid.explain_jetstream / {
+  question -> 
+  jetstream.field_flow -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "What causes algal blooms?"
+;; Answer: Algal blooms = population field growth, nutrients → growth
+voice ecology.explain_bloom / {
+  question -> 
+  bloom.population_field -> 
+  field.explain -> 
+  explanation
+}
+
+;; Example: "How do viruses spread?"
+;; Answer: Viruses = molecular field propagators, infection → propagation
+voice molecular.explain_virus / {
+  question -> 
+  virus.propagation_field -> 
+  field.explain -> 
+  explanation
+}
+

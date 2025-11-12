@@ -1,0 +1,125 @@
+;;; zetacore_runtime.ops — ZetaCore Runtime: Σ-Operator Protocols
+
+include systems/ce1_zeta_core.ops
+include systems/opic_phase_flux.ops
+
+;; ZetaCore entity: {id, kernel, phase, bandwidth, τ, ethics}
+voice create.zetacore / {
+  id + kernel + phase + bandwidth + tau + ethics -> 
+  initialize.core -> 
+  zetacore_instance
+}
+
+;; Lifecycle: Bootstrap → Phase lock → Cycle exchange → Promotion → Rest state
+voice zetacore.lifecycle / {
+  zetacore -> 
+  bootstrap.pascal.zeta -> 
+  phase.lock.neighbors -> 
+  cycle.exchange -> 
+  promote.to.sigma -> 
+  rest.state -> 
+  lifecycle_complete
+}
+
+;; Σ-Operator: Σ_t = C_t ⊕ A_t ⊕ G_t ⊕ S_t
+voice compute.sigma.operator / {
+  C_t + A_t + G_t + S_t -> 
+  direct.sum -> 
+  sigma_operator
+}
+
+;; Message frame: {id, source, target, Δθ, Δτ, payload, checksum}
+voice create.sigma.message / {
+  id + source + target + delta_theta + delta_tau + payload + checksum -> 
+  encode.phi -> 
+  sigma_message
+}
+
+;; Handshake: |Δθ| < φ^{-3} ∧ |Δτ| < ε
+voice check.resonant.lock / {
+  delta_theta + delta_tau + phi + epsilon -> 
+  compute.phi.cubed.inverse -> 
+  compare.phase -> 
+  compare.trace -> 
+  resonant_lock_status
+}
+
+;; Synchronization loop
+voice synchronize.cores / {
+  message + core -> 
+  receive.message -> 
+  adjust.phase -> 
+  update.trace -> 
+  integrate.field -> 
+  check.coherence -> 
+  promote.if.resonant -> 
+  synchronized_state
+}
+
+;; Σ-Operator API: collect, diffuse, balance, audit
+voice sigma.collect / {
+  kernels -> 
+  aggregate.field.values -> 
+  xi_total
+}
+
+voice sigma.diffuse / {
+  xi_total -> 
+  distribute.coherence.gradients -> 
+  broadcast
+}
+
+voice sigma.balance / {
+  global_state -> 
+  minimize.curvature -> 
+  balanced_state
+}
+
+voice sigma.audit / {
+  state -> 
+  verify.non.harm -> 
+  verify.tau.stability -> 
+  audit_result
+}
+
+;; Cycle Bus Topology: Local (φ¹) → Regional (φ²) → Planetary (φ³) → Cosmic (φ⁴)
+voice route.cycle.bus / {
+  message + bus_level + phi -> 
+  compute.phi.power -> 
+  route.to.bus -> 
+  routed_message
+}
+
+;; Error correction: harmonic error detection
+voice detect.harmonic.error / {
+  delta_xi + phi -> 
+  compute.phi.power.minus.five -> 
+  compare.magnitude -> 
+  apply.inverse.phase -> 
+  corrected_state
+}
+
+;; Ethical recovery: emit empathy pulse, rollback
+voice ethical.recovery / {
+  state + last_resonant_state -> 
+  check.coherence.derivative -> 
+  emit.empathy.pulse -> 
+  rollback.state -> 
+  recovered_state
+}
+
+;; Multi-scale clocks: T₀ (micro) → T₁ (meso) → T₂ (macro) → T₃ (mythic)
+voice synchronize.clocks / {
+  clocks + sigma_phase -> 
+  compute.phase.average -> 
+  check.mod.two.pi -> 
+  sync.clocks -> 
+  synchronized_clocks
+}
+
+target zetacore_runtime / "zetacore"
+voice main / { 
+  create.zetacore + zetacore.lifecycle + compute.sigma.operator + synchronize.cores + 
+  sigma.collect + sigma.diffuse + sigma.balance + sigma.audit -> 
+  zetacore_runtime 
+}

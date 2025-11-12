@@ -1,0 +1,444 @@
+{
+  "results": {
+    "baseline": [
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      }
+    ],
+    "primorial": [
+      {
+        "bit_accuracy": 0.5,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.75
+      },
+      {
+        "bit_accuracy": 0.5,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.75
+      },
+      {
+        "bit_accuracy": 0.75,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.875
+      },
+      {
+        "bit_accuracy": 0.375,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.1875
+      },
+      {
+        "bit_accuracy": 0.75,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.875
+      },
+      {
+        "bit_accuracy": 0.375,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.1875
+      },
+      {
+        "bit_accuracy": 0.75,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.875
+      },
+      {
+        "bit_accuracy": 0.875,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.4375
+      },
+      {
+        "bit_accuracy": 0.75,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.875
+      },
+      {
+        "bit_accuracy": 0.75,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.875
+      },
+      {
+        "bit_accuracy": 0.5,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.75
+      },
+      {
+        "bit_accuracy": 0.375,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.1875
+      },
+      {
+        "bit_accuracy": 0.625,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.3125
+      },
+      {
+        "bit_accuracy": 0.625,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.3125
+      },
+      {
+        "bit_accuracy": 0.5,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.75
+      },
+      {
+        "bit_accuracy": 0.125,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.0625
+      },
+      {
+        "bit_accuracy": 0.5,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.75
+      },
+      {
+        "bit_accuracy": 0.5,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.75
+      },
+      {
+        "bit_accuracy": 0.625,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.3125
+      },
+      {
+        "bit_accuracy": 0.625,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.3125
+      }
+    ],
+    "random_mask": [
+      {
+        "bit_accuracy": 0.5,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.75
+      },
+      {
+        "bit_accuracy": 0.75,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.875
+      },
+      {
+        "bit_accuracy": 0.875,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.4375
+      },
+      {
+        "bit_accuracy": 0.5,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.75
+      },
+      {
+        "bit_accuracy": 0.875,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.4375
+      },
+      {
+        "bit_accuracy": 0.875,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.4375
+      },
+      {
+        "bit_accuracy": 0.75,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.875
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 0.875,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.4375
+      },
+      {
+        "bit_accuracy": 0.875,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.4375
+      },
+      {
+        "bit_accuracy": 0.5,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.75
+      },
+      {
+        "bit_accuracy": 0.625,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.3125
+      },
+      {
+        "bit_accuracy": 0.625,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.3125
+      },
+      {
+        "bit_accuracy": 0.75,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.875
+      },
+      {
+        "bit_accuracy": 0.875,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.4375
+      },
+      {
+        "bit_accuracy": 0.875,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.4375
+      },
+      {
+        "bit_accuracy": 0.75,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 0.875
+      },
+      {
+        "bit_accuracy": 0.625,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.3125
+      },
+      {
+        "bit_accuracy": 0.875,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.4375
+      },
+      {
+        "bit_accuracy": 0.875,
+        "parity_accuracy": 0.0,
+        "overall_accuracy": 0.4375
+      }
+    ],
+    "linearized": [
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      },
+      {
+        "bit_accuracy": 1.0,
+        "parity_accuracy": 1.0,
+        "overall_accuracy": 1.0
+      }
+    ]
+  },
+  "aggregated": {
+    "baseline": {
+      "mean_accuracy": 1.0,
+      "mean_parity_accuracy": 1.0,
+      "std_accuracy": 0.0,
+      "n_runs": 20
+    },
+    "primorial": {
+      "mean_accuracy": 0.559375,
+      "mean_parity_accuracy": 0.55,
+      "std_accuracy": 0.2934839220468474,
+      "n_runs": 20
+    },
+    "random_mask": {
+      "mean_accuracy": 0.58125,
+      "mean_parity_accuracy": 0.4,
+      "std_accuracy": 0.23039939578685395,
+      "n_runs": 20
+    },
+    "linearized": {
+      "mean_accuracy": 1.0,
+      "mean_parity_accuracy": 1.0,
+      "std_accuracy": 0.0,
+      "n_runs": 20
+    }
+  },
+  "advantages": {
+    "over_baseline": -0.44062500000000004,
+    "over_random": -0.02187500000000009,
+    "over_linear": -0.44062500000000004
+  },
+  "pass": false
+}

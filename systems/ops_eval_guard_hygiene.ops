@@ -1,0 +1,60 @@
+;;; ops_eval_guard_hygiene.ops — Always-on guardrails
+
+include systems/flow3d_core.ops
+
+;; Assert: divL2_stage ≤ 1e−10, Parseval ≤ 1e−12, energy budget closure
+voice guard.hygiene / {
+  u_stage + U_stage + config -> 
+  check.divL2.stage -> 
+  check.parseval.stage -> 
+  check.energy.budget.stage -> 
+  health_status
+}
+
+;; divL2_stage ≤ 1e−10 each RK substage
+voice check.divL2.stage / {
+  u_stage + N + kx + ky + kz -> 
+  compute.divL2 -> 
+  check.threshold.1e10 -> 
+  divL2_status
+}
+
+;; Parseval relative error ≤ 1e−12
+voice check.parseval.stage / {
+  u + U + N -> 
+  parseval.check -> 
+  compute.relative.error -> 
+  check.threshold.1e12 -> 
+  parseval_status
+}
+
+;; Energy budget closure
+voice check.energy.budget.stage / {
+  u + U + force + viscous + mask + config -> 
+  log.energy.budget -> 
+  compute.residual -> 
+  check.closure -> 
+  energy_budget_status
+}
+
+;; On fail: raise circuit_breaker, re-route to baseline + log
+voice circuit.breaker / {
+  health_status -> 
+  detect.failure -> 
+  raise.circuit.breaker -> 
+  route.to.baseline -> 
+  log.incident -> 
+  circuit_breaker_status
+}
+
+;; Always-on by OPIC: circuit breaker for any health fail
+voice enforce.guardrails / {
+  u_stage + U_stage + u + U + config -> 
+  guard.hygiene -> 
+  circuit.breaker -> 
+  enforce_status
+}
+
+target ops_eval_guard_hygiene / "guard_hygiene"
+voice main / { guard.hygiene + circuit.breaker + enforce.guardrails -> ops_eval_guard_hygiene }
+

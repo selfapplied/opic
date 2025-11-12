@@ -1,17 +1,66 @@
 ;;; music_impl.ops — Music implementation in opic
 
-;;; Musical scales
-voice scale.major.intervals / "2,2,1,2,2,2,1"
-voice scale.minor.intervals / "2,1,2,2,1,2,2"
-voice scale.pentatonic.intervals / "2,2,3,2,3"
+include systems/registry/music.ops
 
-;;; Chord qualities
-voice chord.major / "0,4,7"
-voice chord.minor / "0,3,7"
-voice chord.diminished / "0,3,6"
-voice chord.augmented / "0,4,8"
+;; Initialize music registry
+voice music.init / {
+  -> 
+  music.init_registry -> 
+  music_impl_registry
+}
 
-;;; Note frequencies (A4 = 440Hz)
+;; Get musical elements from registry
+voice scale.major.intervals / {
+  music_impl_registry -> 
+  scale.get "major" -> 
+  extract_intervals -> 
+  intervals
+}
+
+voice scale.minor.intervals / {
+  music_impl_registry -> 
+  scale.get "minor" -> 
+  extract_intervals -> 
+  intervals
+}
+
+voice scale.pentatonic.intervals / {
+  music_impl_registry -> 
+  scale.get "pentatonic" -> 
+  extract_intervals -> 
+  intervals
+}
+
+;; Get chord qualities from registry
+voice chord.major / {
+  music_impl_registry -> 
+  chord.get "major" -> 
+  extract_intervals -> 
+  intervals
+}
+
+voice chord.minor / {
+  music_impl_registry -> 
+  chord.get "minor" -> 
+  extract_intervals -> 
+  intervals
+}
+
+voice chord.diminished / {
+  music_impl_registry -> 
+  chord.get "diminished" -> 
+  extract_intervals -> 
+  intervals
+}
+
+voice chord.augmented / {
+  music_impl_registry -> 
+  chord.get "augmented" -> 
+  extract_intervals -> 
+  intervals
+}
+
+;; Note frequencies (A4 = 440Hz) - these remain as constants
 voice note.C4 / "261.63"
 voice note.D4 / "293.66"
 voice note.E4 / "329.63"
@@ -20,24 +69,80 @@ voice note.G4 / "392.00"
 voice note.A4 / "440.00"
 voice note.B4 / "493.88"
 
-;;; Rhythm patterns
-voice rhythm.whole / "4.0"
-voice rhythm.half / "2.0"
-voice rhythm.quarter / "1.0"
-voice rhythm.eighth / "0.5"
-voice rhythm.sixteenth / "0.25"
+;; Get rhythm patterns from registry
+voice rhythm.whole / {
+  music_impl_registry -> 
+  rhythm.get "whole" -> 
+  extract_duration -> 
+  duration
+}
 
-;;; Tempo
+voice rhythm.half / {
+  music_impl_registry -> 
+  rhythm.get "half" -> 
+  extract_duration -> 
+  duration
+}
+
+voice rhythm.quarter / {
+  music_impl_registry -> 
+  rhythm.get "quarter" -> 
+  extract_duration -> 
+  duration
+}
+
+voice rhythm.eighth / {
+  music_impl_registry -> 
+  rhythm.get "eighth" -> 
+  extract_duration -> 
+  duration
+}
+
+voice rhythm.sixteenth / {
+  music_impl_registry -> 
+  rhythm.get "sixteenth" -> 
+  extract_duration -> 
+  duration
+}
+
+;; Tempo (can be extended via registry if needed)
 voice tempo.andante / "72"
 voice tempo.moderato / "120"
 voice tempo.allegro / "140"
 
-;;; Composition patterns
-voice pattern.ascending / "0,1,2,3,4,5,6,7"
-voice pattern.descending / "7,6,5,4,3,2,1,0"
-voice pattern.arpeggio / "0,2,4,0"
-voice pattern.wave / "0,1,2,1,0"
+;; Get composition patterns from registry
+voice pattern.ascending / {
+  music_impl_registry -> 
+  pattern.get "ascending" -> 
+  extract_sequence -> 
+  sequence
+}
+
+voice pattern.descending / {
+  music_impl_registry -> 
+  pattern.get "descending" -> 
+  extract_sequence -> 
+  sequence
+}
+
+voice pattern.arpeggio / {
+  music_impl_registry -> 
+  pattern.get "arpeggio" -> 
+  extract_sequence -> 
+  sequence
+}
+
+voice pattern.wave / {
+  music_impl_registry -> 
+  pattern.get "wave" -> 
+  extract_sequence -> 
+  sequence
+}
 
 target music.implementation / "music.config"
-voice main / {scale + pattern -> music.implementation}
+voice main / {
+  music.init -> 
+  scale + pattern -> 
+  music.implementation
+}
 

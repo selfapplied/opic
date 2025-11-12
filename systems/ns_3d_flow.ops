@@ -1,0 +1,210 @@
+;;; ns_3d_flow.ops — Clean 3D Periodic Flow with Arithmetic Mask & Descent
+;;; Goal: Measure spectra, invariants, stability — no grand claims
+
+include systems/ns_tensor_validation.ops
+
+;; ============================================================================
+;; Grid & State
+;; ============================================================================
+
+;; Grid: N³ periodic, double precision
+def grid / {
+  N "64" -> 
+  dimensions [N, N, N] -> 
+  periodic true -> 
+  dtype "float64" -> 
+  ⟨grid_config⟩
+}
+
+;; State: Velocity u(x,t) ∈ ℝ³
+def flow.state / {
+  velocity.field + time -> 
+  spectral.velocity + time.step -> 
+  ⟨flow_state⟩
+}
+
+;; ============================================================================
+;; Operators
+;; ============================================================================
+
+;; Projection: enforce incompressibility
+;; Π̂u(k) = û(k) - k(k·û(k))/|k|² for k≠0
+voice project.helmholtz.leray / {
+  spectral.velocity + k.vectors -> 
+  compute.k.dot.u -> 
+  compute.k.times.scalar -> 
+  divide.by.k.squared -> 
+  subtract.from.u -> 
+  projected.velocity
+}
+
+;; Nonlinearity: N(u) = Π(-u·∇u)
+;; Pseudospectral: compute in x-space, FFT back
+voice nonlinearity.advection / {
+  velocity.field -> 
+  compute.gradient -> 
+  compute.u.dot.grad -> 
+  negate -> 
+  fft.unitary -> 
+  project.helmholtz.leray -> 
+  advection.term
+}
+
+;; Viscosity: L(u) = νΔu → in k-space multiply by -ν|k|²
+voice viscous.diffusion / {
+  spectral.velocity + viscosity + k.squared -> 
+  multiply.by.negative.nu.k.squared -> 
+  diffusion.term
+}
+
+;; Forcing: narrow shell |k| ≈ k_f, divergence-free, fixed seed
+voice external.forcing / {
+  forcing.k + grid.size + random.seed -> 
+  generate.narrow.shell.force -> 
+  enforce.divergence.free -> 
+  forcing.term
+}
+
+;; Arithmetic mask (optional): M(k) applied multiplicatively to û after projection
+voice apply.arithmetic.mask / {
+  spectral.velocity + mask.type -> 
+  if.coprime.mask -> apply.coprime.mask,
+  if.von.mangoldt.weight -> apply.von.mangoldt.weight,
+  if.prime.shell.window -> apply.prime.shell.window -> 
+  masked.spectral.velocity
+}
+
+;; Descent term (optional): gradient flow of T[u] = ½||u||² + α||∇u||²
+;; Add -ηΠ(u - αΔu)
+voice tensor.descent.potential / {
+  velocity.field + alpha.grad + eta.descent -> 
+  compute.laplacian -> 
+  multiply.by.alpha -> 
+  subtract.from.u -> 
+  fft.unitary -> 
+  project.helmholtz.leray -> 
+  multiply.by.negative.eta -> 
+  descent.term
+}
+
+;; ============================================================================
+;; Time Stepping
+;; ============================================================================
+
+;; RK4: Runge-Kutta 4th order in spectral space
+voice time.step.rk4 / {
+  current.state + dt + operators -> 
+  compute.k1 -> 
+  compute.k2 -> 
+  compute.k3 -> 
+  compute.k4 -> 
+  combine.rk4.stages -> 
+  next.state
+}
+
+;; ETDRK4: Exponential time-differencing RK4
+voice time.step.etdrk4 / {
+  current.state + dt + linear.operator + nonlinear.operator -> 
+  compute.exponential.integrator -> 
+  compute.rk4.stages -> 
+  combine.etdrk4.stages -> 
+  next.state
+}
+
+;; CFL-limited dt: dt = CFL * min(Δx / max|u|)
+voice compute.cfl.dt / {
+  velocity.field + grid.spacing + cfl.number -> 
+  compute.max.velocity -> 
+  compute.min.dt -> 
+  cfl.limited.dt
+}
+
+;; ============================================================================
+;; Diagnostics
+;; ============================================================================
+
+;; Divergence: ||∇·u||₂ (target < 1e-12)
+voice check.divergence / {
+  velocity.field -> 
+  compute.divergence -> 
+  l2.norm -> 
+  check.threshold "1e-12" -> 
+  ⟨divergence_ok⟩
+}
+
+;; Energy: E = ½⟨|u|²⟩
+voice compute.energy / {
+  velocity.field -> 
+  compute.magnitude.squared -> 
+  average -> 
+  multiply.by.half -> 
+  ⟨energy_E⟩
+}
+
+;; Spectrum: E(k) shell-averaged
+voice compute.spectrum.E_k / {
+  spectral.velocity + k.vectors -> 
+  compute.shell.averaged.energy -> 
+  ⟨spectra_E_k⟩
+}
+
+;; Flatness: 3D proxy of intermittency (vorticity components)
+voice compute.flatness / {
+  velocity.field -> 
+  compute.vorticity -> 
+  compute.moments -> 
+  ratio.moments -> 
+  ⟨flatness_F⟩
+}
+
+;; Parseval check: energy conservation
+voice parseval.check / {
+  velocity.field + spectral.velocity -> 
+  compute.field.energy + compute.spectrum.energy -> 
+  compare.energies -> 
+  ⟨parseval_verified⟩
+}
+
+;; Gravity toy: Newtonian quadrupole from synthetic density
+voice compute.gravity.toy / {
+  velocity.field + rho.0 + epsilon -> 
+  compute.u.tensor.u -> 
+  compute.divergence -> 
+  compute.density.perturbation -> 
+  compute.quadrupole.moment -> 
+  generate.waveform -> 
+  ⟨gravity_waveform⟩
+}
+
+;; ============================================================================
+;; Complete Simulation
+;; ============================================================================
+
+voice simulate.3d.flow / {
+  initial.condition + grid.config + time.steps + dt + viscosity + forcing.k + mask.type + descent.enabled + alpha.grad + eta.descent -> 
+  initialize.flow -> 
+  for.each.time.step -> {
+    compute.nonlinearity -> 
+    compute.viscosity -> 
+    compute.forcing -> 
+    if.mask.enabled -> apply.arithmetic.mask,
+    if.descent.enabled -> compute.descent.term -> 
+    combine.terms -> 
+    time.step.rk4 -> 
+    check.divergence -> 
+    compute.energy -> 
+    compute.spectrum -> 
+    compute.flatness -> 
+    parseval.check -> 
+    store.diagnostics
+  } -> 
+  ⟨simulation_results⟩
+}
+
+target ns_3d_flow / "navier_stokes_3d_periodic_flow"
+voice main / {
+  simulate.3d.flow -> 
+  ns_3d_flow
+}
+
+

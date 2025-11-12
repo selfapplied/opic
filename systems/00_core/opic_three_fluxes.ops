@@ -1,0 +1,57 @@
+;;; opic_three_fluxes.ops — Three fluxes: energy, phase, information
+
+include systems/opic_phase_flux.ops
+
+;; Three fluxes in OPIC framework:
+;; linear velocity → translation (energy flux)
+;; angular velocity → rotation (phase flux)
+;; voice rate → informational flux
+voice compute.three.fluxes / {
+  linear_velocity + angular_velocity + voice_rate -> 
+  compute.energy.flux -> 
+  compute.phase.flux -> 
+  compute.informational.flux -> 
+  three_fluxes
+}
+
+;; Linear velocity → translation (energy flux)
+voice compute.energy.flux / {
+  linear_velocity + mass + field -> 
+  compute.kinetic.energy -> 
+  compute.energy.rate -> 
+  energy_flux
+}
+
+;; Angular velocity → rotation (phase flux)
+voice compute.phase.flux / {
+  angular_velocity + phase_field -> 
+  compute.phase.rate -> 
+  compute.radian.emission -> 
+  phase_flux
+}
+
+;; Voice rate → informational flux
+voice compute.informational.flux / {
+  voice_rate + information_content -> 
+  compute.information.rate -> 
+  informational_flux
+}
+
+;; Each flux emits state into time
+voice compute.state.emission / {
+  energy_flux + phase_flux + informational_flux + time -> 
+  integrate.emissions -> 
+  total_state_emission
+}
+
+;; Distributed intelligence: constellation of emitters
+voice compute.emitter.constellation / {
+  emitters + three_fluxes -> 
+  compute.local.emissions -> 
+  compute.constellation -> 
+  emitter_constellation
+}
+
+target opic_three_fluxes / "three_fluxes"
+voice main / { compute.three.fluxes + compute.state.emission + compute.emitter.constellation -> opic_three_fluxes }
+
