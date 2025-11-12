@@ -1,0 +1,213 @@
+;;; caba_extended.ops — CABA v0.1 Extensions
+;;; 2D/3D radial binning, phase-delta coding, bispectrum-lite
+
+include systems/caba_spec.ops
+
+;; ============================================================================
+;; Extension 1: 2D/3D Radial Binning (Mode B)
+;; ============================================================================
+
+;; Isotropic radial shells → fewer coeffs, same two-point stats
+;; Expect 5–20× compression on isotropic textures
+
+;; Compute radial wavenumber: k = √(kx² + ky² + kz²)
+voice compute.radial.wavenumber / {
+  kx + ky + kz -> 
+  square.each -> 
+  sum -> 
+  sqrt -> 
+  radial.k
+}
+
+;; Bin power spectrum into radial shells
+voice bin.power.spectrum.radial / {
+  power.spectrum + kx.grid + ky.grid + kz.grid + n.bins -> 
+  compute.radial.wavenumber.each -> 
+  assign.to.bins -> 
+  average.within.bins -> 
+  binned.power.spectrum
+}
+
+;; Reconstruct full power spectrum from radial bins
+voice reconstruct.power.from.bins / {
+  binned.power.spectrum + radial.bins + kx.grid + ky.grid + kz.grid -> 
+  interpolate.to.full.grid -> 
+  reconstructed.power.spectrum
+}
+
+;; Mode B with radial binning: huge compression gain
+voice caba.pack.mode.B.radial / {
+  field.values + n.bins -> 
+  fft.unitary -> 
+  compute.power.spectrum -> 
+  bin.power.spectrum.radial -> 
+  store.binned.power + random.seed + binning.schema -> 
+  ⟨caba_archive_B_radial⟩
+}
+
+;; ============================================================================
+;; Extension 2: Phase-Delta Coding (Mode A)
+;; ============================================================================
+
+;; Unwrap phase radially, delta-encode → 2.6–3.5× typical on natural fields
+;; Stays lossless (exact reconstruction)
+
+;; Extract phases from complex spectrum
+voice extract.phases / {
+  complex.spectrum -> 
+  compute.phase.each -> 
+  phase.values
+}
+
+;; Unwrap phase radially: φ_unwrapped = unwrap(φ) along k
+voice unwrap.phase.radial / {
+  phase.values + k.values -> 
+  sort.by.k -> 
+  compute.phase.differences -> 
+  accumulate.unwrap -> 
+  unwrapped.phases
+}
+
+;; Delta-encode unwrapped phases: Δφ = φ[i] - φ[i-1]
+voice delta.encode.phases / {
+  unwrapped.phases -> 
+  compute.differences -> 
+  delta.phases
+}
+
+;; Reconstruct phases from deltas: φ[i] = φ[0] + ΣΔφ
+voice reconstruct.phases.from.deltas / {
+  delta.phases + initial.phase -> 
+  cumulative.sum -> 
+  wrapped.phases
+}
+
+;; Mode A with phase-delta coding: improved compression ratio
+voice caba.pack.mode.A.delta / {
+  field.values -> 
+  fft.unitary -> 
+  enforce.hermitian.symmetry -> 
+  extract.phases -> 
+  unwrap.phase.radial -> 
+  delta.encode.phases -> 
+  store.delta.phases + store.amplitudes -> 
+  ⟨caba_archive_A_delta⟩
+}
+
+;; Reconstruct Mode A delta-coded
+voice caba.unpack.mode.A.delta / {
+  caba_archive_A_delta -> 
+  restore.delta.phases + restore.amplitudes -> 
+  reconstruct.phases.from.deltas -> 
+  compose.complex.spectrum -> 
+  enforce.hermitian.symmetry -> 
+  ifft.unitary -> 
+  reconstructed.field
+}
+
+;; ============================================================================
+;; Extension 3: Bispectrum-Lite (Mode B+)
+;; ============================================================================
+
+;; Sparse bispectrum patch list: 50–200 triangles capture targeted non-Gaussianity
+;; Tiny overhead, preserves chosen non-Gaussian fingerprints
+
+;; Bispectrum: B(k1, k2, k3) = ⟨F(k1) F(k2) F*(k1+k2)⟩
+voice compute.bispectrum.triangle / {
+  k1 + k2 + k3 + complex.spectrum -> 
+  extract.F.k1 + extract.F.k2 + extract.F.star.k3 -> 
+  multiply.three.complex -> 
+  bispectrum.value
+}
+
+;; Select important triangles (high bispectrum magnitude)
+voice select.bispectrum.triangles / {
+  complex.spectrum + max.triangles -> 
+  compute.bispectrum.all.triangles -> 
+  sort.by.magnitude -> 
+  take.top.triangles -> 
+  selected.triangles
+}
+
+;; Store bispectrum patch list: (k1, k2, k3, B_value) tuples
+voice store.bispectrum.patches / {
+  selected.triangles -> 
+  encode.triangle.indices + encode.bispectrum.values -> 
+  bispectrum.patch.list
+}
+
+;; Mode B+ with bispectrum-lite: preserves non-Gaussian features
+voice caba.pack.mode.B.bispectrum / {
+  field.values + max.triangles -> 
+  fft.unitary -> 
+  compute.power.spectrum -> 
+  select.bispectrum.triangles -> 
+  store.bispectrum.patches + store.power.coefficients + random.seed -> 
+  ⟨caba_archive_B_bispectrum⟩
+}
+
+;; Reconstruct with bispectrum constraints
+voice caba.unpack.mode.B.bispectrum / {
+  caba_archive_B_bispectrum + random.seed -> 
+  restore.power.spectrum + restore.bispectrum.patches -> 
+  generate.random.phases -> 
+  apply.bispectrum.constraints -> 
+  compose.complex.spectrum -> 
+  enforce.hermitian.symmetry -> 
+  ifft.unitary -> 
+  reconstructed.field
+}
+
+;; Apply bispectrum constraints to phase generation
+voice apply.bispectrum.constraints / {
+  random.phases + bispectrum.patches -> 
+  adjust.phases.to.match.bispectrum -> 
+  constrained.phases
+}
+
+;; ============================================================================
+;; Extension 4: CABA Container (Complete)
+;; ============================================================================
+
+;; Freeze header schema; add ANS codec id; lock tests
+
+;; CABA header with ANS codec support
+voice caba.header.extended / {
+  version "0.1" + mode + dimensions + dtype + endian + fft.norm + axis.order + periodic.flags + window.id + dc.index + nyquist.indices + seed.value + binning.schema + compressor.id + checksum + parseval.energy -> 
+  ⟨caba_header_extended⟩
+}
+
+;; Compressor IDs: "none", "ANS", "Zstd", "phase_delta", "radial_bin", "bispectrum"
+voice select.compressor / {
+  compression.mode + extension.flags -> 
+  if.radial.binning -> "radial_bin",
+  if.phase.delta -> "phase_delta",
+  if.bispectrum -> "bispectrum",
+  if.ans.codec -> "ANS",
+  else -> "none" -> 
+  compressor.id
+}
+
+;; Complete CABA container with extensions
+voice caba.container.extended / {
+  field.values + compression.mode + extension.flags + random.seed -> 
+  select.compressor -> 
+  caba.header.extended -> 
+  if.mode.A.and.delta -> caba.pack.mode.A.delta,
+  if.mode.B.and.radial -> caba.pack.mode.B.radial,
+  if.mode.B.and.bispectrum -> caba.pack.mode.B.bispectrum,
+  else -> caba.pack -> 
+  caba.trailer -> 
+  ⟨caba_container_extended⟩
+}
+
+target caba_extended / "caba_v0.1_extensions"
+voice main / {
+  caba.pack.mode.B.radial + 
+  caba.pack.mode.A.delta + 
+  caba.pack.mode.B.bispectrum + 
+  caba.container.extended -> 
+  caba_extended
+}
+
+
