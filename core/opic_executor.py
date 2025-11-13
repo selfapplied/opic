@@ -559,6 +559,541 @@ class OpicExecutor:
             except Exception as e:
                 return f"error: {e}"
         
+        def typst_render(env: Dict[str, Any]) -> str:
+            """Render Typst file to PDF - implements typst.render and call_typst_compiler"""
+            import subprocess
+            from pathlib import Path
+            input_path = Path(str(env.get("file_path", env.get("input", ""))))
+            output_path = env.get("output_path", env.get("output"))
+            if output_path:
+                output_path = Path(str(output_path))
+            else:
+                output_path = input_path.with_suffix(".pdf")
+            
+            try:
+                # Use the typst_render.py script if available, otherwise call typst directly
+                script_path = self.project_root / "scripts" / "typst_render.py"
+                if script_path.exists():
+                    cmd = ["python3", str(script_path), str(input_path), str(output_path)]
+                else:
+                    # Fallback to direct typst call
+                    cmd = ["typst", "compile", str(input_path), str(output_path)]
+                
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                return str(output_path)
+            except subprocess.CalledProcessError as e:
+                return f"error: Typst compilation failed: {e.stderr}"
+            except FileNotFoundError:
+                return "error: Typst not found. Install from https://typst.app/"
+        
+        def typst_convert_markdown(env: Dict[str, Any]) -> str:
+            """Convert markdown to Typst syntax"""
+            import re
+            text = str(env.get("markdown", env.get("text", env.get("input", ""))))
+            if not text:
+                return ""
+            
+            # Convert headers
+            text = re.sub(r'^# (.+)$', r'= \1', text, flags=re.MULTILINE)
+            text = re.sub(r'^## (.+)$', r'== \1', text, flags=re.MULTILINE)
+            text = re.sub(r'^### (.+)$', r'=== \1', text, flags=re.MULTILINE)
+            text = re.sub(r'^#### (.+)$', r'==== \1', text, flags=re.MULTILINE)
+            
+            # Convert bold **text** -> *text* (Typst uses single asterisk for bold in some contexts, but markdown-style works)
+            # Actually Typst uses #strong[text] for bold, but *text* works for emphasis
+            # Keep **text** as-is for now, Typst will handle it
+            
+            # Convert links [text](url) -> #link("url")[text]
+            text = re.sub(r'\[([^\]]+)\]\(([^\)]+)\)', r'#link("\2")[\1]', text)
+            
+            # Convert code blocks ```lang\ncode``` -> Typst code blocks
+            def replace_code_block(match):
+                lang = match.group(1) or ""
+                code = match.group(2)
+                if lang == "ops":
+                    # Use OPS syntax highlighting
+                    return f'#ops-code(`{code}`)'
+                else:
+                    return f'#codeblock(lang: "{lang}")[\n{code}\n]'
+            text = re.sub(r'```(\w+)?\n([^`]+)```', replace_code_block, text, flags=re.DOTALL)
+            
+            # Convert inline code `code` -> `code` (Typst uses same syntax)
+            # Actually Typst uses #raw(`code`) but simpler to keep backticks
+            text = re.sub(r'`([^`]+)`', r'`\1`', text)
+            
+            return text
+        
+        def typst_convert_math(env: Dict[str, Any]) -> str:
+            """Convert LaTeX math to Typst math syntax"""
+            import re
+            math = str(env.get("math", env.get("latex", env.get("input", ""))))
+            if not math:
+                return ""
+            
+            # Convert fractions \frac{a}{b} -> $a / b$
+            math = re.sub(r'\\frac\{([^}]+)\}\{([^}]+)\}', r'$\1 / \2$', math)
+            
+            # Convert sum \sum -> $sum$
+            math = re.sub(r'\\sum\b', 'sum', math)
+            
+            # Convert integral \int -> $int$
+            math = re.sub(r'\\int\b', 'int', math)
+            
+            # Convert sqrt \sqrt{x} -> $sqrt(x)$
+            math = re.sub(r'\\sqrt\{([^}]+)\}', r'sqrt(\1)', math)
+            
+            # Ensure math is wrapped in $ if not already
+            if not math.strip().startswith('$'):
+                math = '$' + math
+            if not math.strip().endswith('$'):
+                math = math + '$'
+            
+            return math
+        
+        def typst_ops_code(env: Dict[str, Any]) -> str:
+            """Generate Typst code block with OPS syntax highlighting"""
+            code = str(env.get("code", env.get("ops_code", env.get("input", ""))))
+            return f'#ops-code(`{code}`)'
+        
+        def typst_margin_note(env: Dict[str, Any]) -> str:
+            """Generate Typst margin note"""
+            content = str(env.get("content", env.get("text", env.get("input", ""))))
+            style = env.get("style", "explain")
+            if style == "warning":
+                return f'#margin-warning(`{content}`)'
+            elif style == "tip":
+                return f'#margin-tip(`{content}`)'
+            else:
+                return f'#margin-explain(`{content}`)'
+        
+        def typst_cryptographic_seal(env: Dict[str, Any]) -> str:
+            """Generate Typst cryptographic seal"""
+            signature = str(env.get("signature", env.get("sig", "")))
+            realm = str(env.get("realm", "opic_realm"))
+            ca = str(env.get("ca", "opic_ca"))
+            style = env.get("style", "certificate")
+            return f'#seal-{style}("{signature}", "{realm}", "{ca}")'
+        
+        def typst_field_equation(env: Dict[str, Any]) -> str:
+            """Generate Typst field equation"""
+            equation = str(env.get("equation", env.get("eq", env.get("input", ""))))
+            variables = env.get("variables", env.get("vars"))
+            explanation = env.get("explanation", env.get("expl"))
+            
+            vars_str = f', vars: "{variables}"' if variables else ""
+            expl_str = f', explanation: "{explanation}"' if explanation else ""
+            
+            return f'#field-equation(eq: ${equation}${vars_str}${expl_str})'
+        
+        def typst_draw_svg(env: Dict[str, Any]) -> str:
+            """Generate SVG from opic draw definitions and embed in Typst"""
+            from pathlib import Path
+            
+            # Get draw definition (canvas, shape, pattern, or voice name)
+            draw_def = env.get("draw", env.get("canvas", env.get("shape", env.get("pattern", env.get("voice", env.get("input", ""))))))
+            width = env.get("width", "100%")
+            caption = env.get("caption", env.get("title"))
+            
+            # Generate SVG from draw definition
+            svg_content = generate_svg_from_draw(draw_def)
+            
+            # Save SVG to file for Typst to include
+            svg_file = Path(self.project_root) / "examples" / f"draw_{hash(str(draw_def)) % 10000}.svg"
+            svg_file.parent.mkdir(parents=True, exist_ok=True)
+            svg_file.write_text(svg_content)
+            
+            # Return Typst code to include the SVG
+            caption_str = f', caption: "{caption}"' if caption else ""
+            return f'#draw-diagram("{svg_file.name}", width: {width}{caption_str})'
+        
+        def typst_bloom_svg(env: Dict[str, Any]) -> str:
+            """Generate radiant bloom SVG from field traces and embed in Typst"""
+            from pathlib import Path
+            import subprocess
+            import sys
+            
+            # Get trace file path
+            trace_file = env.get("traces", env.get("trace_file", env.get("input", "data/field_traces.jsonl")))
+            trace_path = Path(str(trace_file))
+            
+            # If relative, resolve relative to project root
+            if not trace_path.is_absolute():
+                trace_path = Path(self.project_root) / trace_path
+            
+            width = env.get("width", "100%")
+            caption = env.get("caption", env.get("title", "Radiant Bloom"))
+            
+            # Generate bloom SVG using bloom_svg.py script
+            bloom_script = Path(self.project_root) / "scripts" / "bloom_svg.py"
+            svg_file = Path(self.project_root) / "examples" / f"bloom_{hash(str(trace_path)) % 10000}.svg"
+            svg_file.parent.mkdir(parents=True, exist_ok=True)
+            
+            try:
+                # Run bloom_svg.py to generate SVG
+                result = subprocess.run(
+                    [sys.executable, str(bloom_script), str(trace_path)],
+                    capture_output=True,
+                    text=True,
+                    cwd=str(self.project_root)
+                )
+                
+                if result.returncode == 0:
+                    svg_content = result.stdout
+                    svg_file.write_text(svg_content)
+                else:
+                    # Fallback: generate simple bloom SVG
+                    svg_content = generate_default_bloom_svg()
+                    svg_file.write_text(svg_content)
+            except Exception as e:
+                # Fallback: generate simple bloom SVG
+                svg_content = generate_default_bloom_svg()
+                svg_file.write_text(svg_content)
+            
+            # Return Typst code to include the SVG
+            caption_str = f', caption: "{caption}"' if caption else ""
+            return f'#bloom-diagram("{svg_file.name}", width: {width}{caption_str})'
+        
+        def generate_default_bloom_svg() -> str:
+            """Generate a default radiant bloom SVG following SPEC recommendations"""
+            import math
+            pi = math.pi
+            cos = math.cos
+            sin = math.sin
+            
+            # Generate a simple radial petal pattern following SPEC.md guidelines:
+            # - θ = line/τ_max (normalized angle)
+            # - r ∝ Φκ (radius proportional to entropy * curvature)
+            # - Golden angle spacing for hue (137°)
+            
+            svg_lines = [
+                '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">',
+                '  <rect width="800" height="800" fill="white"/>',
+                '  <g transform="translate(400,400)">'
+            ]
+            
+            # Generate flower-like bloom with petals
+            N_petals = 8  # Number of petals
+            golden_angle = 137.508  # Golden angle in degrees
+            
+            for i in range(N_petals):
+                # Golden angle spacing for petal positions
+                theta = (i * golden_angle * pi / 180) % (2 * pi)
+                
+                # Petal shape: wider at base, tapering to tip
+                petal_length = 120 + 40 * (i % 3)  # Varying lengths
+                petal_width_base = 30
+                petal_width_tip = 8
+                
+                # Create petal as a path
+                # Base of petal (wider)
+                x1_base = petal_width_base * cos(theta + pi/2)
+                y1_base = petal_width_base * sin(theta + pi/2)
+                x2_base = petal_width_base * cos(theta - pi/2)
+                y2_base = petal_width_base * sin(theta - pi/2)
+                
+                # Tip of petal
+                x_tip = petal_length * cos(theta)
+                y_tip = petal_length * sin(theta)
+                
+                # Tip width points
+                x1_tip = x_tip + petal_width_tip * cos(theta + pi/2)
+                y1_tip = y_tip + petal_width_tip * sin(theta + pi/2)
+                x2_tip = x_tip + petal_width_tip * cos(theta - pi/2)
+                y2_tip = y_tip + petal_width_tip * sin(theta - pi/2)
+                
+                # Golden angle hue
+                hue = (i * golden_angle) % 360
+                fill_color = f"hsla({hue},75%,65%,0.7)"
+                stroke_color = f"hsla({hue},80%,45%,0.9)"
+                
+                # Draw petal as filled path
+                svg_lines.append(
+                    f'    <path d="M {x1_base:.2f},{y1_base:.2f} '
+                    f'L {x_tip:.2f},{y_tip:.2f} '
+                    f'L {x2_tip:.2f},{y2_tip:.2f} '
+                    f'L {x2_base:.2f},{y2_base:.2f} Z" '
+                    f'fill="{fill_color}" stroke="{stroke_color}" stroke-width="1"/>'
+                )
+            
+            # Add center circle
+            svg_lines.append('    <circle cx="0" cy="0" r="15" fill="hsla(45,80%,60%,0.8)" stroke="hsla(45,90%,40%,1)" stroke-width="2"/>')
+            
+            svg_lines.append('  </g>')
+            svg_lines.append('</svg>')
+            return '\n'.join(svg_lines)
+        
+        def generate_bloom_icon_svg(size: int = 100) -> str:
+            """Generate a small flower-like bloom icon for use next to equations"""
+            import math
+            pi = math.pi
+            cos = math.cos
+            sin = math.sin
+            
+            center = size / 2
+            scale = size / 200  # Scale factor
+            
+            svg_lines = [
+                f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {size} {size}">',
+                f'  <g transform="translate({center},{center})">'
+            ]
+            
+            # Smaller flower icon
+            N_petals = 6
+            golden_angle = 137.508
+            
+            for i in range(N_petals):
+                theta = (i * golden_angle * pi / 180) % (2 * pi)
+                petal_length = (30 + 10 * (i % 2)) * scale
+                petal_width_base = 8 * scale
+                petal_width_tip = 3 * scale
+                
+                x1_base = petal_width_base * cos(theta + pi/2)
+                y1_base = petal_width_base * sin(theta + pi/2)
+                x2_base = petal_width_base * cos(theta - pi/2)
+                y2_base = petal_width_base * sin(theta - pi/2)
+                
+                x_tip = petal_length * cos(theta)
+                y_tip = petal_length * sin(theta)
+                
+                x1_tip = x_tip + petal_width_tip * cos(theta + pi/2)
+                y1_tip = y_tip + petal_width_tip * sin(theta + pi/2)
+                x2_tip = x_tip + petal_width_tip * cos(theta - pi/2)
+                y2_tip = y_tip + petal_width_tip * sin(theta - pi/2)
+                
+                hue = (i * golden_angle) % 360
+                fill_color = f"hsla({hue},75%,65%,0.7)"
+                stroke_color = f"hsla({hue},80%,45%,0.9)"
+                
+                svg_lines.append(
+                    f'    <path d="M {x1_base:.2f},{y1_base:.2f} '
+                    f'L {x_tip:.2f},{y_tip:.2f} '
+                    f'L {x2_tip:.2f},{y2_tip:.2f} '
+                    f'L {x2_base:.2f},{y2_base:.2f} Z" '
+                    f'fill="{fill_color}" stroke="{stroke_color}" stroke-width="0.5"/>'
+                )
+            
+            # Center
+            svg_lines.append(f'    <circle cx="0" cy="0" r="{4*scale:.1f}" fill="hsla(45,80%,60%,0.8)" stroke="hsla(45,90%,40%,1)" stroke-width="0.8"/>')
+            
+            svg_lines.append('  </g>')
+            svg_lines.append('</svg>')
+            return '\n'.join(svg_lines)
+        
+        def generate_svg_from_draw(draw_def: str) -> str:
+            """Generate SVG from opic draw definition"""
+            import re
+            
+            draw_str = str(draw_def)
+            
+            # Try to parse as canvas definition
+            if "width" in draw_str and "height" in draw_str:
+                width_match = re.search(r'width[:\s]*(\d+)', draw_str)
+                height_match = re.search(r'height[:\s]*(\d+)', draw_str)
+                width = int(width_match.group(1)) if width_match else 400
+                height = int(height_match.group(1)) if height_match else 300
+                
+                # Generate simple SVG canvas
+                svg = f'''<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
+  <rect width="{width}" height="{height}" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="{width//2}" y="{height//2}" text-anchor="middle" fill="#6B7280" font-size="14">Canvas: {width}x{height}</text>
+</svg>'''
+                return svg
+            
+            # Try to parse as circle definition
+            if "circle" in draw_str.lower() or "radius" in draw_str:
+                radius_match = re.search(r'radius[:\s]*(\d+)', draw_str)
+                center_match = re.search(r'center[:\s]*\((\d+)[,\s]+(\d+)\)', draw_str)
+                radius = int(radius_match.group(1)) if radius_match else 50
+                cx = int(center_match.group(1)) if center_match else 200
+                cy = int(center_match.group(2)) if center_match else 150
+                
+                svg = f'''<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+  <circle cx="{cx}" cy="{cy}" r="{radius}" fill="#3B82F6" opacity="0.3" stroke="#3B82F6" stroke-width="2"/>
+</svg>'''
+                return svg
+            
+            # Try to parse as line definition
+            if "line" in draw_str.lower():
+                start_match = re.search(r'start[:\s]*\((\d+)[,\s]+(\d+)\)', draw_str)
+                end_match = re.search(r'end[:\s]*\((\d+)[,\s]+(\d+)\)', draw_str)
+                if start_match and end_match:
+                    x1, y1 = int(start_match.group(1)), int(start_match.group(2))
+                    x2, y2 = int(end_match.group(1)), int(end_match.group(2))
+                    
+                    svg = f'''<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+  <line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="#3B82F6" stroke-width="2"/>
+</svg>'''
+                    return svg
+            
+            # Default SVG - Opic Draw placeholder
+            return '''<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+  <circle cx="200" cy="150" r="50" fill="#3B82F6" opacity="0.3"/>
+  <text x="200" y="155" text-anchor="middle" fill="#1F2937" font-size="12">Opic Draw</text>
+</svg>'''
+        
+        def typst_inspect_pdf(env: Dict[str, Any]) -> str:
+            """Extract text content from PDF for inspection"""
+            from pathlib import Path
+            import subprocess
+            
+            pdf_path = str(env.get("pdf_path", env.get("input", "")))
+            if not pdf_path:
+                return "Error: No PDF path provided"
+            
+            pdf_file = Path(pdf_path)
+            if not pdf_file.exists():
+                return f"Error: PDF not found: {pdf_path}"
+            
+            # Try multiple extraction methods
+            text = None
+            
+            # Try pdftotext (poppler)
+            try:
+                result = subprocess.run(
+                    ["pdftotext", str(pdf_file), "-"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if result.returncode == 0 and result.stdout:
+                    text = result.stdout
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                pass
+            
+            # Try PyPDF2
+            if not text:
+                try:
+                    import PyPDF2
+                    with open(pdf_file, 'rb') as f:
+                        reader = PyPDF2.PdfReader(f)
+                        text = ""
+                        for page in reader.pages:
+                            text += page.extract_text() + "\n"
+                except ImportError:
+                    pass
+                except Exception:
+                    pass
+            
+            # Try pypdf
+            if not text:
+                try:
+                    import pypdf
+                    with open(pdf_file, 'rb') as f:
+                        reader = pypdf.PdfReader(f)
+                        text = ""
+                        for page in reader.pages:
+                            text += page.extract_text() + "\n"
+                except ImportError:
+                    pass
+                except Exception:
+                    pass
+            
+            if text:
+                return text.strip()
+            return "Error: Could not extract PDF text (install poppler or PyPDF2)"
+        
+        def typst_verify_rendering(env: Dict[str, Any]) -> str:
+            """Verify PDF rendering - check for literal code and expected content"""
+            from pathlib import Path
+            
+            pdf_path = str(env.get("pdf_path", env.get("input", "")))
+            if not pdf_path:
+                return "Error: No PDF path provided"
+            
+            pdf_file = Path(pdf_path)
+            if not pdf_file.exists():
+                return f"Error: PDF not found: {pdf_path}"
+            
+            # Extract text
+            text_result = self._call_primitive("typst_inspect_pdf", {"pdf_path": pdf_path})
+            if text_result.startswith("Error"):
+                return text_result
+            
+            text = text_result.lower()
+            
+            # Check for problematic patterns (literal code)
+            issues = []
+            problematic = [
+                ("#body", "Function parameter appearing literally"),
+                ("if explanation != none", "Conditional logic appearing literally"),
+                ("text(size:", "Function call appearing literally"),
+                ("#let ops-code", "Function definition appearing literally"),
+                ("#margin-explain", "Function call appearing literally"),
+                ("block( fill:", "Block function appearing literally"),
+                ("v(8pt)", "Vertical spacing appearing literally"),
+            ]
+            
+            for pattern, desc in problematic:
+                if pattern in text:
+                    count = text.count(pattern)
+                    issues.append(f"{desc}: found {count} time(s)")
+            
+            # Check for expected content
+            expected = [
+                ("note:", "margin notes"),
+                ("warning:", "warnings"),
+                ("tip:", "tips"),
+                ("certificate", "seals"),
+                ("where:", "equation variables"),
+            ]
+            
+            found = []
+            missing = []
+            for keyword, desc in expected:
+                if keyword in text:
+                    found.append(f"{desc}")
+                else:
+                    missing.append(f"{desc}")
+            
+            # Build report
+            report = []
+            if issues:
+                report.append("❌ Rendering issues found:")
+                for issue in issues:
+                    report.append(f"  - {issue}")
+            else:
+                report.append("✅ No literal code found")
+            
+            if found:
+                report.append(f"\n✅ Found: {', '.join(found)}")
+            if missing:
+                report.append(f"⚠️  Missing: {', '.join(missing)}")
+            
+            return "\n".join(report) if report else "✅ PDF verified"
+        
+        def typst_write_file(env: Dict[str, Any]) -> str:
+            """Write Typst content to file"""
+            from pathlib import Path
+            # Get content from input (last_result passed through chain)
+            # The executor maps last_result to "input" in prim_env
+            content = str(env.get("input", env.get("content", env.get("typst_document", ""))))
+            
+            # Don't use "path" from env if it's the same as content (executor auto-maps)
+            # Only use explicit path if it's different from content
+            explicit_path = env.get("file_path", env.get("output"))
+            if explicit_path and str(explicit_path) != content and not content.startswith(str(explicit_path)):
+                path = explicit_path
+            else:
+                path = "output.typ"
+            
+            file_path = Path(str(path))
+            
+            try:
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                file_path.write_text(content, encoding='utf-8')
+                print(f"Wrote Typst file: {file_path}")
+                return str(file_path)
+            except Exception as e:
+                return f"error: {e}"
+        
         def base64_encode(env: Dict[str, Any]) -> str:
             """Base64 encode string"""
             import base64
@@ -2531,6 +3066,46 @@ if __name__ == "__main__":
             "file.update.includes": file_update_includes,
             "file_backup": file_backup,
             "file.backup": file_backup,
+            "typst_render": typst_render,
+            "typst.render": typst_render,
+            "call_typst_compiler": typst_render,
+            "invoke_typst": typst_render,
+            "typst_convert_markdown": typst_convert_markdown,
+            "typst.convert_markdown": typst_convert_markdown,
+            "typst.from_markdown": typst_convert_markdown,
+            "typst_convert_math": typst_convert_math,
+            "typst.convert_math": typst_convert_math,
+            "typst.from_math": typst_convert_math,
+            "typst.from_latex": typst_convert_math,
+            "typst_write_file": typst_write_file,
+            "typst.write_file": typst_write_file,
+            "write_to_file": typst_write_file,
+            "typst_inspect_pdf": typst_inspect_pdf,
+            "typst.inspect_pdf": typst_inspect_pdf,
+            "typst.extract_text": typst_inspect_pdf,
+            "typst_verify_rendering": typst_verify_rendering,
+            "typst.verify": typst_verify_rendering,
+            "typst.verify_rendering": typst_verify_rendering,
+            "verify_typst": typst_verify_rendering,
+            "typst_ops_code": typst_ops_code,
+            "typst.ops_code": typst_ops_code,
+            "typst_margin_note": typst_margin_note,
+            "typst.margin_note": typst_margin_note,
+            "typst.margin_explain": typst_margin_note,
+            "typst_cryptographic_seal": typst_cryptographic_seal,
+            "typst.cryptographic_seal": typst_cryptographic_seal,
+            "typst.seal_certificate": typst_cryptographic_seal,
+            "typst_field_equation": typst_field_equation,
+            "typst.field_equation": typst_field_equation,
+            "typst.equation_fee": typst_field_equation,
+            "typst_draw_svg": typst_draw_svg,
+            "typst.draw_svg": typst_draw_svg,
+            "typst.draw": typst_draw_svg,
+            "typst.draw_diagram": typst_draw_svg,
+            "typst_bloom_svg": typst_bloom_svg,
+            "typst.bloom_svg": typst_bloom_svg,
+            "typst.bloom": typst_bloom_svg,
+            "typst.radiant_bloom": typst_bloom_svg,
             "base64_encode": base64_encode,
             "json_encode": json_encode,
             "filter_list": filter_list,

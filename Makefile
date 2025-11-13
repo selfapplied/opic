@@ -356,6 +356,41 @@ caba-extended: check-opic
 	@$(OPIC_BINARY) execute systems/caba_extended.ops
 	@echo "✓ CABA extensions test complete"
 
+# Typst integration tests
+typst-test:
+	@python3 scripts/test_typst_output.py
+
+typst-verify:
+	@./scripts/verify_typst.sh examples/typst_complete.pdf
+
+typst-quick-test:
+	@echo "Compiling quick test..."
+	@cd examples && typst compile typst_quick_test.typ typst_quick_test.pdf 2>&1 && echo "✅ Quick test compiled"
+
+# Whitepaper build/verify/open
+whitepaper-build:
+	@echo "📄 Building whitepaper PDF..."
+	@cd examples && typst compile field_equations_whitepaper.typ field_equations_whitepaper.pdf 2>&1 && echo "✅ Whitepaper compiled"
+
+whitepaper-verify:
+	@$(MAKE) whitepaper-build
+	@echo "🧪 Verifying whitepaper PDF..."
+	@python3 scripts/test_typst_output.py examples/field_equations_whitepaper.pdf || (echo "❌ Whitepaper verification failed" && exit 1)
+	@echo "✅ Whitepaper verified"
+
+whitepaper-open:
+	@$(MAKE) typst-verify
+	@$(MAKE) whitepaper-verify
+	@open examples/field_equations_whitepaper.pdf
+
+typst-demo: check-opic
+	@echo "Generating Typst demo..."
+	@$(OPIC_BINARY) execute examples/typst_simple.ops
+
+whitepaper-typst: check-opic
+	@echo "Generating whitepaper as Typst..."
+	@$(OPIC_BINARY) execute systems/whitepaper.ops whitepaper.generate_typst
+
 # Default: give user a shell with opic available
 default: shell
 
