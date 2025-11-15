@@ -293,9 +293,11 @@ def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dic
         base_dir = file_path.parent
     
     # Lambda expansion: if file already loaded (voice/def exists), don't expand again
+    # BUT: Always reload target file to ensure it wins conflicts
     file_key = str(file_path.resolve())
-    if file_key in voice_sources.values() or file_key in def_sources.values():
-        return  # Already expanded
+    is_target = (target_file and file_path.resolve() == target_file.resolve())
+    if not is_target and (file_key in voice_sources.values() or file_key in def_sources.values()):
+        return  # Already expanded (but target file always reloads to win conflicts)
     
     content = file_path.read_text()
     inc_defs, inc_voices, inc_includes, boundary_matrix, symbol_list = parse_ops(content, file_path)
