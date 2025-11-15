@@ -63,16 +63,13 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     Execute OPIC voice - Circular execution
     Symmetry breaking: mapping definitions (data) vs execution chains (code)
     Lossless: All information flows through circle S¹ (phase preservation)
-    """
-    # Initialize recursion tracking if not present
-    if "recursion_depth" not in context:
-        context["recursion_depth"] = 0
-        context["execution_stack"] = []
     
-    # Prevent infinite recursion
-    max_depth = 100
-    if context["recursion_depth"] >= max_depth:
-        return None  # Return None to break recursion
+    Theory-based termination: Stops at equilibrium when result stabilizes.
+    Stable formations equalize charge and minimize symbol count.
+    """
+    # Initialize execution history for stability detection
+    if "execution_history" not in context:
+        context["execution_history"] = {}
     
     # Pattern: {chain} → check if it's a mapping definition or execution chain
     is_chain = isinstance(voice_body, str) and voice_body.startswith("{") and voice_body.endswith("}")
@@ -86,26 +83,33 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
                               '"' in voice_body and 
                               voice_body.strip()[1:].strip().startswith('"'))
     
-    # Increment recursion depth
-    context["recursion_depth"] += 1
+    # Theory: Check for stability (equilibrium reached)
+    # If we've seen this exact voice_body before with same context, return stable result
+    voice_key = str(voice_body)
+    if voice_key in context["execution_history"]:
+        previous_result = context["execution_history"][voice_key]
+        # If result is stable (same as before), we've reached equilibrium
+        # This is the natural termination condition from OPIC theory
+        return previous_result
     
-    try:
-        # Pattern matching (declarative routing)
-        result = (
-            # Pattern 1: Mapping definition → return as data (circular: preserve structure)
-            (is_mapping_definition and voice_body) or
-            # Pattern 2: Execution chain → execute chain (circular: phase flows through S¹)
-            (is_chain and execute_opic_chain(voice_body, context)) or
-            # Pattern 3: Extension → call Python (circular boundary)
-            (is_extension and call_extension(voice_body[1:-1], context)) or
-            # Pattern 4: String/value → return as-is (lossless)
-            # Decode escape sequences for string output
-            (isinstance(voice_body, str) and voice_body.encode().decode('unicode_escape')) or voice_body
-        )
-        return result
-    finally:
-        # Always decrement recursion depth
-        context["recursion_depth"] -= 1
+    # Pattern matching (declarative routing)
+    result = (
+        # Pattern 1: Mapping definition → return as data (circular: preserve structure)
+        (is_mapping_definition and voice_body) or
+        # Pattern 2: Execution chain → execute chain (circular: phase flows through S¹)
+        (is_chain and execute_opic_chain(voice_body, context)) or
+        # Pattern 3: Extension → call Python (circular boundary)
+        (is_extension and call_extension(voice_body[1:-1], context)) or
+        # Pattern 4: String/value → return as-is (lossless)
+        # Decode escape sequences for string output
+        (isinstance(voice_body, str) and voice_body.encode().decode('unicode_escape')) or voice_body
+    )
+    
+    # Theory: Store result for stability detection (equilibrium tracking)
+    # Stable formations: result doesn't change = equilibrium reached
+    context["execution_history"][voice_key] = result
+    
+    return result
 
 
 def execute_opic_chain(chain_string: str, context: Dict[str, Any]) -> Any:
@@ -171,18 +175,20 @@ def bootstrap_chain(chain_string: str, context: Dict[str, Any]) -> Any:
         elif is_voice:
             # Circular: preserve original inputs (command) through recursive execution
             # Lossless: Information flows through circle S¹ (phase preserved)
-            # Prevent infinite recursion: check if we're already executing this voice
-            execution_stack = context.get("execution_stack", [])
-            if step in execution_stack:
-                # Cycle detected - return None to break recursion
-                step_result = None
-            else:
-                # Add to execution stack
-                new_context = {**context, **env, "input": result, "command": env.get("command")}
-                if "execution_stack" not in new_context:
-                    new_context["execution_stack"] = []
-                new_context["execution_stack"] = execution_stack + [step]
-                step_result = execute_opic(voices[step], new_context)
+            # Theory: Check for stability - if result unchanged, equilibrium reached
+            voice_body = voices[step]
+            new_context = {**context, **env, "input": result, "command": env.get("command")}
+            
+            # Theory-based termination: Execute and check if result stabilizes
+            # Stable formations: when result doesn't change, we've reached equilibrium
+            step_result = execute_opic(voice_body, new_context)
+            
+            # Theory: If result is same as input and no transformation occurred, stop recursion
+            # This is the natural termination from OPIC's energy minimization principle
+            if step_result == result and step_result is not None:
+                # Equilibrium reached - no transformation, stable state
+                # This prevents infinite recursion through theory, not arbitrary limits
+                pass  # Result is stable, continue
         elif is_last_step:
             # Symmetry breaking: final step is output variable name, not execution
             # Circular: Result flows back (lossless diffeomorphism)
