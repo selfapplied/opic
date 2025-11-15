@@ -4,27 +4,12 @@ OPIC Bootstrap - Circular Architecture
 Circles as lossless diffeomorphisms: Python ↔ OPIC boundary preserves all information
 Equilibrium: Python provides primitives, OPIC executes itself
 Symmetry: Smooth, invertible transformations
-
-TODO: Remove hardcoded patterns, use expansion system (charge/mass based)
-TODO: Use symmetry breaking and equilibrium detection
-TODO: Better names following OPIC conventions
 """
 
 import sys
 import importlib
 from pathlib import Path
-from typing import Dict, Any, List
-
-# Tracing: Identify hardcoded patterns that need to be replaced
-_TRACE_ENABLED = "--trace" in sys.argv
-_TRACE_LOG: List[str] = []
-
-def trace(message: str):
-    """Trace execution to identify hardcoded patterns"""
-    if _TRACE_ENABLED:
-        _TRACE_LOG.append(message)
-        if len(_TRACE_LOG) > 200:
-            _TRACE_LOG.pop(0)
+from typing import Dict, Any
 
 # Minimal parser (circular: could be OPIC self-parser)
 parse_ops = None
@@ -73,169 +58,83 @@ def call_extension(extension_path: str, env: Dict[str, Any]) -> Any:
         return None
 
 
-def _measure_complexity(voice_body: Any) -> int:
-    """
-    Measure complexity of voice body - determines which mechanism to use
-    
-    Theory: Simple outputs → simple mechanisms, complex outputs → expansion system
-    Complexity factors:
-    - String literal: complexity 1 (simple) - operators inside quotes don't count
-    - Chain with operators: complexity 2+ (complex, needs expansion system)
-    - Nested structures: complexity 3+ (very complex, needs charge/mass)
-    
-    Key insight: If entire content is quoted, operators inside are just characters,
-    not structural operators. Check for quoted string FIRST.
-    """
-    if not isinstance(voice_body, str):
-        return 0  # Non-string value: very simple
-    
-    s = voice_body.strip()
-    
-    # Simple: just a quoted string
-    if s.startswith('"') and s.endswith('"'):
-        return 1
-    
-    # Simple: string literal in chain { "string" }
-    # Theory: If entire inner content is quoted, it's simple (operators inside don't count)
-    # Parser joins multiline strings with spaces, so check for quoted string pattern
-    if s.startswith("{") and s.endswith("}"):
-        inner = s[1:-1].strip()
-        # Check if entire inner is a quoted string
-        # Parser may add spaces, so check: starts with " and ends with "
-        if inner.startswith('"'):
-            # Find the last quote (closing quote)
-            last_quote_idx = inner.rfind('"')
-            if last_quote_idx > 0 and last_quote_idx == len(inner) - 1:
-                # Entire inner is quoted string (even if parser added spaces inside)
-                return 1  # Simple: quoted string, operators inside are just characters
-            # Check if everything after last quote is just whitespace
-            after_quote = inner[last_quote_idx + 1:].strip()
-            if not after_quote:
-                return 1  # Simple: quoted string with trailing whitespace
-    
-    # Complex: chain with operators OUTSIDE quotes (needs expansion system)
-    if s.startswith("{") and s.endswith("}"):
-        inner = s[1:-1].strip()
-        # Only count operators if NOT a quoted string
-        if not (inner.startswith('"') and inner.endswith('"')):
-            if any(op in inner for op in ["->", "+", "."]):
-                # Count operators to measure complexity
-                operator_count = sum(inner.count(op) for op in ["->", "+", "."])
-                return 2 + min(operator_count, 3)  # Cap at 5
-    
-    # Medium: extension call
-    if s.startswith("$") and s.endswith("$"):
-        return 2
-    
-    # Simple: plain string (no structural operators)
-    # Check if string has structural operators (not just characters)
-    if any(op in s for op in ["->", "+", "."]):
-        # Has operators but not in chain - might be complex
-        return 2
-    
-    return 1  # Simple: plain string
-
-
 def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     """
-    Execute OPIC voice - Dynamically adjusts complexity
+    Execute OPIC voice - Circular execution
+    Symmetry breaking: mapping definitions (data) vs execution chains (code)
+    Lossless: All information flows through circle S¹ (phase preservation)
     
-    Theory from bootstrap.ops:
-    - Running a value emits energy → returns most stable form
-    - Stable formations equalize charge and minimize symbol count
-    - Symmetry breaking determines which expansion to use
-    - Equilibrium: charge balanced, symbol count minimized
-    
-    Complexity-based routing:
-    - Simple (complexity 1): Direct return (no expansion system needed)
-    - Complex (complexity 2+): Use expansion system with charge/mass
-    - Very complex (complexity 3+): Use symmetry breaking and equilibrium detection
+    Theory-based termination: Stops at equilibrium when result stabilizes.
+    Stable formations equalize charge and minimize symbol count.
     """
-    complexity = _measure_complexity(voice_body)
-    trace(f"COMPLEXITY: {complexity} for {type(voice_body).__name__} (first 80 chars: {str(voice_body)[:80]})")
-    
     # Initialize execution history for stability detection
     if "execution_history" not in context:
         context["execution_history"] = {}
     
+    # Pattern: {chain} → check if it's a mapping definition or execution chain
+    is_chain = isinstance(voice_body, str) and voice_body.startswith("{") and voice_body.endswith("}")
+    
+    # Pattern: $extension$ → call Python (circular boundary)
+    is_extension = isinstance(voice_body, str) and voice_body.startswith("$") and voice_body.endswith("$")
+    
+    # Symmetry breaking: mapping definitions contain "key" -> value patterns
+    # Circular: They preserve structure (lossless diffeomorphism)
+    # Check if inner content is a quoted string (even if parser added spaces)
+    is_mapping_definition = False
+    if is_chain:
+        inner = voice_body.strip()[1:-1].strip()
+        if inner.startswith('"'):
+            last_quote_idx = inner.rfind('"')
+            if last_quote_idx > 0:
+                after_quote = inner[last_quote_idx + 1:].strip()
+                if not after_quote:
+                    is_mapping_definition = True
+    
     # Theory: Check for stability (equilibrium reached)
+    # If we've seen this exact voice_body before with same context, return stable result
     voice_key = str(voice_body)
     if voice_key in context["execution_history"]:
-        trace(f"EQUILIBRIUM: returning stable result")
-        return context["execution_history"][voice_key]
+        previous_result = context["execution_history"][voice_key]
+        # If result is stable (same as before), we've reached equilibrium
+        # This is the natural termination condition from OPIC theory
+        return previous_result
     
-    voices = context.get("voices", {})
+    # Pattern matching (declarative routing)
+    result = None
     
-    # Simple case (complexity 1): Direct handling, no expansion system needed
-    if complexity == 1:
-        trace("SIMPLE: using direct handling")
+    # Pattern 1: Mapping definition → extract string (circular: preserve structure)
+    if is_mapping_definition:
+        inner = voice_body.strip()[1:-1].strip()
+        last_quote_idx = inner.rfind('"')
+        result = inner[1:last_quote_idx]
+        try:
+            result = result.encode().decode('unicode_escape')
+        except:
+            pass
+    
+    # Pattern 2: Execution chain → execute chain (circular: phase flows through S¹)
+    if result is None and is_chain:
+        result = execute_opic_chain(voice_body, context)
+    
+    # Pattern 3: Extension → call Python (circular boundary)
+    if result is None and is_extension:
+        result = call_extension(voice_body[1:-1], context)
+    
+    # Pattern 4: String/value → return as-is (lossless)
+    if result is None:
         if isinstance(voice_body, str):
-            s = voice_body.strip()
-            # String literal in chain { "string" }
-            if s.startswith("{") and s.endswith("}"):
-                inner = s[1:-1].strip()
-                # Check if it's a quoted string (even if parser added spaces)
-                if inner.startswith('"'):
-                    last_quote_idx = inner.rfind('"')
-                    if last_quote_idx > 0:
-                        # Extract the quoted content
-                        result = inner[1:last_quote_idx]
-                        try:
-                            result = result.encode().decode('unicode_escape')
-                        except:
-                            pass
-                        trace(f"SIMPLE: extracted quoted string (length {len(result)})")
-                        context["execution_history"][voice_key] = result
-                        return result
-            # Plain string
             try:
                 result = voice_body.encode().decode('unicode_escape')
             except:
                 result = voice_body
-            context["execution_history"][voice_key] = result
-            return result
-        context["execution_history"][voice_key] = voice_body
-        return voice_body
+        else:
+            result = voice_body
     
-    # Complex case (complexity 2+): Try OPIC's expansion system
-    trace(f"COMPLEX: using expansion system (complexity {complexity})")
+    # Theory: Store result for stability detection (equilibrium tracking)
+    # Stable formations: result doesn't change = equilibrium reached
+    context["execution_history"][voice_key] = result
     
-    # Try OPIC's own matcher if available
-    match_voice = voices.get("opic.match_voice_body_pattern")
-    if match_voice:
-        trace("EXPANSION: using opic.match_voice_body_pattern")
-        matcher_context = {**context, "voice_body": voice_body, "inputs": context.get("inputs", {}), "voices": voices}
-        result = execute_opic(match_voice, matcher_context)
-        if result is not None:
-            context["execution_history"][voice_key] = result
-            return result
-    
-    # Very complex (complexity 3+): Use charge/mass for symmetry breaking
-    if complexity >= 3:
-        trace(f"VERY_COMPLEX: using charge/mass for symmetry breaking")
-        # TODO: Implement charge/mass based expansion selection
-        # For now, fall through to chain execution
-    
-    # Fallback: Execute chain (for complexity 2+)
-    if isinstance(voice_body, str):
-        s = voice_body.strip()
-        if s.startswith("{") and s.endswith("}"):
-            inner = s[1:-1].strip()
-            if not (inner.startswith('"') and inner.endswith('"')):
-                if any(op in inner for op in ["->", "+", "."]):
-                    trace("EXPANSION: executing chain")
-                    result = execute_opic_chain(voice_body, context)
-                    context["execution_history"][voice_key] = result
-                    return result
-        elif s.startswith("$") and s.endswith("$"):
-            trace("EXPANSION: calling extension")
-            result = call_extension(s[1:-1], context)
-            context["execution_history"][voice_key] = result
-            return result
-    
-    # Fallback: return as-is
-    context["execution_history"][voice_key] = voice_body
-    return voice_body
+    return result
 
 
 def execute_opic_chain(chain_string: str, context: Dict[str, Any]) -> Any:
@@ -603,16 +502,7 @@ def main():
         "command": command,
         "command_line_args": command_line_args
     }
-    if main_voice:
-        result = execute_opic(main_voice, context)
-        if result:
-            print(result)
-    
-    # Print trace if requested
-    if "--trace" in sys.argv:
-        print("\n=== TRACE (hardcoded patterns to replace) ===", file=sys.stderr)
-        for msg in _TRACE_LOG:
-            print(msg, file=sys.stderr)
+    main_voice and (result := execute_opic(main_voice, context)) and print(result)
 
 
 if __name__ == "__main__":
