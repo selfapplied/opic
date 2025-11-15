@@ -64,6 +64,30 @@ voice archive.search_content / {
   matches
 }
 
+;; ============================================================================
+;; HELP & USAGE
+;; ============================================================================
+
+voice archive.help / {
+  ;; Usage:
+  ;;   archive.query "topic or filename"
+  ;; will search git history at commit 3df2d2a
+  ;; and surface matching archived .ops files as summaries/links.
+  ;;
+  ;; Examples:
+  ;;   archive.query "cosmology"     -> finds cosmological files
+  ;;   archive.query "ml.ops"        -> finds ML-related files
+  ;;   archive.query "protocol"       -> finds protocol files
+  ;;
+  ;; All 776 archived files are preserved in git history.
+  ;; Use this voice to surface material pertinent to a query.
+  ;;
+  ;; Archive commit: 3df2d2a
+  ;; Archive deletion: f0d3631
+  ;;
+  "archive_query_help"
+}
+
 target archive_query / "archive_query_system"
 voice main / {archive.query -> archive_query}
 
