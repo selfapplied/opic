@@ -270,6 +270,7 @@ def create_readme_files():
         ("case_studies/core/compression", "Compression Solver"),
         ("case_studies/core/emergent", "Emergent Behaviors"),
         ("case_studies/core/learn", "Fun Learning Curve"),
+        ("case_studies/core/emit", "Emit to Runtime"),
         ("case_studies/domains/biology", "Biology as Field Equations"),
         ("case_studies/domains/ml", "Machine Learning as Compositional Fields"),
         ("case_studies/domains/protocols", "Internet Protocols as Value Fields"),
