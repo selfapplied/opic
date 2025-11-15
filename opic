@@ -67,12 +67,19 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     Theory-based termination: Stops at equilibrium when result stabilizes.
     Stable formations equalize charge and minimize symbol count.
     """
+    # DEBUG: See what we're executing
+    if "--debug" in sys.argv:
+        print(f"DEBUG execute_opic: type={type(voice_body).__name__}, starts_with_brace={isinstance(voice_body, str) and voice_body.startswith('{')}", file=sys.stderr)
+    
     # Initialize execution history for stability detection
     if "execution_history" not in context:
         context["execution_history"] = {}
     
     # Pattern: {chain} → check if it's a mapping definition or execution chain
-    is_chain = isinstance(voice_body, str) and voice_body.startswith("{") and voice_body.endswith("}")
+    is_chain = isinstance(voice_body, str) and voice_body.strip().startswith("{") and voice_body.strip().endswith("}")
+    
+    if "--debug" in sys.argv:
+        print(f"DEBUG: is_chain={is_chain}, voice_body type={type(voice_body)}, first 50: {str(voice_body)[:50] if isinstance(voice_body, str) else 'not string'}", file=sys.stderr)
     
     # Pattern: $extension$ → call Python (circular boundary)
     is_extension = isinstance(voice_body, str) and voice_body.startswith("$") and voice_body.endswith("$")
@@ -89,6 +96,15 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
                 after_quote = inner[last_quote_idx + 1:].strip()
                 if not after_quote:
                     is_mapping_definition = True
+                    # DEBUG: Print to see if we're detecting it
+                    if "--debug" in sys.argv:
+                        print(f"DEBUG: Detected mapping definition, inner length: {len(inner)}, first 50: {inner[:50]}", file=sys.stderr)
+                elif "--debug" in sys.argv:
+                    print(f"DEBUG: NOT mapping definition - after_quote: '{after_quote}'", file=sys.stderr)
+            elif "--debug" in sys.argv:
+                print(f"DEBUG: NOT mapping definition - inner doesn't start with quote: '{inner[:50]}'", file=sys.stderr)
+        elif "--debug" in sys.argv:
+            print(f"DEBUG: NOT mapping definition - not a chain", file=sys.stderr)
     
     # Theory: Check for stability (equilibrium reached)
     # If we've seen this exact voice_body before with same context, return stable result
@@ -111,6 +127,10 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
             result = result.encode().decode('unicode_escape')
         except:
             pass
+        # Store and return immediately - don't fall through
+        if result is not None:
+            context["execution_history"][voice_key] = result
+            return result
     
     # Pattern 2: Execution chain → execute chain (circular: phase flows through S¹)
     if result is None and is_chain:
@@ -502,7 +522,10 @@ def main():
         "command": command,
         "command_line_args": command_line_args
     }
-    main_voice and (result := execute_opic(main_voice, context)) and print(result)
+    if main_voice:
+        result = execute_opic(main_voice, context)
+        if result:
+            print(result)
 
 
 if __name__ == "__main__":
