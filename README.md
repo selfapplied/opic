@@ -4,6 +4,22 @@
 
 *Opic is a self-hosting language for distributed, cryptographically trusted computation, where each function ("voice") composes with others into verifiable chains.*
 
+---
+
+## Core Axiom: Invariant-Generative Worldbuilding
+
+**The Core Axiom states:**
+
+*All generative systems must preserve fundamental invariants under transformation. Worldbuilding is not arbitrary construction, but the disciplined exploration of constraint spaces where physical, mathematical, and narrative invariants remain coherent across scale, composition, and evolution.*
+
+This axiom grounds OPIC's approach to compositional programming:
+- **Voices** are invariant-preserving transformations
+- **Chains** compose these transformations while maintaining coherence
+- **Aquifer primitives** (Feigenbaum, Zeta, RG flows) encode universal scaling laws
+- **Field geometry** ensures topological consistency across program evolution
+
+The Aquifer framework provides primitives that encode deep mathematical structure (chaos theory, spectral analysis, renormalization group flows) as first-class constructs, enabling programs that naturally respect physical and mathematical invariants.
+
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![Zeta Lab](https://img.shields.io/badge/Zeta%20Lab-Research%20Frontier-blue)](docs/riemann_hypothesis_experiment.md)
@@ -326,6 +342,26 @@ You are free to share and adapt this work for any purpose, including commercial 
 - Thanks to all contributors who extend opic's capabilities
 
 ---
+
+## Roadmap: Invariant-Axiom Seeding
+
+**Phase 1: Foundation (Current)**
+- [x] Core Axiom documentation
+- [x] Aquifer primitive stubs (Feigenbaum, Zeta, RG flows)
+- [x] Field geometry initialization framework
+- [x] UI sketch for ZetaCore topological visualization
+
+**Phase 2: Implementation**
+- [ ] Implement Feigenbaum bifurcation constraints
+- [ ] Implement Zeta spectral filtering for voice composition
+- [ ] Complete RG flow convergence analysis
+- [ ] Build ZetaCore interactive UI prototype
+
+**Phase 3: Integration**
+- [ ] Connect Aquifer primitives to OPIC voice system
+- [ ] Demonstrate invariant preservation in chain composition
+- [ ] Performance benchmarking and optimization
+- [ ] Documentation and contributor guide expansion
 
 ---
 
