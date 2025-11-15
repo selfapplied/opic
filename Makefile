@@ -230,6 +230,65 @@ typst: check-opic
 	@$(OPIC_BINARY) execute systems/whitepaper.ops whitepaper.generate_typst || \
 	 (cd examples && typst compile field_equations_whitepaper.typ field_equations_whitepaper.pdf 2>&1 && echo "✅ Whitepaper compiled")
 
+# Case Studies - Generate novel output to .out
+CASE_STUDIES_OUT := $(BUILD_DIR)/case_studies
+
+.PHONY: case-studies cosmology reasoning tests compression emergent solve
+
+case-studies: cosmology reasoning tests compression emergent solve
+	@echo "✓ All case studies completed"
+
+# Cosmology: Generate CMB predictions
+cosmology: check-opic
+	@echo "Running cosmology case study..."
+	@mkdir -p $(CASE_STUDIES_OUT)/core/cosmology
+	@$(OPIC_BINARY) execute case_studies/core/cosmology/zeta_cosmological_correspondence.ops > $(CASE_STUDIES_OUT)/core/cosmology/cmb_predictions.out 2>&1 || true
+	@$(OPIC_BINARY) execute case_studies/core/cosmology/cosmological_extended.ops > $(CASE_STUDIES_OUT)/core/cosmology/extended_predictions.out 2>&1 || true
+	@echo "✓ Cosmology output: $(CASE_STUDIES_OUT)/core/cosmology/"
+
+# Reasoning: Generate explanations
+reasoning: check-opic
+	@echo "Running reasoning case study..."
+	@mkdir -p $(CASE_STUDIES_OUT)/core/reasoning
+	@$(OPIC_BINARY) execute case_studies/core/reasoning/reasoning.ops > $(CASE_STUDIES_OUT)/core/reasoning/reasoning.out 2>&1 || true
+	@$(OPIC_BINARY) execute case_studies/core/reasoning/explain.ops > $(CASE_STUDIES_OUT)/core/reasoning/explanations.out 2>&1 || true
+	@$(OPIC_BINARY) execute case_studies/core/reasoning/self_explanation.ops > $(CASE_STUDIES_OUT)/core/reasoning/self_explanation.out 2>&1 || true
+	@echo "✓ Reasoning output: $(CASE_STUDIES_OUT)/core/reasoning/"
+
+# Tests: Generate test proofs
+tests: check-opic
+	@echo "Running tests case study..."
+	@mkdir -p $(CASE_STUDIES_OUT)/core/tests
+	@$(OPIC_BINARY) execute case_studies/core/tests/scoring.ops > $(CASE_STUDIES_OUT)/core/tests/scoring.out 2>&1 || true
+	@$(OPIC_BINARY) execute case_studies/core/tests/self.ops > $(CASE_STUDIES_OUT)/core/tests/self_tests.out 2>&1 || true
+	@$(OPIC_BINARY) execute case_studies/core/tests/executor_flow.ops > $(CASE_STUDIES_OUT)/core/tests/executor_flow.out 2>&1 || true
+	@echo "✓ Tests output: $(CASE_STUDIES_OUT)/core/tests/"
+
+# Compression: Generate compression results
+compression: check-opic
+	@echo "Running compression case study..."
+	@mkdir -p $(CASE_STUDIES_OUT)/core/compression
+	@$(OPIC_BINARY) execute case_studies/core/compression/critical_geometry_codec.ops > $(CASE_STUDIES_OUT)/core/compression/codec.out 2>&1 || true
+	@$(OPIC_BINARY) execute case_studies/core/compression/compression.ops > $(CASE_STUDIES_OUT)/core/compression/compression.out 2>&1 || true
+	@$(OPIC_BINARY) execute case_studies/core/compression/zeta_compression.ops > $(CASE_STUDIES_OUT)/core/compression/zeta_compression.out 2>&1 || true
+	@echo "✓ Compression output: $(CASE_STUDIES_OUT)/core/compression/"
+
+# Emergent: Generate emergent behavior examples
+emergent: check-opic
+	@echo "Running emergent case study..."
+	@mkdir -p $(CASE_STUDIES_OUT)/core/emergent
+	@$(OPIC_BINARY) execute case_studies/core/emergent/actor_coupled_modeling.ops > $(CASE_STUDIES_OUT)/core/emergent/actor_coupled.out 2>&1 || true
+	@echo "✓ Emergent output: $(CASE_STUDIES_OUT)/core/emergent/"
+
+# Solve: Generate runtime emission examples
+solve: check-opic
+	@echo "Running solve case study..."
+	@mkdir -p $(CASE_STUDIES_OUT)/core/solve
+	@$(OPIC_BINARY) execute case_studies/core/solve/solve_simple.ops > $(CASE_STUDIES_OUT)/core/solve/solver.out 2>&1 || true
+	@$(OPIC_BINARY) execute case_studies/core/solve/example.ops > $(CASE_STUDIES_OUT)/core/solve/example.out 2>&1 || true
+	@$(OPIC_BINARY) execute case_studies/core/solve/runtime.ops > $(CASE_STUDIES_OUT)/core/solve/runtime.out 2>&1 || true
+	@echo "✓ Solve output: $(CASE_STUDIES_OUT)/core/solve/"
+
 help:
 	@echo "OPIC Makefile Targets:"
 	@echo ""
@@ -239,6 +298,15 @@ help:
 	@echo "  make test         - Run all tests"
 	@echo "  make compile      - Self-compile opic"
 	@echo "  make install      - Install system-wide"
+	@echo ""
+	@echo "Case Studies (generate output to .out/):"
+	@echo "  make case-studies - Run all case studies"
+	@echo "  make cosmology    - Generate CMB predictions"
+	@echo "  make reasoning    - Generate explanations"
+	@echo "  make tests        - Generate test proofs"
+	@echo "  make compression  - Generate compression results"
+	@echo "  make emergent     - Generate emergent behavior examples"
+	@echo "  make solve        - Generate runtime emission examples"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build        - Build TiddlyWiki"
