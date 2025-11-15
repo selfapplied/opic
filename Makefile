@@ -249,10 +249,8 @@ cosmology: check-opic
 reasoning: check-opic
 	@echo "Running reasoning case study..."
 	@mkdir -p $(CASE_STUDIES_OUT)/core/reasoning
-	@$(OPIC_BINARY) execute case_studies/core/reasoning/reasoning.ops > $(CASE_STUDIES_OUT)/core/reasoning/reasoning.out 2>&1 || true
-	@$(OPIC_BINARY) execute case_studies/core/reasoning/explain.ops > $(CASE_STUDIES_OUT)/core/reasoning/explanations.out 2>&1 || true
-	@$(OPIC_BINARY) execute case_studies/core/reasoning/self_explanation.ops > $(CASE_STUDIES_OUT)/core/reasoning/self_explanation.out 2>&1 || true
-	@echo "✓ Reasoning output: $(CASE_STUDIES_OUT)/core/reasoning/"
+	@$(OPIC_BINARY) execute case_studies/core/reasoning/main.ops > $(CASE_STUDIES_OUT)/core/reasoning/explanations.out 2>&1 || true
+	@echo "✓ Reasoning output: $(CASE_STUDIES_OUT)/core/reasoning/explanations.out"
 
 # Tests: Generate test proofs
 tests: check-opic

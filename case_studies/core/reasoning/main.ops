@@ -1,0 +1,84 @@
+;;; main.ops — Reasoning case study: Generate explanations
+;;; Demonstrates OPIC's reasoning and explanation capabilities
+
+include core/bootstrap.ops
+include case_studies/core/reasoning/reasoning.ops
+include case_studies/core/reasoning/explain.ops
+
+;; ============================================================================
+;; REASONING CASE STUDY: Generate Explanations
+;; ============================================================================
+;; This case study demonstrates:
+;; 1. Logical reasoning capabilities
+;; 2. Self-explanation of OPIC
+;; 3. Natural language explanations
+
+;; ============================================================================
+;; REASONING DEMONSTRATION
+;; ============================================================================
+
+voice reasoning.demo / {
+  ->
+  "REASONING CAPABILITIES\n" +
+  "======================\n\n" +
+  "OPIC provides logical reasoning through voices:\n" +
+  "- Deductive: modus ponens, modus tollens, syllogism\n" +
+  "- Inductive: pattern recognition, generalization\n" +
+  "- Abductive: best explanation inference\n" +
+  "- Goal-directed: backward/forward chaining\n" +
+  "- Meta-reasoning: reasoning about reasoning\n\n" +
+  "Example reasoning chain:\n" +
+  "  goal: 'solve problem' ->\n" +
+  "  reason.toward_goal ->\n" +
+  "  reason.plan ->\n" +
+  "  reason.verify ->\n" +
+  "  solution\n" ->
+  reasoning_output
+}
+
+;; ============================================================================
+;; SELF-EXPLANATION DEMONSTRATION
+;; ============================================================================
+
+voice explanation.demo / {
+  ->
+  explain.opic ->
+  explanation_output
+}
+
+;; ============================================================================
+;; COMBINE OUTPUTS
+;; ============================================================================
+
+voice combine_reasoning_outputs / {
+  reasoning_output + explanation_output ->
+  "======================================================================\n" +
+  "REASONING CASE STUDY\n" +
+  "======================================================================\n\n" +
+  reasoning_output + "\n\n" +
+  "======================================================================\n" +
+  "SELF-EXPLANATION\n" +
+  "======================================================================\n\n" +
+  explanation_output + "\n\n" +
+  "======================================================================\n" +
+  "This demonstrates:\n" +
+  "- Logical reasoning chains\n" +
+  "- Self-explanation capabilities\n" +
+  "- Natural language generation\n" +
+  "======================================================================\n" ->
+  combined_output
+}
+
+;; ============================================================================
+;; MAIN
+;; ============================================================================
+
+target reasoning / "reasoning_capabilities"
+voice main / {
+  ->
+  reasoning.demo ->
+  explanation.demo ->
+  combine_reasoning_outputs ->
+  reasoning_result
+}
+
