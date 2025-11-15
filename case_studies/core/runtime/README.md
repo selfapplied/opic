@@ -1,4 +1,4 @@
-# Emit to Runtime
+# Runtime Emission
 
 **Solve semantically, then emit to target runtime.**
 
@@ -12,7 +12,7 @@ This case study crystallizes the "solve → emit" pattern:
 
 ## Key Files
 
-- `emit.ops` — Example showing semantic solve + runtime emission
+- `runtime.ops` — Example showing semantic solve + runtime emission
 
 ## Philosophy
 
@@ -37,7 +37,7 @@ OPIC's semantic gravity already resolves meaning. The solver just formats that m
 ```ops
 ;; Solve for Python
 voice solve_for_python / {
-  "emit.ops" + "python.cp311" ->
+  "runtime.ops" + "python.cp311" ->
   solve ->
   python_code + report
 }

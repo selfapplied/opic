@@ -1,10 +1,10 @@
-;;; emit.ops — Emit OPIC to target runtime
+;;; runtime.ops — Emit OPIC to target runtime
 ;;; Case Study: Solve semantically, then emit to runtime
 
 include systems/solve/solve_simple.ops
 
 ;; ============================================================================
-;; EMIT TO RUNTIME
+;; RUNTIME EMISSION
 ;; ============================================================================
 ;; Core Philosophy:
 ;;   1. OPIC solves semantically through its implicit system
@@ -65,7 +65,7 @@ voice target_runtime / {
 ;; ============================================================================
 
 voice solve_for_python / {
-  "emit.ops" + "python.cp311" ->
+  "runtime.ops" + "python.cp311" ->
   solve ->
   python_code + report
 }
@@ -76,14 +76,14 @@ voice solve_for_python / {
 
 ;; Solve for Rust (static types, compile-time checks)
 voice solve_for_rust / {
-  "emit.ops" + "rust" ->
+  "runtime.ops" + "rust" ->
   solve ->
   rust_code + report
 }
 
 ;; Solve for WASM (sandboxed, deterministic)
 voice solve_for_wasm / {
-  "emit.ops" + "wasm" ->
+  "runtime.ops" + "wasm" ->
   solve ->
   wasm_code + report
 }
@@ -96,10 +96,10 @@ voice solve_for_wasm / {
 ;; No complex constraint graphs. No distortion analysis.
 ;; Just: "here's your OPIC, here's your runtime, go."
 
-target emit / "emit_to_runtime"
+target runtime / "emit_to_runtime"
 voice main / {
-  "emit.ops" + "python.cp311" ->
+  "runtime.ops" + "python.cp311" ->
   solve ->
-  emit
+  runtime
 }
 
