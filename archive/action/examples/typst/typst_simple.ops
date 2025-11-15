@@ -1,0 +1,14 @@
+;;; typst_simple.ops — Simple working Typst example
+
+include systems/typst.ops
+
+;; Simple example: Convert markdown to Typst and write file
+voice example.write / {
+  "# Opic Language\n\nOpic is a self-hosting language for distributed computation.\n\n## Features\n\n- Self-hosting\n- Cryptographic trust\n- Field equations" -> 
+  typst.from_markdown -> 
+  typst_write_file
+}
+
+target typst_simple / "simple_typst_example"
+voice main / {example.write -> typst_simple}
+

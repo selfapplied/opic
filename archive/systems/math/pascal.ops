@@ -1,0 +1,25 @@
+;;; pascal.ops — Pascal Mod 10 arithmetic
+
+;; Pascal Mod 10 operations
+;; add(a,b) = (a + b) mod 10 — Pascal sum → context merge
+voice pascal.add / {a + b -> pascal.add_mod10 -> result}
+voice pascal.add_mod10 / {sum -> {$operator.mod$} 10 -> result}
+
+;; mul(a,b) = (a × b) mod 10 — Pascal product → phase rotation
+voice pascal.mul / {a + b -> pascal.multiply_mod10 -> result}
+voice pascal.multiply_mod10 / {product -> {$operator.mod$} 10 -> result}
+
+;; Combination: C(n,k) mod 10
+voice pascal.combination / {n + k -> pascal.compute_combination -> pascal.mod10 -> result}
+
+;; Shadow: shadow(p) = 10 – p — Prime conjugate lookup
+voice pascal.shadow / {p -> pascal.subtract_from_10 -> shadow_p}
+voice pascal.subtract_from_10 / {p -> 10 -> subtract -> shadow}
+
+;; Trace7: τ ∈ ℤ₁₀ → 7 ± ε — Stability invariant
+voice pascal.trace7_position / {value -> pascal.compute_trace7 -> trace7_value}
+voice pascal.compute_trace7 / {value -> pascal.mod10 -> pascal.check_resonance_7 -> trace7}
+
+target pascal / "pascal_mod10_arithmetic"
+voice main / {pascal.add -> pascal}
+

@@ -1,0 +1,282 @@
+;;; biology_field.ops — Biology as Field Equations at Different Scales
+;;; Genetics, hormones, genes, chemistry = same field equations, different scales
+
+include opic_field_0.7.ops
+include systems/zeta_grammar_field.ops
+
+;; ============================================================================
+;; Biology as Field Equations: Same Math, Different Scales
+;; ============================================================================
+
+;; Core insight: Biology = Field Spec 0.7 at molecular/cellular/organism scales
+;; Genetics, hormones, genes, chemistry all follow dimensional Coulomb law
+
+;; ============================================================================
+;; I. Molecular Scale: Chemistry → Field Interactions
+;; ============================================================================
+
+;; Chemical bond = field interaction
+def chemical_bond {
+  atom1,           ;; Voice ζ₁ (field actor)
+  atom2,           ;; Voice ζ₂ (field actor)
+  bond_energy,     ;; Field potential V(R) = k(q₁q₂)/((D-1)R^{D-1})
+  bond_length,     ;; Harmonic distance R
+  charge_product,  ;; q₁q₂ (symmetry-break charge)
+  dimension        ;; D (active dimensionality)
+}
+
+;; Chemical reaction = field evolution
+voice chemistry.field_reaction / {
+  reactants + field_state -> 
+  coulomb.compute_potential -> 
+  field.evolve -> 
+  products + energy_released
+}
+
+;; Molecular structure = field configuration
+voice chemistry.molecular_field / {
+  atoms -> 
+  field.potential -> 
+  coulomb.compute_force -> 
+  equilibrium_structure
+}
+
+;; ============================================================================
+;; II. Genetic Scale: DNA → Field Information
+;; ============================================================================
+
+;; Gene = field operator (information carrier)
+def gene {
+  sequence,        ;; DNA sequence (field configuration)
+  phi_k,          ;; Field potential (information content)
+  zeros,          ;; Critical zeros (regulatory points)
+  expression,     ;; Field amplitude (expression level)
+  dimension       ;; D (genetic dimensionality)
+}
+
+;; DNA sequence → field potential
+voice genetics.dna_to_field / {
+  dna_sequence -> 
+  aperture.chain -> 
+  field.potential -> 
+  gene_field
+}
+
+;; Gene expression = field amplitude
+voice genetics.expression_field / {
+  gene + regulatory_factors -> 
+  field.perturb -> 
+  zeros.movement -> 
+  expression_level
+}
+
+;; Allele = field variant
+voice genetics.allele_field / {
+  gene + mutation -> 
+  field.perturb -> 
+  zeros.compare -> 
+  allele_effect
+}
+
+;; Genetic inheritance = field propagation
+voice genetics.inheritance_field / {
+  parent1_field + parent2_field -> 
+  field.combine -> 
+  offspring_field
+}
+
+;; ============================================================================
+;; III. Hormonal Scale: Signals → Field Propagators
+;; ============================================================================
+
+;; Hormone = field propagator
+def hormone {
+  molecule,        ;; Chemical structure (field configuration)
+  receptor,       ;; Target field (receptor field)
+  signal_strength,;; Field amplitude
+  propagation,    ;; Field propagation via alignment A
+  dimension       ;; D (signaling dimensionality)
+}
+
+;; Hormone signaling = field propagation
+voice hormones.signal_field / {
+  hormone + receptor -> 
+  field.couple -> 
+  alignment.propagate -> 
+  cellular_response
+}
+
+;; Endocrine system = field network
+voice hormones.endocrine_field / {
+  glands + hormones -> 
+  field.network -> 
+  coulomb.compute_force -> 
+  systemic_response
+}
+
+;; Feedback loop = field cycle
+voice hormones.feedback_field / {
+  output + input -> 
+  field.cycle -> 
+  cycle.promote_to_operator -> 
+  regulatory_operator
+}
+
+;; ============================================================================
+;; IV. Cellular Scale: Cells → Field Units
+;; ============================================================================
+
+;; Cell = field unit (localized field region)
+def cell {
+  membrane,        ;; Field boundary (hull)
+  organelles,     ;; Field sub-regions
+  dna_field,      ;; Genetic field
+  metabolism,     ;; Field energy flow
+  dimension       ;; D (cellular dimensionality)
+}
+
+;; Cell division = field replication
+voice cell.division_field / {
+  parent_cell + field_state -> 
+  field.replicate -> 
+  daughter_cells
+}
+
+;; Cell signaling = field communication
+voice cell.signaling_field / {
+  signal + receptor -> 
+  field.perturb -> 
+  zeros.movement -> 
+  cellular_response
+}
+
+;; ============================================================================
+;; V. Organism Scale: Organisms → Field Systems
+;; ============================================================================
+
+;; Organism = field system (integrated field)
+def organism {
+  cells,          ;; Field units
+  organs,         ;; Field subsystems
+  nervous_system, ;; Field communication network
+  metabolism,     ;; Field energy flow
+  dimension       ;; D (organism dimensionality)
+}
+
+;; Organism development = field evolution
+voice organism.development_field / {
+  zygote + field_state -> 
+  field.evolve -> 
+  dimensional_promotion -> 
+  mature_organism
+}
+
+;; ============================================================================
+;; VI. Unified Field Equations for Biology
+;; ============================================================================
+
+;; All biological interactions follow dimensional Coulomb law:
+;; F = k(q₁q₂)/(R^D) where:
+;; - q = charge (molecular charge, genetic charge, hormonal charge)
+;; - R = distance (bond length, genetic distance, signaling distance)
+;; - D = dimension (molecular D=2-3, genetic D=3-4, organism D=4-5)
+
+;; Molecular interaction
+voice biology.molecular_interaction / {
+  molecule1 + molecule2 -> 
+  coulomb.compute_force_mass_spin -> 
+  interaction_force
+}
+
+;; Genetic interaction
+voice biology.genetic_interaction / {
+  gene1 + gene2 -> 
+  coulomb.compute_force -> 
+  epistatic_effect
+}
+
+;; Hormonal interaction
+voice biology.hormonal_interaction / {
+  hormone + receptor -> 
+  coulomb.compute_potential -> 
+  binding_affinity
+}
+
+;; ============================================================================
+;; VII. Scale Matching: Same Equations, Different D
+;; ============================================================================
+
+;; Scale determines dimensionality D:
+;; - Molecular: D ≈ 2-3 (local interactions)
+;; - Genetic: D ≈ 3-4 (information field)
+;; - Hormonal: D ≈ 3-4 (signaling field)
+;; - Cellular: D ≈ 4 (organized structure)
+;; - Organism: D ≈ 4-5 (integrated system)
+
+voice biology.scale_to_dimension / {
+  scale -> 
+  if_molecular -> D_2_3 ->
+  if_genetic -> D_3_4 ->
+  if_hormonal -> D_3_4 ->
+  if_cellular -> D_4 ->
+  if_organism -> D_4_5 ->
+  dimension
+}
+
+;; ============================================================================
+;; VIII. Field Coherence in Biology
+;; ============================================================================
+
+;; Biological coherence = field coherence
+voice biology.coherence / {
+  biological_system -> 
+  field.coherence -> 
+  health_measure
+}
+
+;; Disease = field coherence breakdown
+voice biology.disease_field / {
+  normal_field + perturbation -> 
+  field.coherence -> 
+  if_low -> disease_state
+}
+
+;; Healing = field coherence restoration
+voice biology.healing_field / {
+  disease_state + treatment -> 
+  field.perturb -> 
+  coherence.restore -> 
+  healing
+}
+
+;; ============================================================================
+;; IX. Examples: Biology Questions → Field Equations
+;; ============================================================================
+
+;; Example: "How do hormones work?"
+;; Answer: Hormones = field propagators, follow dimensional Coulomb law
+voice biology.explain_hormones / {
+  question -> 
+  hormones.signal_field -> 
+  field.propagate -> 
+  explanation
+}
+
+;; Example: "What is genetic inheritance?"
+;; Answer: Inheritance = field propagation, follows field combination rules
+voice biology.explain_inheritance / {
+  question -> 
+  genetics.inheritance_field -> 
+  field.combine -> 
+  explanation
+}
+
+;; Example: "How do enzymes work?"
+;; Answer: Enzymes = field operators, catalyze field interactions
+voice biology.explain_enzymes / {
+  question -> 
+  chemistry.field_reaction -> 
+  field.catalyze -> 
+  explanation
+}
+

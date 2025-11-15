@@ -1,0 +1,26 @@
+;;; hello.ops — Hello World tracing its own history
+
+include core/bootstrap.ops
+
+;; History of "Hello World" across languages (1972 → 2024)
+voice history.c / "1972: C — printf(\"hello, world\\n\");"
+voice history.fortran / "1978: Fortran — WRITE(*,*) 'Hello, World!'"
+voice history.pascal / "1980s: Pascal — writeln('Hello, world');"
+voice history.python / "1991: Python — print('Hello, world!')"
+voice history.java / "1995: Java — System.out.println(\"Hello, world\");"
+voice history.go / "2009: Go — fmt.Println(\"Hello, world\")"
+voice history.opic / "2024: OPIC — voice main / \"Hello, world!\""
+
+;; Trace the evolution in a couple lines
+voice main / {
+  history.c -> 
+  history.fortran -> 
+  history.pascal -> 
+  history.python -> 
+  history.java -> 
+  history.go -> 
+  history.opic -> 
+  "Hello, world! (tracing 52 years of programming history)"
+}
+
+target hello / "hello_world_history"

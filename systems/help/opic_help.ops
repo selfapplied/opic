@@ -1,9 +1,0 @@
-;;; opic_help.ops — Generate help from actual code and comments (pure opic)
-
-voice generate.help / {
-  "." -> generate_help -> 
-  help.text
-}
-
-target opic_help / "opic_help"
-voice main / {generate.help -> help.text}

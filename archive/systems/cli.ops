@@ -1,0 +1,43 @@
+;;; cli.ops — opic CLI command routing (pure opic, no includes)
+
+;; Get command from command line args
+voice cli.get_command / {command_line_args -> get_first -> command}
+
+;; Map command to .ops file path  
+voice cli.find_ops_file / {
+  "execute" -> "core/bootstrap.ops"
+  "bootstrap" -> "core/bootstrap.ops"  
+  "help" -> "systems/help/opic_help.ops"
+  "test" -> "action/tests/core_tests/runtime.ops"
+  "compile" -> "systems/opic_compile.ops"
+  "plan" -> "systems/opic_plan.ops"
+  "repos" -> "systems/repos.ops"
+  command -> command + ".ops"
+}
+
+;; Load and execute .ops file (uses file_read primitive)
+voice cli.execute_ops / {
+  ops_file -> 
+  file_read -> 
+  parse_ops -> 
+  find_main -> 
+  execute_main
+}
+
+;; Route command to ops file and execute
+voice cli.route / {
+  command -> 
+  cli.find_ops_file -> 
+  cli.execute_ops
+}
+
+;; Main CLI entry point
+voice cli.main / {
+  command_line_args -> 
+  cli.get_command -> 
+  cli.route
+}
+
+target cli / "opic_cli"
+voice main / {cli.main -> cli}
+

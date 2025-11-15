@@ -1,0 +1,14 @@
+;;; typst_working.ops — Working Typst example that actually creates files
+
+include systems/typst.ops
+
+;; Working example: Convert and write in one step
+voice example.working / {
+  "# Opic Language\n\nOpic is a self-hosting language.\n\n## Features\n\n- Self-hosting\n- Cryptographic trust" -> 
+  typst_convert_markdown -> 
+  typst_write_file
+}
+
+target typst_working / "working_typst_example"
+voice main / {example.working -> typst_working}
+

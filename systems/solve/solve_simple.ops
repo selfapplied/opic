@@ -1,0 +1,257 @@
+;;; solve_simple.ops — Simplified program solver
+;;; Focus: Let OPIC's implicit system do the work, just project to runtime
+
+include core/bootstrap.ops
+
+;; ============================================================================
+;; CORE INSIGHT: Solve → Project
+;; ============================================================================
+;; OPIC already solves semantically through its implicit system.
+;; We just need to project that meaning onto a target runtime.
+
+;; Solve OPIC file F for target runtime Rt
+voice solve / {
+  ops_file + target_runtime ->
+  opic.load_recursive ->
+  project.to_runtime ->
+  code + report
+}
+
+;; Project voices and defs to target runtime
+voice project.to_runtime / {
+  voices + defs + target_runtime ->
+  project.types ->
+  project.functions ->
+  project.main ->
+  code
+}
+
+;; Project types (defs) to runtime
+voice project.types / {
+  defs + runtime ->
+  runtime.format_types ->
+  type_code
+}
+
+;; Project functions (voices) to runtime
+voice project.functions / {
+  voices + runtime ->
+  runtime.format_functions ->
+  function_code
+}
+
+;; Project main entry point
+voice project.main / {
+  voices + runtime ->
+  voices.get "main" ->
+  runtime.format_main ->
+  main_code
+}
+
+;; ============================================================================
+;; RUNTIME FORMATTERS (Simple Templates)
+;; ============================================================================
+
+;; Format types for runtime
+voice runtime.format_types / {
+  defs + runtime ->
+  runtime == "rust" -> format.rust.types ->
+  runtime == "python" -> format.python.types ->
+  runtime == "wasm" -> format.wasm.types ->
+  format.generic.types
+}
+
+;; Format functions for runtime
+voice runtime.format_functions / {
+  voices + runtime ->
+  runtime == "rust" -> format.rust.functions ->
+  runtime == "python" -> format.python.functions ->
+  runtime == "wasm" -> format.wasm.functions ->
+  format.generic.functions
+}
+
+;; Format main for runtime
+voice runtime.format_main / {
+  main_voice + runtime ->
+  runtime == "rust" -> format.rust.main ->
+  runtime == "python" -> format.python.main ->
+  runtime == "wasm" -> format.wasm.main ->
+  format.generic.main
+}
+
+;; ============================================================================
+;; RUST FORMATTERS
+;; ============================================================================
+
+voice format.rust.types / {
+  defs ->
+  defs.map -> format.rust.type ->
+  code
+}
+
+voice format.rust.type / {
+  def ->
+  "pub struct " + def.name + " {\n" +
+  def.fields.map -> format.rust.field ->
+  "}\n"
+}
+
+voice format.rust.field / {
+  field ->
+  "    " + field.name + ": " + field.type + ",\n"
+}
+
+voice format.rust.functions / {
+  voices ->
+  voices.map -> format.rust.function ->
+  code
+}
+
+voice format.rust.function / {
+  voice ->
+  "pub fn " + voice.name + "(" + format.rust.params + ") {\n" +
+  format.rust.body voice.body +
+  "}\n"
+}
+
+voice format.rust.main / {
+  main_voice ->
+  "fn main() {\n" +
+  format.rust.body main_voice.body +
+  "}\n"
+}
+
+;; ============================================================================
+;; PYTHON FORMATTERS
+;; ============================================================================
+
+voice format.python.types / {
+  defs ->
+  defs.map -> format.python.type ->
+  code
+}
+
+voice format.python.type / {
+  def ->
+  "class " + def.name + ":\n" +
+  "    def __init__(self, " + format.python.params def.fields + "):\n" +
+  def.fields.map -> format.python.field_init ->
+  code
+}
+
+voice format.python.functions / {
+  voices ->
+  voices.map -> format.python.function ->
+  code
+}
+
+voice format.python.function / {
+  voice ->
+  "def " + voice.name + "(" + format.python.params + "):\n" +
+  format.python.body voice.body +
+  code
+}
+
+voice format.python.main / {
+  main_voice ->
+  "if __name__ == '__main__':\n" +
+  format.python.body main_voice.body
+}
+
+;; ============================================================================
+;; WASM FORMATTERS
+;; ============================================================================
+
+voice format.wasm.types / {
+  defs ->
+  defs.map -> format.wasm.type ->
+  code
+}
+
+voice format.wasm.type / {
+  def ->
+  "(type $" + def.name + " (struct " +
+  def.fields.map -> format.wasm.field +
+  "))"
+}
+
+voice format.wasm.functions / {
+  voices ->
+  voices.map -> format.wasm.function ->
+  code
+}
+
+voice format.wasm.function / {
+  voice ->
+  "(func $" + voice.name + " " +
+  format.wasm.params +
+  format.wasm.body voice.body +
+  ")"
+}
+
+voice format.wasm.main / {
+  main_voice ->
+  "(func $main (export \"main\")\n" +
+  format.wasm.body main_voice.body +
+  ")"
+}
+
+;; ============================================================================
+;; GENERIC FORMATTERS (Fallback)
+;; ============================================================================
+
+voice format.generic.types / {
+  defs ->
+  defs.map -> def.name + " = " + def.fields
+}
+
+voice format.generic.functions / {
+  voices ->
+  voices.map -> voice.name + " = " + voice.body
+}
+
+voice format.generic.main / {
+  main_voice ->
+  "main = " + main_voice.body
+}
+
+;; ============================================================================
+;; SIMPLE REPORT (Just what changed)
+;; ============================================================================
+
+;; Generate simple report
+voice report.generate / {
+  voices + defs + runtime ->
+  report.check_capabilities ->
+  report.list_changes ->
+  report_text
+}
+
+;; Check what capabilities runtime has
+voice report.check_capabilities / {
+  runtime ->
+  runtime == "rust" -> "Affine types, compile-time checks" ->
+  runtime == "python" -> "Dynamic types, runtime checks" ->
+  runtime == "wasm" -> "Sandboxed, deterministic" ->
+  "Basic types and functions"
+}
+
+;; List what changed
+voice report.list_changes / {
+  capabilities ->
+  "Runtime: " + capabilities + "\n" +
+  "All OPIC voices and defs projected directly.\n" +
+  "Use OPIC's implicit system for semantic resolution."
+}
+
+;; ============================================================================
+;; ENTRY POINT
+;; ============================================================================
+
+target solve_simple / "simple_program_solver"
+voice main / {
+  ops_file + target_runtime ->
+  solve ->
+  solve_simple
+}
+

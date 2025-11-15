@@ -1,0 +1,433 @@
+;; Semantic Boundary Matrix - represents file space as matrix of semantic changes
+;; Each row: [line, char, boundary_type, content, position]
+;; Useful for symbol extraction and type filtering
+
+;; Semantic boundary types
+def boundary.def_start { line, char, type: "def_start", content, position }
+def boundary.def_end { line, char, type: "def_end", content, position }
+def boundary.voice_start { line, char, type: "voice_start", content, position }
+def boundary.voice_end { line, char, type: "voice_end", content, position }
+def boundary.include { line, char, type: "include", content, position }
+def boundary.comment { line, char, type: "comment", content, position }
+def boundary.namespace { line, char, type: "namespace", content, position }
+
+;; Create semantic boundary matrix from file content
+voice semantic.create_matrix / {
+  file_content -> 
+  semantic.scan_lines -> 
+  semantic.identify_boundaries -> 
+  semantic.build_matrix -> 
+  boundary_matrix
+}
+
+;; Scan lines and identify semantic boundaries
+voice semantic.scan_lines / {
+  file_content -> 
+  string.split_lines -> 
+  list.enumerate -> 
+  semantic.scan_each_line -> 
+  boundaries
+}
+
+;; Scan single line for boundaries
+voice semantic.scan_each_line / {
+  line_number + line -> 
+  semantic.check_def_start -> 
+  semantic.check_voice_start -> 
+  semantic.check_include -> 
+  semantic.check_namespace -> 
+  semantic.check_comment -> 
+  boundaries
+}
+
+;; Check for def start boundary
+voice semantic.check_def_start / {
+  line + line_number + char_offset -> 
+  string.match_pattern -> 
+  "def " -> 
+  if_matches -> 
+  boundary.create_def_start
+}
+
+;; Check for voice start boundary
+voice semantic.check_voice_start / {
+  line + line_number + char_offset -> 
+  string.match_pattern -> 
+  "voice " -> 
+  if_matches -> 
+  boundary.create_voice_start
+}
+
+;; Check for include boundary
+voice semantic.check_include / {
+  line + line_number + char_offset -> 
+  string.match_pattern -> 
+  "include " -> 
+  if_matches -> 
+  boundary.create_include
+}
+
+;; Check for namespace usage (namespace.voice pattern)
+voice semantic.check_namespace / {
+  line + line_number + char_offset -> 
+  string.match_pattern -> 
+  "[a-zA-Z0-9_]+\\.[a-zA-Z0-9_]+" -> 
+  if_matches -> 
+  boundary.create_namespace
+}
+
+;; Check for comment boundary
+voice semantic.check_comment / {
+  line + line_number + char_offset -> 
+  string.match_pattern -> 
+  ";" -> 
+  if_matches -> 
+  boundary.create_comment
+}
+
+;; Create boundary objects
+voice boundary.create_def_start / {
+  line + char + content -> 
+  boundary.def_start.create
+}
+
+voice boundary.create_voice_start / {
+  line + char + content -> 
+  boundary.voice_start.create
+}
+
+voice boundary.create_include / {
+  line + char + content -> 
+  boundary.include.create
+}
+
+voice boundary.create_namespace / {
+  line + char + content -> 
+  boundary.namespace.create
+}
+
+voice boundary.create_comment / {
+  line + char + content -> 
+  boundary.comment.create
+}
+
+;; Build matrix from boundaries
+voice semantic.build_matrix / {
+  boundaries -> 
+  list.map -> 
+  boundary.to_row -> 
+  matrix.create
+}
+
+;; Convert boundary to matrix row [line, char, type, content, position]
+voice boundary.to_row / {
+  boundary -> 
+  boundary.get_line -> 
+  boundary.get_char -> 
+  boundary.get_type -> 
+  boundary.get_content -> 
+  boundary.get_position -> 
+  row.create
+}
+
+;; Extract symbols from matrix by type
+voice semantic.extract_symbols / {
+  boundary_matrix + symbol_type -> 
+  matrix.filter_rows -> 
+  row.get_type -> 
+  symbol_type -> 
+  matrix.extract_content -> 
+  symbols
+}
+
+;; Filter matrix by boundary type
+voice semantic.filter_by_type / {
+  boundary_matrix + boundary_type -> 
+  matrix.filter -> 
+  row.get_type -> 
+  boundary_type -> 
+  filtered_matrix
+}
+
+;; Extract all def boundaries
+voice semantic.extract_defs / {
+  boundary_matrix -> 
+  semantic.filter_by_type -> 
+  "def_start" -> 
+  matrix.extract_content -> 
+  def_names
+}
+
+;; Extract all voice boundaries
+voice semantic.extract_voices / {
+  boundary_matrix -> 
+  semantic.filter_by_type -> 
+  "voice_start" -> 
+  matrix.extract_content -> 
+  voice_names
+}
+
+;; Extract all namespace usages
+voice semantic.extract_namespaces / {
+  boundary_matrix -> 
+  semantic.filter_by_type -> 
+  "namespace" -> 
+  matrix.extract_content -> 
+  namespace_symbols
+}
+
+;; ============================================================================
+;; SYMBOL EXTRACTION AND EXPANSION OPERATIONS
+;; ============================================================================
+
+;; Extract all symbols from boundary matrix (defs, voices, namespaces)
+voice semantic.extract_all_symbols / {
+  boundary_matrix -> 
+  semantic.extract_defs -> 
+  semantic.extract_voices -> 
+  semantic.extract_namespaces -> 
+  list.merge -> 
+  list.unique -> 
+  all_symbols
+}
+
+;; Create symbol list for expansion
+voice expansion.create_symbol_list / {
+  boundary_matrix -> 
+  semantic.extract_all_symbols -> 
+  expansion.filter_builtin -> 
+  symbol_list
+}
+
+;; Filter out builtin symbols
+voice expansion.filter_builtin / {
+  symbols -> 
+  list.filter -> 
+  symbol.not_builtin -> 
+  filtered_symbols
+}
+
+;; Check if symbol is builtin
+voice symbol.not_builtin / {
+  symbol -> 
+  builtin.contains -> 
+  symbol -> 
+  not
+}
+
+;; Builtin symbols set
+voice builtin.contains / {
+  symbol -> 
+  builtin.set.contains -> 
+  symbol
+}
+
+voice builtin.set / {
+  "opic" + "true" + "false" + "null" + "result" + "input" + "output" + "env" + "context" + "if" + "then" + "else" -> 
+  builtin_set
+}
+
+;; Expansion operations on symbol list
+voice expansion.expand_symbols / {
+  symbol_list + expansions -> 
+  list.map -> 
+  expansion.expand_symbol -> 
+  expanded_symbols
+}
+
+;; Expand single symbol using expansion rules
+voice expansion.expand_symbol / {
+  symbol + expansions -> 
+  expansion.match -> 
+  expansion.apply_expansion -> 
+  expanded
+}
+
+;; Apply expansion to symbol using pattern matching (no if statements)
+;; Expansion type determined by pattern matching on expansion_result
+voice expansion.apply_expansion / {
+  symbol + expansion_result -> 
+  expansion.match_directory_pattern -> 
+  expansion.match_file_pattern -> 
+  expansion.match_string_pattern -> 
+  expanded_path
+}
+
+;; Pattern match: directory expansion
+voice expansion.match_directory_pattern / {
+  expansion_result -> 
+  expansion.pattern_is_directory -> 
+  expansion.directory_to_files.expand -> 
+  expanded_path
+}
+
+;; Pattern match: file expansion
+voice expansion.match_file_pattern / {
+  expansion_result -> 
+  expansion.pattern_is_file -> 
+  expansion.file_to_self.expand -> 
+  expanded_path
+}
+
+;; Pattern match: string resolution
+voice expansion.match_string_pattern / {
+  expansion_result -> 
+  expansion.pattern_is_string -> 
+  expansion.resolve_string -> 
+  expanded_path
+}
+
+;; Pattern predicates (return expansion_result if matches, null otherwise)
+voice expansion.pattern_is_directory / { expansion_result -> expansion_result.type == "directory" -> expansion_result }
+voice expansion.pattern_is_file / { expansion_result -> expansion_result.type == "file" -> expansion_result }
+voice expansion.pattern_is_string / { expansion_result -> expansion_result.type == "string" -> expansion_result }
+
+;; Batch expansion: expand all symbols from boundary matrix
+voice expansion.batch_expand / {
+  boundary_matrix + expansions -> 
+  expansion.create_symbol_list -> 
+  expansion.expand_symbols -> 
+  expanded_paths
+}
+
+;; Expand symbols and create includes
+voice expansion.create_includes / {
+  boundary_matrix + expansions + file_path -> 
+  expansion.batch_expand -> 
+  list.map -> 
+  expansion.to_include_path -> 
+  includes
+}
+
+;; Convert expanded path to include path
+voice expansion.to_include_path / {
+  expanded_path + file_path -> 
+  path.relative_to -> 
+  file_path.parent -> 
+  include_path
+}
+
+;; Extract symbols by type for targeted expansion
+voice expansion.extract_by_type / {
+  boundary_matrix + symbol_type -> 
+  semantic.filter_by_type -> 
+  symbol_type -> 
+  matrix.extract_content -> 
+  symbols -> 
+  expansion.create_symbol_list -> 
+  symbol_list
+}
+
+;; Expand only def symbols
+voice expansion.expand_defs / {
+  boundary_matrix + expansions -> 
+  expansion.extract_by_type -> 
+  "def_start" -> 
+  expansion.expand_symbols -> 
+  expanded_defs
+}
+
+;; Expand only voice symbols
+voice expansion.expand_voices / {
+  boundary_matrix + expansions -> 
+  expansion.extract_by_type -> 
+  "voice_start" -> 
+  expansion.expand_symbols -> 
+  expanded_voices
+}
+
+;; Expand only namespace symbols
+voice expansion.expand_namespaces / {
+  boundary_matrix + expansions -> 
+  expansion.extract_by_type -> 
+  "namespace" -> 
+  expansion.expand_symbols -> 
+  expanded_namespaces
+}
+
+;; Conditional expansion using pattern matching (no if statements)
+;; Pattern match: new symbol -> expand, already expanded -> return symbol
+voice expansion.expand_if_new / {
+  symbol + expansions + already_expanded -> 
+  expansion.pattern_new_symbol -> 
+  expansion.pattern_already_expanded -> 
+  expanded
+}
+
+;; Pattern match: new symbol (not in already_expanded)
+voice expansion.pattern_new_symbol / {
+  symbol + already_expanded -> 
+  list.contains -> 
+  symbol -> 
+  not -> 
+  expansion.expand_symbol -> 
+  expanded
+}
+
+;; Pattern match: already expanded (in already_expanded)
+voice expansion.pattern_already_expanded / {
+  symbol + already_expanded -> 
+  list.contains -> 
+  symbol -> 
+  symbol
+}
+
+;; Incremental expansion: expand only new symbols
+voice expansion.incremental_expand / {
+  boundary_matrix + expansions + previous_symbols -> 
+  expansion.create_symbol_list -> 
+  list.difference -> 
+  previous_symbols -> 
+  new_symbols -> 
+  expansion.expand_symbols -> 
+  expanded_new
+}
+
+;; Get boundary at specific position
+voice semantic.get_boundary_at / {
+  boundary_matrix + line + char -> 
+  matrix.find_row -> 
+  row.matches_position -> 
+  boundary
+}
+
+;; Check if position is within a boundary
+voice semantic.is_within_boundary / {
+  boundary_matrix + line + char + boundary_type -> 
+  semantic.get_boundary_at -> 
+  boundary.get_type -> 
+  boundary_type -> 
+  matches
+}
+
+;; Extract content between boundaries
+voice semantic.extract_between / {
+  boundary_matrix + start_boundary + end_boundary -> 
+  matrix.slice_rows -> 
+  matrix.extract_content -> 
+  content
+}
+
+;; Matrix operations
+voice matrix.create / { rows -> matrix_object }
+voice matrix.filter / { matrix + predicate -> filtered_matrix }
+voice matrix.filter_rows / { matrix + row_predicate -> filtered_matrix }
+voice matrix.extract_content / { matrix -> list.map -> row.get_content -> contents }
+voice matrix.find_row / { matrix + predicate -> row }
+voice matrix.slice_rows / { matrix + start_index + end_index -> sliced_matrix }
+
+;; Row operations
+voice row.create / { line + char + type + content + position -> row_object }
+voice row.get_line / { row -> row[0] }
+voice row.get_char / { row -> row[1] }
+voice row.get_type / { row -> row[2] }
+voice row.get_content / { row -> row[3] }
+voice row.get_position / { row -> row[4] }
+voice row.matches_position / { row + line + char -> row.get_line == line && row.get_char == char }
+
+;; Boundary operations
+voice boundary.get_line / { boundary -> boundary.line }
+voice boundary.get_char / { boundary -> boundary.char }
+voice boundary.get_type / { boundary -> boundary.type }
+voice boundary.get_content / { boundary -> boundary.content }
+voice boundary.get_position / { boundary -> boundary.position }

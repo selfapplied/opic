@@ -1,0 +1,21 @@
+;;; calculus.ops — Calculus operations
+
+;; Derivatives (numerical)
+voice calc.derivative / {f + x + h -> calc.compute_derivative -> df_dx}
+voice calc.compute_derivative / {f_x_plus_h + f_x + h -> subtract -> divide -> derivative}
+
+;; Integrals (numerical)
+voice calc.integrate / {f + a + b -> calc.numerical_integration -> integral_value}
+voice calc.numerical_integration / {f + a + b -> calc.simpson_rule -> integral}
+
+;; Limits
+voice calc.limit / {f + x + point -> calc.compute_limit -> limit_value}
+voice calc.compute_limit / {f_point_plus_epsilon + f_point_minus_epsilon -> calc.average -> limit}
+
+;; Gradient
+voice calc.gradient / {f + x -> calc.compute_gradient -> grad_f}
+voice calc.compute_gradient / {f + x + dimensions -> calc.partial_derivatives -> gradient}
+
+target calculus / "calculus_operations"
+voice main / {calc.derivative -> calculus}
+

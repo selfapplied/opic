@@ -1,0 +1,40 @@
+;;; typst_advanced.ops — Advanced Typst features demonstration
+
+include systems/typst.ops
+include systems/typst_extensions.ops
+
+;; Example: OPS code with syntax highlighting
+voice example.ops_code / {
+  "voice greet / {name -> \"Hello \" + name -> greeting}\nvoice main / {greet \"world\" -> greet}" -> 
+  typst_ops_code -> 
+  highlighted_code
+}
+
+;; Example: Margin note
+voice example.margin_note / {
+  "This voice demonstrates opic's compositional pattern" -> 
+  typst_margin_note -> 
+  margin_note
+}
+
+;; Example: Cryptographic seal
+voice example.seal / {
+  signature: "sha256:abc123..."
+  realm: "opic_realm"
+  ca: "opic_ca"
+  -> typst_cryptographic_seal -> 
+  seal
+}
+
+;; Example: Field equation
+voice example.field_equation / {
+  equation: "f(Delta t, Delta Phi, proof_of_care) = sum_i w_i * (t_i + Phi_i + v_i)"
+  variables: "tau = (t, Phi, v)"
+  explanation: "Field Equation Exchange: Learning Energy Units"
+  -> typst_field_equation -> 
+  equation
+}
+
+target typst_advanced / "advanced_typst_features"
+voice main / {example.ops_code -> typst_advanced}
+

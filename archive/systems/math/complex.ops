@@ -1,0 +1,23 @@
+;;; complex.ops — Complex number operations
+
+;; Complex number creation
+voice complex.create / {real + imaginary -> {$complex$} -> z}
+voice complex.from_polar / {r + theta -> complex.create_polar -> z}
+
+;; Basic operations
+voice complex.add / {z1 + z2 -> complex.add_real_imag -> z_sum}
+voice complex.multiply / {z1 + z2 -> complex.multiply_real_imag -> z_product}
+voice complex.divide / {z1 + z2 -> complex.divide_real_imag -> z_quotient}
+
+;; Properties
+voice complex.real / {z -> {$z.real$} -> real_part}
+voice complex.imag / {z -> {$z.imag$} -> imag_part}
+voice complex.abs / {z -> {$abs$} -> magnitude}
+voice complex.angle / {z -> {$numpy.angle$} -> phase}
+
+;; Conjugate
+voice complex.conjugate / {z -> {$numpy.conj$} -> z_conj}
+
+target complex / "complex_number_operations"
+voice main / {complex.create -> complex}
+

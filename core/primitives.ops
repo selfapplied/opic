@@ -1,0 +1,44 @@
+;;; primitives.ops — Essential operations via $extension$ syntax
+;;; Core primitives: file, string, dict, list, type operations
+;;; OPIC calls Python extensions directly, no pre-registration needed
+
+;; File operations (via Python extensions)
+voice python.file_read / {$pathlib.Path.read_text$}
+voice python.file_write / {$pathlib.Path.write_text$}
+voice python.file_exists / {$pathlib.Path.exists$}
+
+;; Math operations (via Python extensions)
+voice math.add / {$operator.add$}
+voice math.multiply / {$operator.mul$}
+voice math.divide / {$operator.truediv$}
+
+;; String operations (via Python extensions)
+voice string.split / {$str.split$}
+voice string.join / {$str.join$}
+voice string.strip / {$str.strip$}
+voice string.contains / {$operator.contains$}
+
+;; Dictionary operations (via Python extensions)
+voice dict.lookup / {$dict.get$}
+voice dict.update / {$dict.update$}
+
+;; List operations (via Python extensions)
+voice list.append / {$list.append$}
+voice list.for_each / {$builtins.map$}
+
+;; Type checking (via Python extensions)
+voice type.is_string / {$builtins.isinstance$ "str"}
+voice type.is_dict / {$builtins.isinstance$ "dict"}
+voice type.is_list / {$builtins.isinstance$ "list"}
+
+;; Convenience wrappers
+voice python.add / {$operator.add$}
+voice python.split / {$str.split$}
+voice python.join / {$str.join$}
+voice python.strip / {$str.strip$}
+voice python.contains / {$operator.contains$}
+voice python.lookup / {$dict.get$}
+voice python.is_string / {$builtins.isinstance$ "str"}
+voice python.is_dict / {$builtins.isinstance$ "dict"}
+voice python.is_list / {$builtins.isinstance$ "list"}
+

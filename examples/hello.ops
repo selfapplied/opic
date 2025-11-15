@@ -1,4 +1,0 @@
-;;; hello.ops — Simple hello world example
-
-voice main / "Hello, world! This is opic."
-

@@ -1,0 +1,478 @@
+;;; feigenbaum_field.ops — Feigenbaum field operators (Working Theory)
+;;; α and δ as calibrations: yardsticks, not sacred constants
+;;; Measures local α̂, δ̂ from RG steps, compares to reference, produces universality/criticality indices
+;;; These indices inform system behavior but don't force Feigenbaum assumptions
+;;; Core principle: "Reference beacons, not handcuffs"
+
+include systems/00_core/opic_field_0.7.ops
+
+;; ============================================================================
+;; CANONICAL GAUGE: Normalization Invariants
+;; ============================================================================
+
+;; Canonical normalization for a voice-field ζ
+;; Enforces: peak height = 1, curvature at peak = -1, L² norm fixed
+;; This is the OPIC analog of "f(0)=1, f''(0)=-1" for maps
+voice gauge.canonical / {
+  zeta_field ->
+  center_on_peak          ;; shift domain so critical point lives at 0
+  normalize_peak_to_1     ;; ζ(0) = 1
+  normalize_curvature     ;; ∂²ζ/∂s² at 0 = -1
+  normalize_L2_norm       ;; ∫|ζ|² = constant
+  normalized_zeta_field
+}
+
+;; Center field on its peak (critical point)
+voice center_on_peak / {
+  zeta_field ->
+  find_peak_position ->
+  shift_domain ->
+  centered_field
+}
+
+;; Normalize peak height to 1
+voice normalize_peak_to_1 / {
+  centered_field ->
+  measure_peak_height ->
+  divide_by_peak ->
+  peak_normalized_field
+}
+
+;; Normalize curvature at peak to -1
+voice normalize_curvature / {
+  peak_normalized_field ->
+  compute_second_derivative_at_peak ->
+  measure_curvature ->
+  scale_to_minus_one ->
+  curvature_normalized_field
+}
+
+;; Normalize L² norm to fixed constant
+voice normalize_L2_norm / {
+  curvature_normalized_field ->
+  compute_L2_norm ->
+  scale_to_fixed_norm ->
+  fully_normalized_field
+}
+
+;; ============================================================================
+;; RENORMALIZATION OPERATOR: Iterate → Rescale → Normalize → Measure
+;; ============================================================================
+
+;; RG step: iterate twice, rescale, normalize, measure scaling factors
+voice renormalization.unimodal / {
+  zeta_field + dimension ->
+  gauge.canonical           -> zeta_0
+  iterate_twice             -> zeta_2      ;; compose the same morphism twice
+  rescale_domain_and_range  -> zeta_scaled
+  gauge.canonical           -> zeta_next
+  zeta_next
+}
+
+;; Iterate dynamics twice: ζ ∘ ζ
+voice iterate_twice / {
+  zeta_field ->
+  apply_morphism_once ->
+  apply_morphism_again ->
+  zeta_doubled
+}
+
+;; Rescale domain and range to bring back to canonical scale
+voice rescale_domain_and_range / {
+  zeta_doubled ->
+  measure_domain_scaling_needed ->
+  measure_range_scaling_needed ->
+  apply_domain_rescaling ->
+  apply_range_rescaling ->
+  zeta_rescaled
+}
+
+;; ============================================================================
+;; MEASURING α AND δ FROM RG STEPS
+;; ============================================================================
+
+;; Extract α from RG step: domain rescaling factor
+;; α = "how much did we rescale s to bring the doubled dynamics back to canonical form?"
+voice feigenbaum.alpha / {
+  zeta_field + dimension ->
+  renormalization.unimodal ->
+  extract_domain_scaling_factor ->
+  alpha_measured
+}
+
+;; Extract domain scaling factor from RG step
+voice extract_domain_scaling_factor / {
+  zeta_0 + zeta_scaled + zeta_next ->
+  compare_domain_scales ->
+  compute_scaling_ratio ->
+  domain_scaling_factor
+}
+
+;; Extract δ from RG step: parameter-space eigenvalue
+;; δ = "eigenvalue of linearized flow in the parameter direction under our RG operator"
+voice feigenbaum.delta / {
+  zeta_field_family + dimension_family ->
+  renormalization.unimodal[over_family] ->
+  compute_relevant_eigenvalue_in_parameter_space ->
+  delta_measured
+}
+
+;; Compute eigenvalue in parameter space
+voice compute_relevant_eigenvalue_in_parameter_space / {
+  zeta_family_before + zeta_family_after + dimension_family ->
+  linearize_RG_operator ->
+  compute_eigenvalues ->
+  find_dominant_eigenvalue ->
+  delta_eigenvalue
+}
+
+;; Linearize RG operator around fixed point
+voice linearize_RG_operator / {
+  zeta_family_before + zeta_family_after ->
+  compute_perturbation ->
+  compute_RG_response ->
+  build_linear_operator ->
+  linearized_RG
+}
+
+;; ============================================================================
+;; RG-PURE USES OF α AND δ
+;; ============================================================================
+
+;; State-space scaling: ζ^{(n+1)}(s) = α · ζ^{(n)}(s/α)
+;; Only legitimate when α is measured from RG step
+voice feigenbaum.scale_state_space_rg_pure / {
+  zeta_field_n + dimension ->
+  renormalization.unimodal ->
+  extract_domain_scaling_factor ->
+  alpha_measured ->
+  scale_amplitude_by_alpha ->
+  scale_parameter_by_alpha_inverse ->
+  zeta_field_n_plus_1
+}
+
+;; Parameter-space convergence: ΔD_{n+1} = δ^{-1} · ΔD_n
+;; Only legitimate when δ is measured from RG step
+voice feigenbaum.converge_parameter_space_rg_pure / {
+  dimension_n + zeta_field_family ->
+  renormalization.unimodal[over_family] ->
+  compute_relevant_eigenvalue_in_parameter_space ->
+  delta_measured ->
+  compute_parameter_window_width ->
+  scale_by_delta_inverse ->
+  dimension_n_plus_1
+}
+
+;; Renormalization group transformation
+;; ζ^{(n+1)}(s, D) = α · ζ^{(n)}(s/α, D/δ)
+;; Only legitimate when both α and δ are measured from RG steps
+voice renormalization.feigenbaum_transform_rg_pure / {
+  zeta_field_n + dimension_n ->
+  renormalization.unimodal ->
+  extract_domain_scaling_factor ->
+  alpha_measured ->
+  renormalization.unimodal[over_family] ->
+  compute_relevant_eigenvalue_in_parameter_space ->
+  delta_measured ->
+  scale_state_space_by_alpha ->
+  scale_parameter_space_by_delta ->
+  renormalized_field_n_plus_1
+}
+
+;; ============================================================================
+;; DESIGN CHOICES (Must Be Labeled)
+;; ============================================================================
+
+;; Extended coupling matrix with Feigenbaum scaling
+;; DESIGN CHOICE: "We adopt Feigenbaum's spatial scaling as canonical unit"
+;; Only legitimate when coupling matrix is result of RG step
+voice coupling.feigenbaum_extended_design_choice / {
+  voice_i + voice_j + base_coupling_matrix + alpha_measured ->
+  compute_dimensional_difference ->
+  raise_alpha_to_power ->
+  multiply_coupling_matrix ->
+  extended_coupling_weight
+}
+
+;; Curvature evolution with delta acceleration
+;; DESIGN CHOICE: "We model curvature acceleration with δ scaling"
+;; Only legitimate when modeling curvature response to RG step
+voice curvature.feigenbaum_evolution_design_choice / {
+  ricci_tensor + zeta_field + learning_rate_beta + delta_measured ->
+  compute_curvature_acceleration ->
+  add_delta_acceleration_term ->
+  evolve_metric
+}
+
+;; ============================================================================
+;; REFERENCE VALUES: Calibration Beacons
+;; ============================================================================
+
+;; Reference values: good calibrations from classic period-doubling cascade
+;; These are NOT laws—they're yardsticks for comparison
+;; Close to reference → "this behaves like classic Feigenbaum geometry"
+;; Far from reference → "different universality class; don't force assumptions"
+
+def FEIGENBAUM_ALPHA_REFERENCE 2.5029078750958928222839028732182157863802693769290813258904472515679961315868844887534152761781630275513902273640985853711782276698361784059309022827182686049927892877118939742496692111322403744524357727913360362256199963457337337764268427152216374859544167335342340168832905124874463146754530595783026368253300618647398999524980057966150679258363349515707812274223653582200533303062985520169883882776108675603954129365292073932187838010194144352535093835496046670893248094294087335780033697853254996477368569166392287175469825134869347411979756177932339451903269762204353422291263273739073762284036096479134773564608789432500162325131695990362230995293511435230673306750034177129298962400834242852284009920525800140337137843957123402686065820548939453035160691056272396287169335247077432599961565613898917148427650830856399544391069923572207984715508444369775953564535966148531798642347246241
+
+def FEIGENBAUM_DELTA_REFERENCE 4.66920160910299067185320382046620161725818557747576863274565134300413433021131473713868974402394801381716598485518981513440862714202793252231244298889089085994493546323671341153248171421994745564436582379320200956105833057545861765222207038541064674949428498145339172620056875566595233287455135691
+
+;; ============================================================================
+;; CALIBRATION: Measure → Compare → Index
+;; ============================================================================
+
+;; Step 1: Measure local α̂, δ̂ from RG step
+;; Run one RG step for subsystem (training loop, voice chain, Mode 7 layers)
+voice calibration.measure_local / {
+  subsystem ->
+  renormalization.unimodal ->
+  feigenbaum.alpha ->
+  alpha_hat ->
+  renormalization.unimodal[over_family] ->
+  feigenbaum.delta ->
+  delta_hat ->
+  local_calibration
+}
+
+;; ============================================================================
+;; INDICES: Tiny Numbers, Huge Stories
+;; ============================================================================
+
+;; Bandwidth parameters for index computation
+;; These control how sensitive the indices are to deviations
+;; Can be learned/adapted, but start with reasonable defaults
+def ALPHA_BANDWIDTH 0.1    ;; σ_α: typical deviation scale for α
+def DELTA_BANDWIDTH 0.2    ;; σ_δ: typical deviation scale for δ
+
+;; Universality Index U: "How Feigenbaum-like is this thing?"
+;; U = exp(-|α̂ - α₀|/σ_α)
+;; U ≈ 1: "strongly in Feigenbaum's universality class"
+;; U ≪ 1: "this is not a classic period-doubling story; don't force that frame"
+;; High U → "It's safe to use Feigenbaum-style multiscale assumptions here"
+voice index.universality / {
+  alpha_measured ->
+  subtract_alpha_reference      -> delta_alpha
+  normalize_by_alpha_bandwidth  -> delta_alpha_norm
+  map_to_unit_interval_alpha    -> universality_index   ;; U in [0,1]
+}
+
+;; Subtract reference: |α̂ - α₀|
+voice subtract_alpha_reference / {
+  alpha_measured + FEIGENBAUM_ALPHA_REFERENCE ->
+  absolute_difference ->
+  delta_alpha
+}
+
+;; Normalize by bandwidth: |α̂ - α₀|/σ_α
+voice normalize_by_alpha_bandwidth / {
+  delta_alpha + ALPHA_BANDWIDTH ->
+  divide ->
+  delta_alpha_norm
+}
+
+;; Map to unit interval: exp(-delta_alpha_norm)
+;; Monotone decreasing: closer to reference → higher index
+voice map_to_unit_interval_alpha / {
+  delta_alpha_norm ->
+  negate ->
+  exp ->
+  universality_index
+}
+
+;; Criticality Index C: "How close are we to an edge-of-chaos style threshold?"
+;; C = exp(-|δ̂ - δ₀|/σ_δ)
+;; High C: "behavior is approaching a Feigenbaum-like critical point"
+;; Low C: "this isn't that kind of criticality, or we're far away from it"
+;; High C → cue to slow time locally, increase monitoring, adjust learning pressure
+voice index.criticality / {
+  delta_measured ->
+  subtract_delta_reference      -> delta_delta
+  normalize_by_delta_bandwidth  -> delta_delta_norm
+  map_to_unit_interval_delta     -> criticality_index    ;; C in [0,1]
+}
+
+;; Subtract reference: |δ̂ - δ₀|
+voice subtract_delta_reference / {
+  delta_measured + FEIGENBAUM_DELTA_REFERENCE ->
+  absolute_difference ->
+  delta_delta
+}
+
+;; Normalize by bandwidth: |δ̂ - δ₀|/σ_δ
+voice normalize_by_delta_bandwidth / {
+  delta_delta + DELTA_BANDWIDTH ->
+  divide ->
+  delta_delta_norm
+}
+
+;; Map to unit interval: exp(-delta_delta_norm)
+;; Monotone decreasing: closer to reference → higher index
+voice map_to_unit_interval_delta / {
+  delta_delta_norm ->
+  negate ->
+  exp ->
+  criticality_index
+}
+
+;; Combined "Feigenbaum complexion": {U, C}
+;; Pack both indices into a profile that tells OPIC how wild, how close to cliff, how self-similar
+voice index.feigenbaum_profile / {
+  alpha_measured + delta_measured ->
+  index.universality  -> U
+  index.criticality   -> C
+  pack_indices        -> {U, C}
+}
+
+;; Pack indices into profile
+voice pack_indices / {
+  universality_index + criticality_index ->
+  create_profile ->
+  feigenbaum_profile
+}
+
+;; Profile structure: {U, C} with interpretation
+def feigenbaum_profile {
+  universality_index,    ;; U: how Feigenbaum-like (0-1)
+  criticality_index      ;; C: how close to critical point (0-1)
+}
+
+;; ============================================================================
+;; USING INDICES: Let System Respond
+;; ============================================================================
+
+;; Step 3: Use indices to modulate behavior elsewhere
+;; Pattern: Run RG step → Read α̂, δ̂ → Compress to {U, C} → Modulate behavior
+
+;; Thresholds for index-based decisions (can be learned/adapted)
+def UNIVERSALITY_THRESHOLD 0.7    ;; U > 0.7 → "strongly Feigenbaum-like"
+def CRITICALITY_THRESHOLD 0.7     ;; C > 0.7 → "approaching critical point"
+
+;; If universality index is high: permit Feigenbaum-style scaling assumptions
+;; High U → allow stronger cross-scale tying, Feigenbaum-style visualization, compression
+voice calibration.if_high_universality / {
+  universality_index + UNIVERSALITY_THRESHOLD ->
+  if_above_threshold ->
+  permit_feigenbaum_scaling ->
+  apply_multiscale_tying ->
+  adjust_visualization_compression
+}
+
+;; Permit Feigenbaum-style scaling when U is high
+voice permit_feigenbaum_scaling / {
+  universality_index + threshold ->
+  if_above ->
+  enable_feigenbaum_assumptions ->
+  scaling_permitted
+}
+
+;; Apply multiscale tying: stronger α-based coupling between levels
+voice apply_multiscale_tying / {
+  universality_index + voices ->
+  compute_coupling_strength ->
+  apply_alpha_based_coupling ->
+  multiscale_coupled
+}
+
+;; Adjust visualization/compression based on universality
+voice adjust_visualization_compression / {
+  universality_index + visualization_state ->
+  compute_compression_factor ->
+  apply_feigenbaum_visualization ->
+  adjusted_visualization
+}
+
+;; If criticality index is high: Mode 7 time warps, routing, attention
+;; High C → trigger safety/attention: time warps, extra diagnostics, cautious updates
+voice calibration.if_high_criticality / {
+  criticality_index + CRITICALITY_THRESHOLD ->
+  if_above_threshold ->
+  mode7.slow_time_warp ->
+  route_more_attention ->
+  adjust_diagnostics_logging ->
+  adjust_learning_rates
+}
+
+;; Mode 7 time warp: slow down time locally when approaching critical point
+voice mode7.slow_time_warp / {
+  criticality_index + time_state ->
+  compute_warp_factor ->
+  apply_time_slowdown ->
+  warped_time
+}
+
+;; Route more attention to critical regions
+voice route_more_attention / {
+  criticality_index + attention_state ->
+  compute_attention_boost ->
+  route_attention ->
+  boosted_attention
+}
+
+;; Adjust diagnostics/logging: increase monitoring near criticality
+voice adjust_diagnostics_logging / {
+  criticality_index + logging_state ->
+  compute_logging_level ->
+  increase_monitoring ->
+  enhanced_logging
+}
+
+;; Adjust learning rates: cautious updates near criticality
+voice adjust_learning_rates / {
+  criticality_index + learning_state ->
+  compute_rate_adjustment ->
+  apply_cautious_updates ->
+  adjusted_learning
+}
+
+;; Meta-couplers: small scalars summarizing "how self-similar, how critical"
+;; The field can treat subsystems appropriately based on these calibrations
+;; These indices tell OPIC: how wild, how close to cliff, how self-similar
+voice calibration.as_meta_couplers / {
+  universality_index + criticality_index ->
+  summarize_self_similarity ->
+  summarize_criticality ->
+  meta_coupling_strength
+}
+
+;; Summarize self-similarity from universality index
+voice summarize_self_similarity / {
+  universality_index ->
+  interpret_as_similarity ->
+  self_similarity_summary
+}
+
+;; Summarize criticality from criticality index
+voice summarize_criticality / {
+  criticality_index ->
+  interpret_as_criticality ->
+  criticality_summary
+}
+
+;; ============================================================================
+;; COMPLETE CALIBRATION PIPELINE
+;; ============================================================================
+
+;; Full calibration workflow: measure → index → respond
+;; Pattern: Run RG step → Read α̂, δ̂ → Compress to {U, C} → Modulate behavior
+voice calibration.pipeline / {
+  subsystem ->
+  calibration.measure_local ->
+  index.feigenbaum_profile ->
+  calibration.if_high_universality ->
+  calibration.if_high_criticality ->
+  calibration.as_meta_couplers ->
+  calibrated_subsystem
+}
+
+target feigenbaum_field / "feigenbaum_field"
+voice main / {
+  gauge.canonical +
+  renormalization.unimodal +
+  feigenbaum.alpha +
+  feigenbaum.delta +
+  calibration.measure_local +
+  calibration.compare_to_reference +
+  calibration.pipeline ->
+  feigenbaum_field
+}
+

@@ -1,0 +1,12 @@
+;;; typst_test.ops — Direct test of Typst primitives
+
+;; Direct test: just call the primitive
+voice test.typst / {
+  "# Test Document\n\nThis is a test." -> 
+  typst_convert_markdown -> 
+  typst_write_file
+}
+
+target typst_test / "typst_test"
+voice main / {test.typst -> typst_test}
+

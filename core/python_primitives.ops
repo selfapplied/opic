@@ -1,0 +1,36 @@
+;;; python_primitives.ops — What Python provides to OPIC
+
+;; This file declares what Python provides as primitives
+;; Python implements these, OPIC uses them
+
+;; File operations
+voice python.file_read / {path -> file_read -> text}
+voice python.file_write / {path + content -> file_write -> written}
+voice python.file_exists / {path -> file_exists -> exists}
+
+;; String operations
+voice python.split / {text + separator -> split_string -> parts}
+voice python.join / {parts + separator -> join_string -> text}
+voice python.strip / {text -> strip_whitespace -> cleaned}
+voice python.contains / {text + substring -> check_contains -> found}
+
+;; Math operations (basic)
+voice python.add / {a + b -> add_numbers -> result}
+voice python.multiply / {a + b -> multiply_numbers -> result}
+voice python.divide / {a + b -> divide_numbers -> result}
+
+;; Dictionary/object operations
+voice python.lookup / {dict + key -> get_value -> value}
+voice python.update / {dict + key + value -> set_value -> updated_dict}
+
+;; List operations
+voice python.append / {list + item -> append_item -> new_list}
+voice python.for_each / {list + function -> map_items -> results}
+
+;; Type checking
+voice python.is_string / {value -> check_is_string -> is_string}
+voice python.is_dict / {value -> check_is_dict -> is_dict}
+voice python.is_list / {value -> check_is_list -> is_list}
+
+;; These are implemented by Python - OPIC just declares them
+

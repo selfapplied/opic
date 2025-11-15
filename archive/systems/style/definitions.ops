@@ -1,0 +1,65 @@
+;;; definitions.ops — Definition analysis trait
+
+include analysis.ops
+
+voice analyze multi line defs / {
+  content
+  find defs
+  check multi line
+  weights
+}
+
+voice find defs / {
+  content
+  find pattern "def \\w+ \\{"
+  extract defs
+  all
+}
+
+voice check multi line / {
+  defs
+  map check def
+  filter multi line
+  weights
+}
+
+voice check def / {
+  def
+  count lines
+  compare 1
+  is_multi_line
+}
+
+voice analyze big blobs / {
+  content
+  find defs
+  count fields
+  check big blob
+  weights
+}
+
+voice count fields / {
+  defs
+  map extract fields
+  count fields per def
+  field counts
+}
+
+voice check big blob / {
+  field counts
+  map check count
+  filter big
+  weights
+}
+
+voice check count / {
+  count
+  compare 8
+  is_big_blob
+}
+
+
+
+
+
+

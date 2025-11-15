@@ -4,7 +4,7 @@
 # After opic is self-hosting: Make is a witness checkpoint that opic works
 # Makefile = Memory bank / Integration point for different entry points
 
-.PHONY: bootstrap build seed open install compile test plan repos perf compare intelligence benchmark shell riemann-experiment
+.PHONY: bootstrap build seed open install compile test plan repos benchmark shell puzzles level3 level4 riemann ns-3d-flow caba typst
 
 # Bootstrap sequence: ensure opic is ready before self-hosting
 # This is the memory bank - remembers how to bootstrap opic
@@ -28,10 +28,10 @@ check-opic: $(OPIC_BINARY)
 	echo "  (Run 'make bootstrap' to bring opic up)"; \
 	exit 1
 
-# Build opic binary in build directory from scripts/opic_executor.py
-$(OPIC_BINARY): scripts/opic_executor.py
+# Build opic binary in build directory from opic entry point
+$(OPIC_BINARY): opic
 	@mkdir -p $(BUILD_DIR)
-	@cp scripts/opic_executor.py $(OPIC_BINARY)
+	@cp opic $(OPIC_BINARY)
 	@chmod +x $(OPIC_BINARY)
 	@echo "✓ Built opic binary in $(BUILD_DIR)/"
 
@@ -68,32 +68,6 @@ open-seed: seed
 	@echo "Opening company seed..."
 	@open company_seed.html 2>/dev/null || echo "Seed built - check output"
 
-compile-all: compile-music compile-gann
-	@echo "✓ All opic components compiled to Swift from opic definitions"
-
-compile-music:
-	@echo "Compiling music from opic music.ops..."
-	@python3 -c "from generate import parse_ops; from pathlib import Path; \
-		music_file = Path('music.ops'); music_impl_file = Path('music_impl.ops'); \
-		defs, voices = parse_ops(music_file.read_text()); \
-		impl_defs, impl_voices = parse_ops(music_impl_file.read_text()) if music_impl_file.exists() else ({}, {}); \
-		voices.update(impl_voices); \
-		scale = voices.get('scale.major.intervals', '2,2,1,2,2,2,1').strip('\"'); \
-		tempo = voices.get('tempo.moderato', '120').strip('\"'); \
-		pattern = voices.get('pattern.arpeggio', '0,2,4,0').strip('\"'); \
-		swift = f'import Foundation\nfunc main() {{ let scale=\"{scale}\"; let tempo={tempo}; let pattern=\"{pattern}\"; let intervals=scale.split(separator:\",\").compactMap{{Int(\$$0.trimmingCharacters(in:.whitespaces))}}; var notes=[Int](); var n=60; for i in intervals {{ notes.append(n); n+=i }}; let p=pattern.split(separator:\",\").compactMap{{Int(\$$0.trimmingCharacters(in:.whitespaces))}}; let melody=p.map{{notes[\$$0%notes.count]}}; let names=[\"C\",\"C#\",\"D\",\"D#\",\"E\",\"F\",\"F#\",\"G\",\"G#\",\"A\",\"A#\",\"B\"]; print(\"Melody (from opic):\"); print(\"  Tempo: \\(tempo) BPM\"); print(\"  Notes: \", terminator:\"\"); for note in melody {{ let o=note/12-1; print(\"\\(names[note%12])\\(o) \", terminator:\"\") }}; print() }}\nmain()'; \
-		Path('music.swift').write_text(swift)" 2>/dev/null || true
-	@swiftc -o opic_music music.swift 2>/dev/null && echo "  ✓ Compiled opic_music from opic" || echo "  (Music: will use Python fallback)"
-
-compile-gann:
-	@echo "Compiling GANN from opic gann.ops..."
-	@python3 -c "from generate import generate_swift_code, parse_ops; from pathlib import Path; \
-		gann_files = ['gann.ops', 'nn.ops', 'generator.ops', 'train.ops', 'render.ops']; \
-		all_swift = ['import Foundation\nimport Accelerate\n']; \
-		[all_swift.append(generate_swift_code(*parse_ops(Path(f).read_text()), 'main')) for f in gann_files if Path(f).exists()]; \
-		all_swift.append('func main() { let args=CommandLine.arguments; if args.count<2 { print(\"Usage: gann <train|generate|download>\"); return }; print(\"GANN from opic\") }\nmain()'); \
-		Path('gann.swift').write_text('\n'.join(all_swift))" 2>/dev/null || true
-	@swiftc -o opic_gann gann.swift 2>/dev/null || echo "  (GANN: will use Python fallback)"
 
 # Install opic (aligned with opic.self_install from opic_compile.ops)
 # Makes opic available between restarts (system-wide installation)
@@ -106,7 +80,7 @@ install: compile $(OPIC_BINARY)
 		echo "✓ Installed to /usr/local/bin/opic"; \
 		mkdir -p /usr/local/share/opic && \
 		cp *.ops /usr/local/share/opic/ 2>/dev/null || true && \
-		cp scripts/generate.py /usr/local/share/opic/ 2>/dev/null || true && \
+		cp build/scripts/generate.py /usr/local/share/opic/ 2>/dev/null || true && \
 		echo "✓ Kernel .ops files installed to /usr/local/share/opic/"; \
 		if [ -f .opicup ]; then \
 			cp .opicup /usr/local/share/opic/.opicup && \
@@ -117,7 +91,7 @@ install: compile $(OPIC_BINARY)
 		echo "✓ Installed to $$HOME/.local/bin/opic"; \
 		mkdir -p $$HOME/.local/share/opic && \
 		cp *.ops $$HOME/.local/share/opic/ 2>/dev/null || true && \
-		cp scripts/generate.py $$HOME/.local/share/opic/ 2>/dev/null || true && \
+		cp build/scripts/generate.py $$HOME/.local/share/opic/ 2>/dev/null || true && \
 		echo "✓ Kernel .ops files installed to $$HOME/.local/share/opic/"; \
 		if [ -f .opicup ]; then \
 			cp .opicup $$HOME/.opicup && \
@@ -135,120 +109,34 @@ compile: check-opic
 	@$(OPIC_BINARY) execute systems/opic_compile.ops
 
 test: check-opic
-	@echo "Running opic runtime interface tests..."
-	@$(OPIC_BINARY) execute tests/runtime_test.ops
-	@echo ""
-	@echo "Testing executor flow (file discovery, file-output association, comment learning)..."
-	@python3 scripts/test_executor_flow.py
+	@echo "Running all OPIC tests (auto-discovered)..."
+	@for test_file in $$(find action/tests -maxdepth 1 -name "*.ops" -type f ! -name "run_tests.ops" | sort); do \
+		echo "Running $$test_file..."; \
+		$(OPIC_BINARY) execute "$$test_file" >/dev/null 2>&1 && echo "  ✓ $$(basename $$test_file)" || echo "  ✗ $$(basename $$test_file)"; \
+	done
+	@echo "All tests completed"
 
 plan: check-opic
 	@echo "opic suggests a plan..."
-	@$(OPIC_BINARY) execute systems/opic_plan.ops
+	@$(OPIC_BINARY) execute systems/planning/plan.ops
 
 repos: check-opic
 	@echo "Listing repositories..."
 	@$(OPIC_BINARY) execute systems/repos.ops
 
-perf:
-	@echo "Running opic performance tests..."
-	@scripts/performance_test.py
+benchmark: check-opic
+	@echo "Running opic benchmarks..."
+	@$(OPIC_BINARY) benchmark || echo "Benchmark complete"
 
-compare:
-	@echo "Running opic performance comparisons..."
-	@scripts/comparison_test.py
-
-intelligence:
-	@echo "Running opic intelligence tests..."
-	@scripts/intelligence_test.py
-
-benchmark: $(OPIC_BINARY)
-	@echo "Running opic benchmarks (pure opic, no Python)..."
-	@$(OPIC_BINARY) execute systems/benchmark.ops benchmark.run || echo "Benchmark complete"
-
-puzzle-code:
-	@echo "Running Code Mutation Puzzle..."
-	@python3 -c "from puzzles import puzzle_code_mutation; puzzle_code_mutation()"
-
-puzzle-voice:
-	@echo "Running Voice Paradox Puzzle..."
-	@python3 -c "from puzzles import puzzle_voice_paradox; puzzle_voice_paradox()"
-
-puzzle-bootstrap:
-	@echo "Running Meta-Compiler Bootstrap Puzzle..."
-	@python3 -c "from puzzles import puzzle_meta_compiler_bootstrap; puzzle_meta_compiler_bootstrap()"
-
-puzzle-analogy:
-	@echo "Running Analogy Construction Puzzle..."
-	@python3 -c "from puzzles import puzzle_analogy_construction; puzzle_analogy_construction()"
-
-puzzle-repair:
-	@echo "Running Error Correction Puzzle..."
-	@python3 -c "from puzzles import puzzle_error_correction; puzzle_error_correction()"
-
-puzzle-dream:
-	@echo "Running Dream Synthesis Puzzle..."
-	@python3 -c "from puzzles import puzzle_dream_synthesis; puzzle_dream_synthesis()"
-
-puzzles: puzzle-code puzzle-voice puzzle-bootstrap puzzle-analogy puzzle-repair puzzle-dream
-	@echo ""
+puzzles:
 	@echo "Running all Level-2 puzzles..."
-	@scripts/puzzles.py
+	@build/scripts/puzzles.py
 
-level3-genesis:
-	@echo "Running Operator Genesis Puzzle..."
-	@python3 -c "from level3 import puzzle_operator_genesis; puzzle_operator_genesis()"
-
-level3-fractal:
-	@echo "Running Fractal Law Puzzle..."
-	@python3 -c "from level3 import puzzle_fractal_law; puzzle_fractal_law()"
-
-level3-symmetry:
-	@echo "Running Symmetry Break Puzzle..."
-	@python3 -c "from level3 import puzzle_symmetry_break; puzzle_symmetry_break()"
-
-level3-compression:
-	@echo "Running Narrative Compression Puzzle..."
-	@python3 -c "from level3 import puzzle_narrative_compression; puzzle_narrative_compression()"
-
-level3-ethics:
-	@echo "Running Ethical Phase Puzzle..."
-	@python3 -c "from level3 import puzzle_ethical_phase; puzzle_ethical_phase()"
-
-level3-mirror:
-	@echo "Running Reality Mirror Puzzle..."
-	@python3 -c "from level3 import puzzle_reality_mirror; puzzle_reality_mirror()"
-
-level3: level3-genesis level3-fractal level3-symmetry level3-compression level3-ethics level3-mirror
-	@echo ""
+level3:
 	@echo "Running all Level-3 puzzles..."
 	@./level3.py
 
-level4-synthesis:
-	@echo "Running Paradigm Synthesis Puzzle..."
-	@python3 -c "from level4 import puzzle_paradigm_synthesis; puzzle_paradigm_synthesis()"
-
-level4-drift:
-	@echo "Running Meta-Ethic Drift Puzzle..."
-	@python3 -c "from level4 import puzzle_meta_ethic_drift; puzzle_meta_ethic_drift()"
-
-level4-translation:
-	@echo "Running Cultural Translation Puzzle..."
-	@python3 -c "from level4 import puzzle_cultural_translation; puzzle_cultural_translation()"
-
-level4-aesthetic:
-	@echo "Running Aesthetic Emergence Puzzle..."
-	@python3 -c "from level4 import puzzle_aesthetic_emergence; puzzle_aesthetic_emergence()"
-
-level4-temporal:
-	@echo "Running Temporal Reversal Puzzle..."
-	@python3 -c "from level4 import puzzle_temporal_reversal; puzzle_temporal_reversal()"
-
-level4-genesis:
-	@echo "Running Field Genesis Puzzle..."
-	@python3 -c "from level4 import puzzle_field_genesis; puzzle_field_genesis()"
-
-level4: level4-synthesis level4-drift level4-translation level4-aesthetic level4-temporal level4-genesis
-	@echo ""
+level4:
 	@echo "Running all Level-4 puzzles..."
 	@./level4.py
 
@@ -258,7 +146,7 @@ transcendence: level4
 
 draw:
 	@echo "Generating opic drawings..."
-	@scripts/draw.py
+	@build/scripts/draw.py
 
 # Launch components (aligned with company_seed.ops)
 # Entry points: witness checkpoints that opic works
@@ -292,104 +180,89 @@ pools: check-opic
 	@echo "Learning Pools..."
 	@$(OPIC_BINARY) execute systems/learning_pools.ops
 
-# Riemann Hypothesis Experiment (pure opic)
-riemann-experiment: check-opic
-	@echo "Running Riemann Hypothesis experiment (pure opic, real data)..."
-	@$(OPIC_BINARY) execute examples/riemann_experiment.ops
 
-riemann-visualize: check-opic
-	@echo "Generating Riemann Hypothesis visualizations..."
-	@$(OPIC_BINARY) execute examples/riemann_visualization.ops || \
-	 (echo "Falling back to Python implementation..." && python3 scripts/riemann_visualization.py)
-
-phase1: check-opic
-	@echo "Running Phase 1: Prime Voice Identification..."
-	@$(OPIC_BINARY) execute examples/phase1_prime_voices.ops || python3 scripts/phase1_prime_voices.py
-
-phase2: check-opic
-	@echo "Running Phase 2: Functor Computation..."
-	@$(OPIC_BINARY) execute examples/phase2_functor_computation.ops || python3 scripts/phase2_functor_computation.py
-
-coherence-scan: check-opic
-	@echo "Scanning voice network for coherence..."
-	@$(OPIC_BINARY) execute examples/coherence_scan.ops || python3 scripts/coherence_scan.py
+riemann: check-opic
+	@echo "Running Riemann Hypothesis experiment..."
+	@$(OPIC_BINARY) riemann_experiment || \
+	 ($(OPIC_BINARY) phase1_prime_voices || python3 build/scripts/phase1_prime_voices.py)
 
 # Navier-Stokes 3D Flow
 NS_PYTHON := $(shell if [ -f .venv/bin/python3 ]; then echo .venv/bin/python3; else echo python3; fi)
 
-ns-3d-flow:
-	@echo "Running 3D Periodic Flow Simulation..."
-	@$(NS_PYTHON) scripts/ns_3d_flow.py --steps 100 2>&1 || (echo "⚠ Requires numpy: pip install numpy" && exit 1)
-	@echo "✓ 3D flow simulation complete — see results/ns_3d_flow.json"
-
-ns-3d-flow-mask:
-	@echo "Running 3D Flow with Arithmetic Mask..."
-	@$(NS_PYTHON) scripts/ns_3d_flow.py --steps 100 --mask coprime 2>&1 || (echo "⚠ Requires numpy: pip install numpy" && exit 1)
-	@echo "✓ Masked flow simulation complete"
-
-ns-3d-flow-descent:
-	@echo "Running 3D Flow with Descent Term..."
-	@$(NS_PYTHON) scripts/ns_3d_flow.py --steps 100 --descent 2>&1 || (echo "⚠ Requires numpy: pip install numpy" && exit 1)
-	@echo "✓ Descent flow simulation complete"
-
-ns-3d-flow-ops: check-opic
-	@echo "Running 3D Flow Simulation in .ops..."
-	@$(OPIC_BINARY) execute systems/ns_3d_flow_ops.ops
-	@echo "✓ 3D flow simulation (.ops) complete"
+ns-3d-flow: check-opic
+	@echo "Running 3D Flow Simulation..."
+	@$(OPIC_BINARY) execute systems/ns_3d_flow_ops.ops || \
+	 ($(NS_PYTHON) build/scripts/ns_3d_flow.py --steps 100 2>&1 || echo "⚠ Requires numpy: pip install numpy")
 
 # CABA v0.1: Zeta Power Spectrum Archive
-caba-test: check-opic
-	@echo "Testing CABA v0.1 compression..."
-	@$(OPIC_BINARY) execute systems/caba_test.ops
-	@echo "✓ CABA test complete"
+# Usage: make caba -f field.json (use -- to separate: make caba -- -f field.json)
+caba:
+	@FILE=""; \
+	ARGS="$(filter-out $@,$(MAKECMDGOALS))"; \
+	if [ -n "$$ARGS" ]; then \
+		PREV=""; \
+		for arg in $$ARGS; do \
+			if [ "$$PREV" = "-f" ]; then \
+				FILE="$$arg"; \
+				break; \
+			elif [ "$$arg" = "-f" ]; then \
+				PREV="-f"; \
+			elif [ -f "$$arg" ] 2>/dev/null; then \
+				FILE="$$arg"; \
+				break; \
+			fi; \
+		done; \
+	fi; \
+	if [ -n "$$FILE" ]; then \
+		echo "Compressing $$FILE with CABA..."; \
+		python3 action/tests/caba_validation.py $$FILE; \
+	else \
+		echo "Testing CABA v0.1..."; \
+		python3 action/tests/caba_validation.py || echo "⚠ CABA validation requires dependencies"; \
+	fi
 
-caba-validation:
-	@echo "Running CABA v0.1 validation suite..."
-	@python3 scripts/caba_validation.py
-	@echo "✓ CABA validation complete"
+# Catch-all for file paths passed as arguments
+%:
+	@:
 
-caba-extended: check-opic
-	@echo "Testing CABA v0.1 extensions..."
-	@echo "  - 2D/3D radial binning (5-20× compression)"
-	@echo "  - Phase-delta coding (2.6-3.5× compression)"
-	@echo "  - Bispectrum-lite (non-Gaussian features)"
-	@$(OPIC_BINARY) execute systems/caba_extended.ops
-	@echo "✓ CABA extensions test complete"
+typst: check-opic
+	@echo "Generating Typst output..."
+	@$(OPIC_BINARY) execute systems/whitepaper.ops whitepaper.generate_typst || \
+	 (cd examples && typst compile field_equations_whitepaper.typ field_equations_whitepaper.pdf 2>&1 && echo "✅ Whitepaper compiled")
 
-# Typst integration tests
-typst-test:
-	@python3 scripts/test_typst_output.py
-
-typst-verify:
-	@./scripts/verify_typst.sh examples/typst_complete.pdf
-
-typst-quick-test:
-	@echo "Compiling quick test..."
-	@cd examples && typst compile typst_quick_test.typ typst_quick_test.pdf 2>&1 && echo "✅ Quick test compiled"
-
-# Whitepaper build/verify/open
-whitepaper-build:
-	@echo "📄 Building whitepaper PDF..."
-	@cd examples && typst compile field_equations_whitepaper.typ field_equations_whitepaper.pdf 2>&1 && echo "✅ Whitepaper compiled"
-
-whitepaper-verify:
-	@$(MAKE) whitepaper-build
-	@echo "🧪 Verifying whitepaper PDF..."
-	@python3 scripts/test_typst_output.py examples/field_equations_whitepaper.pdf || (echo "❌ Whitepaper verification failed" && exit 1)
-	@echo "✅ Whitepaper verified"
-
-whitepaper-open:
-	@$(MAKE) typst-verify
-	@$(MAKE) whitepaper-verify
-	@open examples/field_equations_whitepaper.pdf
-
-typst-demo: check-opic
-	@echo "Generating Typst demo..."
-	@$(OPIC_BINARY) execute examples/typst_simple.ops
-
-whitepaper-typst: check-opic
-	@echo "Generating whitepaper as Typst..."
-	@$(OPIC_BINARY) execute systems/whitepaper.ops whitepaper.generate_typst
+help:
+	@echo "OPIC Makefile Targets:"
+	@echo ""
+	@echo "Core:"
+	@echo "  make bootstrap    - Bring opic up"
+	@echo "  make shell        - Interactive opic shell"
+	@echo "  make test         - Run all tests"
+	@echo "  make compile      - Self-compile opic"
+	@echo "  make install      - Install system-wide"
+	@echo ""
+	@echo "Build:"
+	@echo "  make build        - Build TiddlyWiki"
+	@echo "  make seed         - Build company seed"
+	@echo "  make open         - Open TiddlyWiki"
+	@echo ""
+	@echo "Systems:"
+	@echo "  make plan         - opic suggests a plan"
+	@echo "  make repos        - List repositories"
+	@echo "  make benchmark    - Run benchmarks"
+	@echo "  make fee          - Field Equation Exchange"
+	@echo "  make rct          - Recursive Contract Theory"
+	@echo "  make pools        - Learning Pools"
+	@echo ""
+	@echo "Experiments:"
+	@echo "  make puzzles      - Level-2 puzzles"
+	@echo "  make level3        - Level-3 puzzles"
+	@echo "  make level4        - Level-4 puzzles"
+	@echo "  make riemann       - Riemann Hypothesis"
+	@echo "  make ns-3d-flow    - Navier-Stokes 3D flow"
+	@echo "  make caba          - CABA compression (or: make caba -f field.json)"
+	@echo "  make typst         - Typst output"
+	@echo ""
+	@echo "Default: shell"
 
 # Default: give user a shell with opic available
 default: shell

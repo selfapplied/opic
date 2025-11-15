@@ -1,0 +1,154 @@
+;;; opic_compile.ops — OPIC to Python Bytecode Compiler
+;;; Simple pattern: parse chain -> compile to Python -> execute
+
+;; Compile OPIC chain to Python bytecode
+voice opic.compile_chain / {
+  chain_string ->
+  opic.parse_chain ->
+  opic.compile_steps ->
+  python_bytecode
+}
+
+;; Parse chain into steps
+voice opic.parse_chain / {
+  chain ->
+  opic.normalize_chain ->
+  opic.split_by_arrows ->
+  steps
+}
+
+;; Normalize chain (remove braces)
+voice opic.normalize_chain / {
+  chain ->
+  string.strip ->
+  opic.remove_braces ->
+  normalized
+}
+
+;; Remove braces
+voice opic.remove_braces / {
+  text ->
+  python.slice_from_1 ->
+  python.slice_to_minus_1 ->
+  string.strip ->
+  inner
+}
+
+;; Split by arrows
+voice opic.split_by_arrows / {
+  normalized ->
+  string.split "->" ->
+  python.for_each string.strip ->
+  steps
+}
+
+;; Compile steps to Python code
+voice opic.compile_steps / {
+  steps ->
+  opic.compile_each_step ->
+  python.join "\n" ->
+  python_bytecode
+}
+
+;; Compile each step
+voice opic.compile_each_step / {
+  steps ->
+  opic.map_compile_step ->
+  compiled_lines
+}
+
+;; Map compile step
+voice opic.map_compile_step / {
+  steps ->
+  python.for_each ->
+  opic.compile_step ->
+  compiled_lines
+}
+
+;; Compile single step
+voice opic.compile_step / {
+  step ->
+  opic.classify_step ->
+  opic.compile_extension_call ->
+  opic.compile_voice_call ->
+  opic.compile_literal ->
+  python_code
+}
+
+;; Classify step type
+voice opic.classify_step / {
+  step ->
+  opic.check_is_extension ->
+  opic.check_is_voice ->
+  opic.check_is_literal ->
+  step_type
+}
+
+;; Check if step is extension ($name$)
+voice opic.check_is_extension / {
+  step ->
+  string.contains "$" ->
+  is_extension
+}
+
+;; Check if step is voice
+voice opic.check_is_voice / {
+  step + voices ->
+  dict.lookup ->
+  is_voice
+}
+
+;; Check if step is literal
+voice opic.check_is_literal / {
+  step ->
+  opic.is_quoted_string ->
+  opic.is_number ->
+  is_literal
+}
+
+;; Compile extension call ($python.func$)
+voice opic.compile_extension_call / {
+  step ->
+  opic.extract_extension_name ->
+  opic.generate_python_call ->
+  python_code
+}
+
+;; Extract extension name
+voice opic.extract_extension_name / {
+  step ->
+  python.strip_quotes ->
+  python.slice_from_1 ->
+  python.slice_to_minus_1 ->
+  extension_name
+}
+
+;; Generate Python call
+voice opic.generate_python_call / {
+  extension_name + last_result ->
+  opic.build_call_statement ->
+  python_code
+}
+
+;; Build call statement
+voice opic.build_call_statement / {
+  func_name + args ->
+  "result = " + func_name + "(" + args + ")" ->
+  python_code
+}
+
+;; Compile voice call
+voice opic.compile_voice_call / {
+  step + voices ->
+  opic.lookup_voice_body ->
+  opic.compile_voice_body ->
+  python_code
+}
+
+;; Compile literal
+voice opic.compile_literal / {
+  step ->
+  python.strip_quotes ->
+  python_code
+}
+

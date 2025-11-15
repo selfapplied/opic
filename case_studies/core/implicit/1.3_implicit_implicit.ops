@@ -1,0 +1,328 @@
+;;; implicit.ops — Understanding how words can be implicit in OPIC
+
+;; ============================================================================
+;; 1. ATTENTION-BASED DISCOVERY
+;; ============================================================================
+;; Mention a namespace, and OPIC pulls its worldline in
+;; Pattern: Use ml.generate → OPIC "notices" that and loads ml.ops
+;; No include, no registry. Just: "I saw your name; you're in the graph now."
+
+voice implicit.attention / {
+  Namespace mentioned -> OPIC detects namespace -> OPIC loads corresponding file -> No include needed
+}
+
+;; ============================================================================
+;; 2. IMPLICIT ROUTING (+)
+;; ============================================================================
+;; + is "hopeful OR": Try voice1, if it returns None, try voice2
+;; Pattern: voice1 + voice2 → first non-null result wins
+;; No explicit if, no guard, just "stack candidates and let reality decide"
+
+voice implicit.routing / {
+  voice1 + voice2 -> Try voice1 -> If None try voice2 -> First non-null wins -> No explicit if needed
+}
+
+;; ============================================================================
+;; 3. DEFAULT BEHAVIOR
+;; ============================================================================
+;; Commands are "bare nouns" that resolve to files
+;; Pattern: hello → hello.ops in action/...
+;; "Words" become executable by convention alone
+
+voice implicit.default / {
+  Command -> Resolve to file -> hello becomes hello.ops -> Executable by convention -> No explicit verb needed
+}
+
+;; ============================================================================
+;; 4. NATURAL DISCOVERY (SEMANTIC)
+;; ============================================================================
+;; OPIC uses meaning to find voices
+;; Pattern: "learn energy" → thermo.* voices
+;; No hardcoded mapping; just semantic gravity
+
+voice implicit.discovery / {
+  Meaning used -> OPIC finds matching voices -> learn energy finds thermo.* -> No hardcoded mapping -> Semantic matching
+}
+
+;; ============================================================================
+;; 5. CONTEXT-BASED DISAMBIGUATION
+;; ============================================================================
+;; file.read vs ml.read picked by namespace + context
+;; Pattern: No explicit priority table; the field context is the priority table
+;; That's how you handle homonyms
+
+voice implicit.disambiguation / {
+  Ambiguous name -> Check namespace -> Check context -> Field context resolves -> No explicit priority table needed
+}
+
+;; ============================================================================
+;; 6. IMPLICIT EXECUTION
+;; ============================================================================
+;; .ops files execute by shape: opic <file.ops>
+;; Pattern: Shape implies execution, no extra verb needed
+
+voice implicit.execution / {
+  .ops file -> Shape implies execution -> opic hello.ops -> No execute verb needed -> Behavior emergent from topology
+}
+
+;; ============================================================================
+;; 7. IMPLICIT COMPOSITION
+;; ============================================================================
+;; voice1 -> voice2 composes because the arrow means "pipe"
+;; Pattern: No extra verb needed - composition is syntactic
+
+voice implicit.composition / {
+  voice1 -> voice2 -> Arrow means pipe -> Composes automatically -> No extra verb needed -> Composition is syntactic
+}
+
+;; ============================================================================
+;; 8. IMPLICIT LIFTING — Type/shape adaptation
+;; ============================================================================
+;; Values are lifted to the shapes voices expect – no explicit map/wrap needed
+;; Pattern: scalar → list, single → chain, string → structured, when context demands
+
+voice implicit.lifting / {
+  Value -> OPIC adapts to expected shape -> Scalar becomes list -> String becomes structure -> Single becomes chain -> No explicit map needed
+}
+
+;; ============================================================================
+;; 9. IMPLICIT PARSING — Circle diffeomorphism model
+;; ============================================================================
+
+;; The parser is a smooth flow, not discrete jumps
+;; Pattern: Try voice resolution → if no file exists, smoothly rotate to literal
+;; Example: hello → try hello.ops → if missing, treat as literal text
+
+;; Quotes as RELATIVE distinction of meta (not static token type)
+;; • Without quotes: hello → use hello at current frame (execute/resolve)
+;; • With quotes: "hello" → shift to meta frame, reference hello relative to that frame
+;; Quotes shift the reference frame relative to current context, not an absolute property
+;; Meta is relative to where you are - frame shift, not type change
+;; The distinction is relative to context, not an inherent property of the symbol
+
+;; Why quotes aren't needed for literal strings:
+;; • Execution flows: Operators (->, +, .) force high curvature → structure
+;; • Natural language: No operators + no file exists → low curvature → literal
+;; • Context resolves ambiguity: Field curvature biases toward voice or literal
+;; • Smooth rotation: No discrete jumps, no quote walls, just continuous flow
+
+;; Distinction without quotes (for literals):
+;; • hello -> world → Contains "->" operator → high curvature → try voice resolution
+;; • hello world → No operator, no file → low curvature → literal text
+;; • The parser smoothly rotates based on curvature, not token type
+
+;; Quotes as relative meta distinction:
+;; • hello → use hello at current frame (execute/resolve/apply)
+;; • "hello" → shift to meta frame, reference hello relative to that frame
+;; Quotes shift the reference frame - relative to context, not absolute property
+;; Meta is relative to where you are - frame shift, not type change
+
+;; Key insight: If everything is in quotes, it's a lot like nothing is
+;; • If everything is quoted: "hello" "world" → all meta, no distinction
+;; • If nothing is quoted: hello world → all use, no distinction
+;; • The distinction only matters when there's a mix - relative to context
+;; • Quotes mark difference, not absolute type - the relativity emerges from contrast
+;;
+;; Implication: Quotes are OPTIONAL
+;; • If quotes are relative and only meaningful through contrast
+;; • Then the distinction can be inferred from context alone
+;; • The circle diffeomorphism can detect meta vs use through curvature
+;; • Quotes are just hints, not requirements - context determines everything
+
+voice implicit.parsing / {
+  Symbol -> Try voice resolution -> If file exists use voice -> If not rotate to literal -> Context curvature biases flow -> Quotes optional hint for meta
+}
+
+voice implicit.quotes_as_meta / {
+  hello -> Use at current frame -> "hello" -> Bias curvature toward meta frame -> Relative distinction not absolute type -> Context determines flow
+}
+
+voice implicit.quotes_relativity / {
+  Everything quoted -> Like nothing quoted -> No distinction -> Distinction needs contrast -> Quotes mark difference not type -> Quotes optional -> Context determines
+}
+
+voice implicit.quotes_optional / {
+  Quotes optional -> Hints not requirements -> Context infers distinction -> Curvature detects meta vs use -> Can write OPIC without quotes
+}
+
+voice implicit.no_quotes_needed / {
+  Operators force high curvature -> Natural language low curvature -> Curvature distinguishes structure from data -> Quotes optional hints for meta -> Context determines
+}
+
+;; ============================================================================
+;; 10. WAYS WORDS COMBINE — All patterns
+;; ============================================================================
+
+;; OPIC combines words in multiple ways:
+
+;; 1. CHAINING (->) — Sequential flow
+;;    Pattern: word1 -> word2 -> word3
+;;    Meaning: Execute word1, pass result to word2, pass result to word3
+;;    Example: split_lines -> filter_lines -> parse_each
+;;    Curvature: High (structural singularity) → forces structure
+
+;; 2. COMBINING (+) — Parallel/alternatives
+;;    Pattern: word1 + word2 + word3
+;;    Meaning: Try word1, if None try word2, if None try word3 (hopeful OR)
+;;    Example: grammar.list_extensions + grammar.discover_rules
+;;    Curvature: High (structural singularity) → forces structure
+
+;; 3. NAMESPACING (.) — Hierarchical organization
+;;    Pattern: namespace.word
+;;    Meaning: word within namespace (e.g., grammar.list_extensions)
+;;    Example: grammar.understand, opic.parse_ops, ml.generate
+;;    Curvature: High (structural singularity) → forces structure
+
+;; 4. SPACE-SEPARATED — Natural language / flat composition
+;;    Pattern: word1 word2 word3
+;;    Meaning: Natural language text or flat list of operations
+;;    Example: hello world, grammar list extensions
+;;    Curvature: Low (no operators) → rotates to literal
+
+;; 5. FLAT DEFINITIONS — All operations at same level
+;;    Pattern: voice op1 / {...}, voice op2 / {...}, voice op3 / {...}
+;;    Meaning: Each operation defined independently, then composed
+;;    Example: split_lines, filter_lines, parse_each all at top level
+;;    Curvature: Medium (file structure) → operations discoverable
+
+;; 6. META REFERENCE (") — Talking about symbols
+;;    Pattern: "word"
+;;    Meaning: Meta reference - talking ABOUT word rather than using it
+;;    Example: "hello" → mention hello (meta), hello → use hello (execute)
+;;    Curvature: Meta space (relative distinction, not static type)
+
+;; Key insight: Operators (->, +, .) are structural singularities
+;; They force high curvature → structure → voice resolution
+;; Natural language (no operators) → low curvature → literal
+;; Quotes mark meta space - relative distinction (meta vs use), not static type
+
+voice implicit.word_combinations / {
+  word1 -> word2 -> Sequential flow -> word1 + word2 -> Hopeful OR -> namespace.word -> Hierarchical -> word1 word2 word3 -> Natural language -> Quotes optional meta hint
+}
+
+voice implicit.operators_as_singularities / {
+  Operators -> -> + . -> Structural singularities -> Force high curvature -> Structure -> Voice resolution -> No operators -> Low curvature -> Literal
+}
+
+;; Circle diffeomorphism: resolve-or-rotate behavior
+;; On the circle, every point has neighbors - no dead-ends
+;; If a map can't take you straight ahead, it bends smoothly to the next direction
+
+voice implicit.circle_diffeomorphism / {
+  Symbol -> Try voice resolution -> Stable fixed point -> If fails rotate to literal -> Fallback orbit -> Operators boundary conditions -> Context biases flow -> Rotate until valid basin
+}
+
+;; Smooth flow: syntax → semantics → data
+;; No quote walls, no brittle token types, no binary switch
+;; Just continuous diffeomorphic flow
+;; Quotes are optional hints that bias curvature - they don't create walls, they guide flow
+
+voice implicit.smooth_flow / {
+  Symbol on circle -> Meanings are rotations -> Ambiguity follows curvature -> North pole structured meaning -> South pole literal meaning -> Rotation not failure
+}
+
+;; Universal pattern: Feigenbaum's α
+;; A system that refines ambiguity by folding and re-folding until stable
+
+voice implicit.universal_pattern / {
+  Feigenbaum alpha -> Refine ambiguity by folding -> Parser follows flow -> Quotes optional hints -> Bias curvature -> Guide not break -> Smooth rotation
+}
+
+;; ============================================================================
+;; 11. IMPLICIT SILENCE — Silence on conflict
+;; ============================================================================
+;; When things conflict or fail, OPIC silently falls back
+;; Pattern: silence.on_conflict → no explicit error handling needed
+;; Example: Multiple voices match → use first, silently ignore others
+
+voice implicit.silence / {
+  Conflict or failure -> OPIC silently falls back -> No explicit error handling -> Multiple matches use first -> Graceful degradation
+}
+
+;; ============================================================================
+;; 12. IMPLICIT LIST MAPPING
+;; ============================================================================
+;; Lists map implicitly: [xs] f → map (fold if monoid)
+;; Pattern: No explicit map needed - lists automatically map over operations
+;; Example: [1, 2, 3] -> add_one → [2, 3, 4] (implicit map)
+
+voice implicit.list_mapping / {
+  List -> operation -> Maps automatically -> [1,2,3] -> add_one -> [2,3,4] -> No explicit map needed -> Functional programming implicit
+}
+
+;; ============================================================================
+;; 13. IMPLICIT RESULT PASSING
+;; ============================================================================
+;; Results flow automatically between steps
+;; Pattern: last_result flows implicitly to next step
+;; Example: step1 -> step2 → step2 receives step1's result automatically
+
+voice implicit.result_passing / {
+  step1 -> step2 -> Result flows automatically -> last_result to next step -> No explicit parameter passing -> Data flow implicit
+}
+
+;; ============================================================================
+;; 14. IMPLICIT RECURSION
+;; ============================================================================
+;; Chains recurse implicitly
+;; Pattern: Nested chains execute recursively
+;; Example: voice1 / {voice2 -> voice3} → voice2 and voice3 execute recursively
+
+voice implicit.recursion / {
+  Nested chain -> Executes recursively -> voice1 / {voice2 -> voice3} -> Recursive composition -> No explicit recursion keyword
+}
+
+;; ============================================================================
+;; 15. IMPLICIT MAIN VOICE
+;; ============================================================================
+;; The `main` voice executes implicitly
+;; Pattern: `opic <file>` automatically finds and executes `main`
+;; Example: opic hello.ops → finds voice main / {...} and executes it
+
+voice implicit.main / {
+  opic file -> Finds main voice -> Executes automatically -> No explicit run needed -> Implicit entry point -> Executable by convention
+}
+
+;; ============================================================================
+;; 16. IMPLICIT VARIABLE BINDING
+;; ============================================================================
+;; Variables bound from context
+;; Pattern: Variables available implicitly in chains
+;; Example: step1 -> step2 → step2 can access step1's result as variable
+
+voice implicit.variable_binding / {
+  step1 -> step2 -> Variables bound from context -> Available implicitly -> Inferred from chain flow -> No explicit declaration
+}
+
+;; ============================================================================
+;; 17. IMPLICIT TARGET RESOLUTION
+;; ============================================================================
+;; Targets resolve implicitly
+;; Pattern: `target name / "description"` creates implicit entry point
+;; Example: target hello / "hello world" → creates implicit hello entry point
+
+voice implicit.target / {
+  target name -> Creates entry point -> Resolves implicitly -> No explicit invocation -> Named entry points -> Implicit resolution
+}
+
+;; ============================================================================
+;; PRINCIPLES OF IMPLICIT BEHAVIOR
+;; ============================================================================
+
+;; 1. Natural over explicit: Prefer discovery over hardcoding
+;; 2. Context-aware: Use context to resolve ambiguity
+;; 3. Progressive fallback: Try options in sequence
+;; 4. Semantic matching: Discover through meaning, not syntax
+;; 5. Minimal verbosity: Omit words that can be inferred
+;; 6. Shape adaptation: Lift values to fit expected forms
+;; 7. Smooth parsing: Continuous diffeomorphic flow, no discrete jumps
+;; 8. Operator-based structure: Operators (->, +, .) mark structural singularities
+;; 9. Silent fallback: Graceful degradation without explicit error handling
+;; 10. Automatic flow: Results, variables, and recursion flow automatically
+
+voice implicit.principles / {
+  Natural over explicit -> Context-aware -> Progressive fallback -> Semantic matching -> Minimal verbosity -> Shape adaptation -> Smooth parsing -> Operator-based structure -> Silent fallback -> Automatic flow
+}
+
+target implicit / "implicit_behavior_patterns"
+voice main / {implicit.attention -> implicit}

@@ -1,0 +1,218 @@
+;;; docs.ops — Documentation woven into OPIC voices (all insights surfaced in context)
+;; All markdown documentation insights surfaced through OPIC voices
+;; Access via: opic docs <topic> or reference voices directly (e.g., docs.philosophy)
+
+;; Philosophy insights (from philosophy.md, turing_compositor_transition.md)
+voice docs.philosophy / {
+  "OPIC Philosophy:" ->
+  "  - Computation as living, distributed conversation" ->
+  "  - Programs verify, sign, and evolve themselves" ->
+  "  - Voices as morphisms (computational actors)" ->
+  "  - Compositional behavior, not just function calls" ->
+  "  - Self-hosting: parser, loader, executor all in OPIC" ->
+  "  - Circular architecture: Python ↔ OPIC boundary preserves information" ->
+  "  - Turing compositor: composes behaviors (morphisms), not just values" ->
+  "  - Mathematical foundation: Cartesian closed categories, monoidal transducers" ->
+  "  - Every voice is Turing-complete in the small, composition rules enforce constraints in the large" ->
+  "  - Compose two behaviors into a third, preserving structural invariants and passing energy" ->
+  philosophy_insights
+}
+
+;; Architecture insights
+voice docs.architecture / {
+  "OPIC Architecture (layers):" ->
+  "  Layer 0: Language Runtime (core/bootstrap.ops)" ->
+  "  Layer 1: Core Systems (certificate, witness, VFS)" ->
+  "  Layer 2: Domain Systems (math, flow, security)" ->
+  "  Layer 3: Applications (examples, tests, ml)" ->
+  "  Layer 4: Resources (docs, wiki, data)" ->
+  architecture_insights
+}
+
+;; Core vs Systems distinction
+voice docs.core_vs_systems / {
+  "Core vs Systems:" ->
+  "  core/ = Language runtime kernel (foundation, self-hosting)" ->
+  "  systems/00_core/ = Field theory foundation (domain-specific but foundational)" ->
+  "  systems/ = Domain systems (built on core)" ->
+  "  Rule: core/ runs the language, systems/ use the language" ->
+  core_vs_systems_insights
+}
+
+;; Execution insights (from how_execution_works.md, automatic_voice_discovery.md, opic_execution_engine_analysis.md)
+voice docs.execution / {
+  "How OPIC Execution Works:" ->
+  "  1. Parse chain: Remove braces, split by '->'" ->
+  "  2. Discover voices: Auto-discover relevant voices based on context" ->
+  "  3. Execute sequentially: Each step receives previous result" ->
+  "  4. Data flow: Result flows forward through chain" ->
+  "  5. Recursive: Nested chains execute recursively" ->
+  "  Automatic Voice Discovery:" ->
+  "    - Keywords in steps → discover matching voice namespaces" ->
+  "    - Context-aware: 'learn energy' → discovers thermo.* voices" ->
+  "    - Semantic matching: voice namespaces match context" ->
+  "    - No explicit composition needed: voices discovered automatically" ->
+  "  Discovery Patterns:" ->
+  "    - learn/energy/density/critical/phase/resonance/cycle → thermo.*" ->
+  "    - energy/curvature/potential/field/wave/flow/xi → field.*" ->
+  "    - cycle/promote/dimension/operator/resonance → cycle.*" ->
+  "    - combinatorial/mod/projection/pascal → pascal.*" ->
+  "    - symmetry/curvature/theta/tan/sin/cos → trig.*" ->
+  execution_insights
+}
+
+;; Voice system insights
+voice docs.voices / {
+  "Voices as Morphisms:" ->
+  "  - Not just functions, but computational actors" ->
+  "  - Invariant signature (domain/codomain structure)" ->
+  "  - Energy coupling (connection to neighbors)" ->
+  "  - Compositional behavior (how it composes)" ->
+  "  - Syntax: voice name / {input -> transformation -> output}" ->
+  voice_insights
+}
+
+;; Chain insights
+voice docs.chains / {
+  "Chains:" ->
+  "  - Sequential composition: {input -> voice1 -> voice2 -> output}" ->
+  "  - Data flows forward: Each step receives previous result" ->
+  "  - Composable: Chains can contain nested chains" ->
+  "  - Declarative: Describe what, not how" ->
+  chain_insights
+}
+
+;; Self-hosting insights
+voice docs.self_hosting / {
+  "Self-Hosting:" ->
+  "  - bootstrap.ops defines the kernel" ->
+  "  - opic_parse.ops parses OPIC code" ->
+  "  - opic_load.ops loads OPIC files" ->
+  "  - opic_execute.ops executes OPIC voices" ->
+  "  - All written in OPIC itself (circular architecture)" ->
+  "  - Python provides minimal bootstrap (file I/O, primitives)" ->
+  self_hosting_insights
+}
+
+;; Circular architecture insights
+voice docs.circular / {
+  "Circular Architecture:" ->
+  "  - Python ↔ OPIC boundary preserves all information" ->
+  "  - Python provides: file I/O, primitives, extensions" ->
+  "  - OPIC provides: language definition, execution, composition" ->
+  "  - Equilibrium: Python bootstraps, OPIC executes itself" ->
+  "  - Lossless: Information flows through circle S¹ (phase preserved)" ->
+  "  - Smooth, invertible transformations (lossless diffeomorphisms)" ->
+  circular_insights
+}
+
+;; Field theory insights (from opic_field_spec_0.7.md, dimensional_field_equations.md, zeta_grammar_field_integration.md)
+voice docs.field_theory / {
+  "Field Specification 0.7:" ->
+  "  - Pascal Mod 10 / Tangent Symmetry / Bracket Algebra" ->
+  "  - Voice: dynamic actor (ζ-trace) carrying phase, potential, charge" ->
+  "  - Ion: minimal quantum of bias (+ noun / − verb)" ->
+  "  - Operator: composable transformation shell" ->
+  "  - Field: global continuum of meaning" ->
+  "  - Equilibrium: resonance point" ->
+  "  - Symmetry breaks: forward / backward flow" ->
+  "  Dimensional Field Equations (§9):" ->
+  "    - Energy exchange: dE/dt = -∇·J + Q" ->
+  "    - Curvature flow: dR/dt = -Ricci + source" ->
+  "    - Xi-form operator: ξ = dΦ + *d*Φ" ->
+  "    - Wave equation: ∂²φ/∂t² = ∇²φ - V(φ)" ->
+  "    - Field voices: field.xi_operator, field.wave_equation, field.energy_exchange" ->
+  field_theory_insights
+}
+
+;; Thermodynamics insights (from dimensional_thermodynamics.md)
+voice docs.thermodynamics / {
+  "Dimensional Thermodynamics (§8):" ->
+  "  - Learning density: ρ_learn = d(energy)/d(dimension)" ->
+  "  - Criticality: phase transitions at dimensional boundaries" ->
+  "  - Cycle annihilation: cycles → dimensions via promotion" ->
+  "  - Witness singularity: dimensional witness points" ->
+  "  - Thermo voices: thermo.learning_density, thermo.dimensional_criticality" ->
+  "  - Discovery: learn/energy/density/critical/phase → thermo.* voices (47 total)" ->
+  thermodynamics_insights
+}
+
+;; Typst/documentation insights (from typst_extensions.md, declarative_document_core.md)
+voice docs.typst / {
+  "Typst Integration:" ->
+  "  - Declarative document generation: specify what, not how" ->
+  "  - Automatic text generation from definition types" ->
+  "  - Structured data types: work with data, convert to strings at output" ->
+  "  - Default combination rules: subsections auto-combine content" ->
+  "  - Minimal content specification: only specify what matters" ->
+  typst_insights
+}
+
+;; Query documentation by topic
+voice docs.query / {
+  topic ->
+  if_topic_is "philosophy" -> docs.philosophy,
+  if_topic_is "architecture" -> docs.architecture,
+  if_topic_is "core" -> docs.core_vs_systems,
+  if_topic_is "execution" -> docs.execution,
+  if_topic_is "voices" -> docs.voices,
+  if_topic_is "chains" -> docs.chains,
+  if_topic_is "self-hosting" -> docs.self_hosting,
+  if_topic_is "circular" -> docs.circular,
+  if_topic_is "field" -> docs.field_theory,
+  if_topic_is "thermo" -> docs.thermodynamics,
+  if_topic_is "thermodynamics" -> docs.thermodynamics,
+  if_topic_is "typst" -> docs.typst,
+  if_topic_is "incremental" -> docs.incremental_expansion,
+  if_topic_is "expansion" -> docs.incremental_expansion,
+  default -> "Documentation topic not found. Try: philosophy, architecture, core, execution, voices, chains, self-hosting, circular, field, thermo, typst, incremental" ->
+  doc_result
+}
+
+;; All documentation insights
+voice docs.all / {
+  docs.philosophy ->
+  docs.architecture ->
+  docs.core_vs_systems ->
+  docs.execution ->
+  docs.voices ->
+  docs.chains ->
+  docs.self_hosting ->
+  docs.circular ->
+  docs.field_theory ->
+  docs.thermodynamics ->
+  docs.typst ->
+  "All documentation insights woven into OPIC voices"
+}
+
+;; OPIC generates its perspective using field-based generation theory
+;; Theory: intent → composer plan → ion chain → field coherence → output
+;; Implementation: generate_coherent (in opic_executor.py) implements this pipeline
+voice docs.generate_perspective / {
+  intent ->
+  generate.coherent ->
+  opic_generated_response
+}
+
+;; Compose intent from reasoning about incremental expansion
+voice docs.compose_intent / {
+  question ->
+  docs.philosophy ->
+  docs.execution ->
+  "Based on OPIC's philosophy of compositional growth and incremental self-hosting evolution, " ->
+  "should documentation expand incrementally? " ->
+  "Reasoning: " ->
+  intent
+}
+
+;; OPIC's perspective on incremental expansion (using field-based generation)
+voice docs.incremental_expansion / {
+  "Should documentation expand incrementally?" ->
+  docs.compose_intent ->
+  docs.generate_perspective ->
+  opic_generated_response
+}
+
+target docs / "opic_documentation"
+voice main / {docs.all -> docs}
+

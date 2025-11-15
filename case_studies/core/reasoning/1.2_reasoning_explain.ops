@@ -1,0 +1,84 @@
+;;; explain.ops — OPIC explains its own makeup and structure
+
+;; Explain OPIC's structure
+voice explain.structure / {
+  "OPIC Structure:" -> 
+  "  core/          - Language runtime (bootstrap, parser, executor)" ->
+  "  systems/       - Domain systems (security, math, flow, etc.)" ->
+  "  action/        - Applications (examples, tests, ml)" ->
+  "  resources/     - Static resources (docs, wiki, data)" ->
+  "  build/         - Build system (scripts, configs, artifacts)" ->
+  "  output/        - Generated output (results, backup)" ->
+  structure_explanation
+}
+
+;; Explain how OPIC works
+voice explain.how_it_works / {
+  "How OPIC Works:" ->
+  "  1. Bootstrap: core/bootstrap.ops loads the kernel" ->
+  "  2. Parse: opic_parse.ops parses .ops files into voices/defs" ->
+  "  3. Load: opic_load.ops recursively loads includes" ->
+  "  4. Execute: opic_execute.ops runs voice chains" ->
+  "  5. Self-hosting: All of this is written in OPIC itself" ->
+  how_it_works_explanation
+}
+
+;; Explain components
+voice explain.components / {
+  "OPIC Components:" ->
+  "  Voices: Composable transformations (voice name / {chain})" ->
+  "  Chains: Sequential composition (input -> voice1 -> voice2 -> output)" ->
+  "  Defs: Type definitions (def type_name { fields })" ->
+  "  Targets: Entry points (target name / \"value\")" ->
+  "  Includes: File imports (include path/to/file.ops)" ->
+  components_explanation
+}
+
+;; Explain architecture layers
+voice explain.architecture / {
+  "OPIC Architecture (layers):" ->
+  "  Layer 0: Language Runtime (core/bootstrap.ops)" ->
+  "  Layer 1: Core Systems (certificate, witness, VFS)" ->
+  "  Layer 2: Domain Systems (math, flow, security)" ->
+  "  Layer 3: Applications (examples, tests, ml)" ->
+  "  Layer 4: Resources (docs, wiki, data)" ->
+  architecture_explanation
+}
+
+;; Explain self-hosting
+voice explain.self_hosting / {
+  "OPIC is Self-Hosting:" ->
+  "  - bootstrap.ops defines the kernel" ->
+  "  - opic_parse.ops parses OPIC code" ->
+  "  - opic_load.ops loads OPIC files" ->
+  "  - opic_execute.ops executes OPIC voices" ->
+  "  - All written in OPIC itself (circular architecture)" ->
+  self_hosting_explanation
+}
+
+;; Explain the circular architecture
+voice explain.circular / {
+  "Circular Architecture:" ->
+  "  Python ↔ OPIC boundary preserves all information" ->
+  "  Python provides: file I/O, primitives, extensions" ->
+  "  OPIC provides: language definition, execution, composition" ->
+  "  Equilibrium: Python bootstraps, OPIC executes itself" ->
+  "  Lossless: Information flows through circle S¹ (phase preserved)" ->
+  circular_explanation
+}
+
+;; Main explanation voice (references docs.* voices for deeper insights)
+voice explain.opic / {
+  explain.structure ->
+  explain.how_it_works ->
+  explain.components ->
+  explain.architecture ->
+  explain.self_hosting ->
+  explain.circular ->
+  "OPIC: A self-hosting, event-based compositional language where programs are voices and chains." ->
+  "For deeper insights, see: docs.philosophy, docs.execution, docs.field_theory, docs.thermodynamics"
+}
+
+target explain / "opic_self_explanation"
+voice main / {explain.opic -> explain}
+

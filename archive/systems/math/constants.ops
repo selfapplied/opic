@@ -1,0 +1,23 @@
+;;; constants.ops — Mathematical constants
+
+;; Fundamental constants
+voice math.pi / 3.141592653589793
+voice math.e / 2.718281828459045
+voice math.phi / 1.618033988749895  ;; Golden ratio
+voice math.sqrt2 / 1.4142135623730951
+voice math.sqrt3 / 1.7320508075688772
+voice math.euler_gamma / 0.5772156649015329  ;; Euler-Mascheroni constant
+
+;; Complex constants
+voice math.i / {real: 0, imaginary: 1}  ;; Imaginary unit
+voice math.zero / 0
+voice math.one / 1
+
+;; Infinity and special values
+voice math.infinity / "∞"
+voice math.negative_infinity / "-∞"
+voice math.nan / "NaN"
+
+target constants / "mathematical_constants"
+voice main / {math.pi -> constants}
+

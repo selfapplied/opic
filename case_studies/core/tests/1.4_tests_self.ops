@@ -1,0 +1,72 @@
+;;; self.ops — Understanding of the tests directory
+
+;; Purpose: The tests directory contains OPIC test files that validate
+;;          system behavior, demonstrate capabilities, and ensure correctness.
+
+;; Convention: Each .ops file in this directory is a test that can be executed.
+;;             Tests naturally discover themselves - no hardcoding needed.
+
+;; Test Structure:
+;;   - Tests use voices to define test cases
+;;   - Tests use generate.coherent for explanation generation tests
+;;   - Tests validate OPIC's capabilities (execution, composition, field theory)
+
+;; Discovery: Tests are auto-discovered by find action/tests *.ops
+;; Execution: Each test file is executed via opic execute
+
+;; Test Categories:
+;;   - Atomic tests: Single concept validation
+;;   - Integration tests: Multi-component interaction
+;;   - Explanation tests: Natural language generation
+;;   - Field tests: Field theory validation
+;;   - Performance tests: System performance validation
+
+;; Self-understanding: This directory tests OPIC's ability to test itself.
+;;                     Tests verify that OPIC can explain, execute, and validate itself.
+
+voice tests.understand / {
+  "What is the tests directory?" ->
+  "The tests directory contains OPIC test files that validate system behavior." ->
+  "Tests naturally discover themselves - no hardcoding needed." ->
+  "Each test file is executable and validates specific capabilities." ->
+  understanding
+}
+
+voice tests.discover / {
+  "action/tests" ->
+  file.find "*.ops" ->
+  discovered_tests
+}
+
+voice tests.run / {
+  tests.discover ->
+  "Tests discovered and ready to execute" ->
+  test_execution
+}
+
+;; Score test results using φₖ curvature
+voice tests.score / {
+  test_result ->
+  test.score ->
+  test_score
+}
+
+;; Tests as CE1 operators (composable morphisms)
+voice tests.as_operators / {
+  test_name ->
+  ce1.test_operator_table ->
+  lookup ->
+  test_operator
+}
+
+;; Generate documentation from test voices
+voice tests.generate_docs / {
+  tests.discover ->
+  test.generate_docs ->
+  documentation
+}
+
+target tests / "tests_directory_understanding"
+voice main / {tests.understand -> tests}
+
+

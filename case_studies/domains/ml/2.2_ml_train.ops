@@ -1,0 +1,18 @@
+;;; train.ops — Training procedures
+
+def training_step { generator, batch, loss, optimizer }
+def batch { samples, size }
+def epoch { steps, batches }
+
+voice compute.generator.loss / {generated + target -> loss}
+voice backpropagate / {loss + generator -> gradients}
+voice update.generator / {generator + gradients + optimizer -> updated}
+voice train.epoch / {generator + batches -> trained}
+
+voice accumulate.gradients / {gradients + batch -> accumulated}
+voice apply.optimizer / {weights + gradients + learning_rate -> updated}
+voice clip.gradients / {gradients + max_norm -> clipped}
+
+target trained.generator / "generator.model"
+voice main / {generator + training_data -> trained.generator}
+

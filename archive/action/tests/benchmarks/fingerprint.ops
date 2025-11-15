@@ -1,0 +1,36 @@
+;;; fingerprint.ops — A/B test: baseline vs primorial mask
+
+include systems/flow3d_core.ops
+include systems/flow3d_mask.ops
+
+;; Runs: A=baseline, B=primorial(2310)
+voice fingerprint_persistence.ab / {
+  config + seeds -> 
+  run.baseline -> 
+  run.primorial -> 
+  compute.time.averaged.E_k -> 
+  test.shell.differences -> 
+  compute.metrics -> 
+  results
+}
+
+;; Outputs: E(k) mean±CI, ΔE(k) with FDR correction, kept-mode %, SNR
+voice compute.metrics / {
+  baseline.E_k + masked.E_k + difference_test -> 
+  compute.kept.mode.fraction -> 
+  compute.snr -> 
+  compute.confidence.intervals -> 
+  metrics
+}
+
+;; Pass: ≥3 adjacent shells significant across seeds
+voice check.pass.criteria / {
+  difference_test + seeds -> 
+  count.adjacent.significant -> 
+  check.threshold -> 
+  pass_status
+}
+
+target fingerprint / "fingerprint_persistence"
+voice main / { fingerprint_persistence.ab + check.pass.criteria -> fingerprint }
+

@@ -1,0 +1,115 @@
+;;; file_resolution.ops — File resolution and conflict handling
+;;; Declarative distance calculation and conflict resolution
+;;; Auto-included: math (uses math.add, etc.)
+
+;; ============================================================================
+;; DISTANCE CALCULATION
+;; ============================================================================
+
+;; Calculate directory distance from base directory
+;; Distance = number of directory levels between base and file
+;; 0 = same directory, 1 = parent, 2 = grandparent, etc.
+voice file.calculate_distance / {
+  file_path + base_dir ->
+  file.try_relative_path ->
+  if_relative -> file.distance_from_relative
+  if_not_relative -> file.distance_from_absolute ->
+  distance
+}
+
+;; Try to get relative path
+voice file.try_relative_path / {
+  file_path + base_dir ->
+  file.get_parent ->
+  file.get_base_parent ->
+  file.relative_to ->
+  relative_path
+}
+
+;; Calculate distance from relative path
+voice file.distance_from_relative / {
+  relative_path ->
+  file.split_path ->
+  file.count_parts ->
+  distance
+}
+
+;; Calculate distance from absolute paths (different trees)
+voice file.distance_from_absolute / {
+  file_path + base_dir ->
+  file.get_path_parts ->
+  file.get_base_parts ->
+  file.find_common_parts ->
+  file.calculate_up_levels ->
+  file.calculate_down_levels ->
+  file.add_levels ->
+  distance
+}
+
+;; Get parent directory
+voice file.get_parent / {file_path -> file.parent -> parent_dir}
+voice file.get_base_parent / {base_dir -> file.parent -> base_parent}
+
+;; Split path into parts
+voice file.split_path / {path -> file.split_by_slash -> parts}
+voice file.count_parts / {parts -> list.length -> count}
+
+;; Get path parts
+voice file.get_path_parts / {file_path -> file.get_parent -> file.split_path -> path_parts}
+voice file.get_base_parts / {base_dir -> file.split_path -> base_parts}
+
+;; Find common path components
+voice file.find_common_parts / {
+  path_parts + base_parts ->
+  file.compare_parts ->
+  common_count
+}
+
+;; Compare parts and count common prefix
+voice file.compare_parts / {
+  path_parts + base_parts ->
+  file.zip_parts ->
+  file.count_matching ->
+  common_count
+}
+
+;; Calculate up levels (from base to common ancestor)
+voice file.calculate_up_levels / {
+  base_parts + common_count ->
+  file.subtract_length ->
+  up_levels
+}
+
+;; Calculate down levels (from common ancestor to file)
+voice file.calculate_down_levels / {
+  path_parts + common_count ->
+  file.subtract_length ->
+  down_levels
+}
+
+;; Add up and down levels
+voice file.add_levels / {up_levels + down_levels -> math.add -> total_distance}
+
+;; ============================================================================
+;; CONFLICT RESOLUTION
+;; ============================================================================
+
+;; Resolve conflict: choose nearest definition
+voice file.resolve_conflict / {
+  existing_distance + current_distance ->
+  file.compare_distances ->
+  if_current_nearer -> current_wins
+  if_existing_nearer -> existing_wins ->
+  resolution
+}
+
+;; Compare distances
+voice file.compare_distances / {
+  existing_distance + current_distance ->
+  math.less_than_or_equal current_distance existing_distance ->
+  is_current_nearer
+}
+
+target file_resolution / "file_resolution_and_conflicts"
+voice main / file.calculate_distance
+

@@ -1,0 +1,202 @@
+;;; test_field_spec.ops — Test Field Spec 0.7 voices availability and execution
+
+include core/bootstrap.ops
+include systems/opic_field_0.7.ops
+
+;; Test definitions
+def test_result { name, passed, message }
+
+;; Test 1: Voice Availability
+voice test.voice_availability / {
+  executor -> 
+  test.pascal_voices -> 
+  test.trig_voices -> 
+  test.flow_voices -> 
+  test.cycle_voices -> 
+  test.nlp_voices -> 
+  test.dimension_voices -> 
+  test.availability_results
+}
+
+voice test.pascal_voices / {
+  executor -> 
+  opic.check_voice "pascal.add" -> 
+  opic.check_voice "pascal.mul" -> 
+  opic.check_voice "pascal.combination" -> 
+  opic.check_voice "pascal.shadow" -> 
+  opic.check_voice "pascal.trace7_position" -> 
+  all_exist
+}
+
+voice test.trig_voices / {
+  executor -> 
+  opic.check_voice "trig.cos_theta" -> 
+  opic.check_voice "trig.sin_theta" -> 
+  opic.check_voice "trig.tan_theta" -> 
+  opic.check_voice "trig.sec_theta" -> 
+  opic.check_voice "trig.cot_theta" -> 
+  opic.check_voice "trig.csc_theta" -> 
+  all_exist
+}
+
+voice test.flow_voices / {
+  executor -> 
+  opic.check_voice "flow.equilibrium" -> 
+  opic.check_voice "flow.hermitian_flow" -> 
+  opic.check_voice "flow.standing_wave" -> 
+  opic.check_voice "flow.forward_bias" -> 
+  opic.check_voice "flow.reverse_bias" -> 
+  count_existing
+}
+
+voice test.cycle_voices / {
+  executor -> 
+  opic.check_voice "cycle.compute_phase" -> 
+  opic.check_voice "cycle.compute_charge" -> 
+  opic.check_voice "cycle.promote_to_operator" -> 
+  opic.check_voice "cycle.learning_threshold" -> 
+  opic.check_voice "cycle.identity_to_time" -> 
+  opic.check_voice "cycle.dialogue_to_rotation" -> 
+  opic.check_voice "cycle.trace7_fundamental" -> 
+  all_exist
+}
+
+voice test.nlp_voices / {
+  executor -> 
+  opic.check_voice "nlp.masked_cycle" -> 
+  opic.check_voice "nlp.masked_promotion" -> 
+  opic.check_voice "nlp.attention_cycle" -> 
+  opic.check_voice "nlp.hermitian_attention" -> 
+  opic.check_voice "nlp.attention_dialogue" -> 
+  opic.check_voice "nlp.training_epoch_cycle" -> 
+  all_exist
+}
+
+voice test.dimension_voices / {
+  executor -> 
+  opic.check_voice "dimension.expand" -> 
+  opic.check_voice "dimension.promote" -> 
+  opic.check_voice "dimension.reduce" -> 
+  all_exist
+}
+
+voice opic.check_voice / {
+  voice_name + executor -> 
+  opic.has_voice -> 
+  exists
+}
+
+voice opic.has_voice / {
+  voice_name + executor -> 
+  executor.get_voices -> 
+  opic.lookup_voice -> 
+  if_found true -> 
+  if_not_found false -> 
+  exists
+}
+
+voice test.availability_results / {
+  pascal + trig + flow + cycle + nlp + dimension -> 
+  test.collect_results -> 
+  results
+}
+
+;; Test 2: Cycle Execution
+voice test.cycle_execution / {
+  executor -> 
+  test.cycle_phase -> 
+  test.cycle_promotion -> 
+  test.learning_threshold -> 
+  test.execution_results
+}
+
+voice test.cycle_phase / {
+  executor -> 
+  opic.execute_voice "cycle.compute_phase" {theta: 0.5} -> 
+  test.check_result -> 
+  test_result
+}
+
+voice test.cycle_promotion / {
+  executor -> 
+  opic.execute_voice "cycle.promote_to_operator" {cycle: "test"} -> 
+  test.check_result -> 
+  test_result
+}
+
+voice test.learning_threshold / {
+  executor -> 
+  opic.execute_voice "cycle.learning_threshold" {cycles: []} -> 
+  test.check_result -> 
+  test_result
+}
+
+voice test.check_result / {
+  result -> 
+  if_null false -> 
+  if_not_null true -> 
+  passed
+}
+
+voice test.execution_results / {
+  results -> 
+  test.collect_passed -> 
+  test.collect_failed -> 
+  results_summary
+}
+
+;; Test 3: NLP Cycle Execution
+voice test.nlp_cycle_execution / {
+  executor -> 
+  test.masked_cycle -> 
+  test.attention_cycle -> 
+  test.hermitian_attention -> 
+  test.nlp_results
+}
+
+voice test.masked_cycle / {
+  executor -> 
+  opic.execute_voice "nlp.masked_cycle" {context_tokens: []} -> 
+  test.check_result -> 
+  test_result
+}
+
+voice test.attention_cycle / {
+  executor -> 
+  opic.execute_voice "nlp.attention_cycle" {token_i: 0, token_j: 1} -> 
+  test.check_result -> 
+  test_result
+}
+
+voice test.hermitian_attention / {
+  executor -> 
+  opic.execute_voice "nlp.hermitian_attention" {attention_cycle: "test"} -> 
+  test.check_result -> 
+  test_result
+}
+
+voice test.nlp_results / {
+  results -> 
+  test.collect_passed -> 
+  test.collect_failed -> 
+  results_summary
+}
+
+;; Test suite: run all tests
+voice test.suite / {
+  test.voice_availability -> 
+  test.cycle_execution -> 
+  test.nlp_cycle_execution -> 
+  test.all_results
+}
+
+voice test.all_results / {
+  availability + cycle + nlp -> 
+  test.collect_all -> 
+  test.report -> 
+  test_summary
+}
+
+target test_field_spec / "field_spec_tests"
+voice main / {test.suite -> test.all_results -> test_field_spec}
+

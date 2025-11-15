@@ -1,0 +1,84 @@
+;;; test_conversions.ops — Test that Python-to-opic conversions work correctly
+
+include core/bootstrap.ops
+
+;; Test definitions
+def test_result { name, passed, message }
+
+;; Test 1: Executor flow test conversion
+voice test.executor_flow_conversion / {
+  "tests/test_executor_flow.ops" -> 
+  opic.load_file -> 
+  opic.has_voice "test.file_discovery" -> 
+  opic.has_voice "test.file_output_association" -> 
+  opic.has_voice "test.comment_learning" -> 
+  all_voices_exist -> 
+  test_result
+}
+
+;; Test 2: Field spec test conversion
+voice test.field_spec_conversion / {
+  "tests/test_field_spec.ops" -> 
+  opic.load_file -> 
+  opic.has_voice "test.voice_availability" -> 
+  opic.has_voice "test.cycle_execution" -> 
+  opic.has_voice "test.nlp_cycle_execution" -> 
+  all_voices_exist -> 
+  test_result
+}
+
+;; Test 3: Bloom SVG conversion
+voice test.bloom_svg_conversion / {
+  "systems/visualization/bloom_svg.ops" -> 
+  opic.load_file -> 
+  opic.has_voice "bloom.generate_svg" -> 
+  opic.has_voice "bloom.load_traces" -> 
+  opic.has_voice "bloom.filter_traces" -> 
+  opic.has_voice "bloom.render_svg" -> 
+  all_voices_exist -> 
+  test_result
+}
+
+;; Test 4: Typst render conversion
+voice test.typst_render_conversion / {
+  "systems/typst/render.ops" -> 
+  opic.load_file -> 
+  opic.has_voice "typst.render" -> 
+  opic.has_voice "typst.write_file" -> 
+  opic.has_voice "typst.compile" -> 
+  all_voices_exist -> 
+  test_result
+}
+
+;; Test 5: Domain knowledge conversion
+voice test.domain_knowledge_conversion / {
+  "systems/knowledge/add_domain.ops" -> 
+  opic.load_file -> 
+  opic.has_voice "knowledge.add_domain_entry" -> 
+  opic.has_voice "knowledge.map_field" -> 
+  opic.has_voice "knowledge.store_entry" -> 
+  all_voices_exist -> 
+  test_result
+}
+
+;; Test suite: verify all conversions
+voice test.suite / {
+  test.executor_flow_conversion -> 
+  test.field_spec_conversion -> 
+  test.bloom_svg_conversion -> 
+  test.typst_render_conversion -> 
+  test.domain_knowledge_conversion -> 
+  test.results
+}
+
+voice test.results / {
+  results -> 
+  test.collect_passed -> 
+  test.collect_failed -> 
+  test.report -> 
+  test_summary
+}
+
+target test_conversions / "python_to_opic_conversion_tests"
+voice main / {test.suite -> test.results -> test_conversions}
+

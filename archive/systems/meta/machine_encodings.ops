@@ -1,0 +1,289 @@
+;;; machine_encodings.ops — Machine Encodings as Circle Diffeomorphisms
+;;; Voice grammar integration: All machine operations as declarative voices
+;;; Files auto-included: bootstrap.ops, primitives.ops
+
+;; ============================================================================
+;; 0. ONTOLOGY (Declarative Definitions)
+;; ============================================================================
+
+;; Machine encoding: representation of state in finite cyclic group
+def machine_encoding {
+  state_space: "S_N = Z/NZ",
+  continuous_idealization: "S^1 = R/2piZ",
+  sampling_map: "sigma_N: S^1 -> S_N",
+  sampling_formula: "sigma_N(theta) = floor(N*theta / 2*pi)"
+}
+
+;; Core equivalence: All finite encodings are discretizations of circle diffeomorphisms
+voice encoding.core_equivalence / "All finite encodings are discretizations of circle diffeomorphisms"
+
+;; ============================================================================
+;; 1. ENCODING AS DISCRETE CIRCLE STRUCTURE (Voice Grammar)
+;; ============================================================================
+
+;; Definition 1.1: Finite Encoding Space
+def finite_encoding_space {
+  width_n_bits: int,
+  N: "2^n",
+  state_space: "S_N = Z/NZ",
+  canonical_wrap: "x -> x mod N"
+}
+
+;; Create encoding space from bit width
+voice encoding.create_space / {n_bits -> encoding.compute_N -> encoding_space}
+voice encoding.compute_N / {n_bits -> math.power 2 -> N}
+
+;; Definition 1.2: Discrete Circle
+def discrete_circle {
+  N_points: int,
+  identification: "i in S_N ≡ theta_i = 2*pi*i / N",
+  interpretation: "N-point discretization of S^1"
+}
+
+;; Map encoding to phase on circle
+voice encoding.to_phase / {i + N -> encoding.compute_theta_i -> phase}
+voice encoding.compute_theta_i / {
+  i + N ->
+  math.multiply i "2*pi" ->
+  math.divide N ->
+  theta_i
+}
+
+;; Map phase to encoding
+voice encoding.from_phase / {theta + N -> encoding.compute_i -> encoding_value}
+voice encoding.compute_i / {
+  theta + N ->
+  math.multiply theta N ->
+  math.divide "2*pi" ->
+  math.floor ->
+  i
+}
+
+;; ============================================================================
+;; 2. MACHINE OPERATIONS AS CIRCLE MAPS (Voice Grammar)
+;; ============================================================================
+
+;; Definition 2.1: Machine Operation
+def machine_operation {
+  f: "S_N -> S_N",
+  type: "discrete_circle_map",
+  lift: "f_tilde: R -> R",
+  lift_condition: "f_tilde(x + N) = f_tilde(x) + k*N",
+  circle_map: "f(i) = f_tilde(i) mod N"
+}
+
+;; ============================================================================
+;; 3. CLASS OF ALLOWED CIRCLE DIFFEOMORPHISMS (Voice Grammar)
+;; ============================================================================
+
+;; 3.1 Affine Circle Maps (ALU Core)
+def affine_circle_map {
+  formula: "f(i) = a*i + b mod N",
+  continuous_version: "theta -> a*theta + b mod 2*pi",
+  diffeomorphic_when: "gcd(a, N) = 1",
+  examples: ["addition", "subtraction", "pointer_updates", "bit_rotations"],
+  role: "backbone of machine arithmetic"
+}
+
+;; Apply affine circle map
+voice encoding.affine_map / {i + a + b + N -> encoding.compute_affine -> encoding.mod_N -> result}
+voice encoding.compute_affine / {i + a -> math.multiply -> math.add b -> affine_result}
+voice encoding.mod_N / {value + N -> $operator.mod$ -> wrapped_value}
+
+;; Check if affine map is diffeomorphic
+voice encoding.check_diffeomorphic / {a + N -> encoding.compute_gcd -> if_gcd_1 -> diffeomorphic}
+voice encoding.compute_gcd / {a + N -> $math.gcd$ -> gcd_value}
+
+;; Addition as affine map (a=1, b=addend)
+voice encoding.add / {i + addend + N -> math.add -> encoding.mod_N -> result}
+
+;; Subtraction as affine map (a=1, b=-subtrahend)
+voice encoding.subtract / {i + subtrahend + N -> math.subtract -> encoding.mod_N -> result}
+
+;; Bit rotation as affine map (a=±1, b=0)
+voice encoding.rotate_left / {i + N -> $operator.lshift$ 1 -> encoding.mod_N -> result}
+voice encoding.rotate_right / {i + N -> $operator.rshift$ 1 -> encoding.mod_N -> result}
+
+;; 3.2 Bitwise Operators as Symbolic Circle Maps
+def bitwise_operator {
+  type: "piecewise_constant_diffeomorphism",
+  partition: "circle into arcs corresponding to binary digits",
+  formula: "f(theta)_k = g_k(theta_k)",
+  examples: ["XOR", "AND", "OR"],
+  classification: "partitioned_circle_map or discrete_Markov_circle_map"
+}
+
+;; XOR as symbolic circle map
+voice encoding.xor / {i1 + i2 -> $operator.xor$ -> result}
+
+;; AND as symbolic circle map
+voice encoding.and / {i1 + i2 -> $operator.and$ -> result}
+
+;; OR as symbolic circle map
+voice encoding.or / {i1 + i2 -> $operator.or$ -> result}
+
+;; 3.3 Hash Functions as High-Diffusion Circle Maps
+def hash_function {
+  type: "circle_diffusor",
+  H: "S_N -> S_M",
+  properties: [
+    "high_expansion_on_symbolic_partitions",
+    "near_mixing_on_S1_under_sampling",
+    "approximate_equidistribution_of_iterates"
+  ],
+  formal_condition: "forall A subset S^1, mu(H^-1(A)) ≈ mu(A)",
+  classification: "circle_chaotic_but_circle_based"
+}
+
+;; Hash as circle diffusor
+voice encoding.hash / {value + N -> $builtins.hash$ -> encoding.mod_N -> hashed_value}
+
+;; ============================================================================
+;; 4. PRECISION AS CIRCLE RESOLUTION (Voice Grammar)
+;; ============================================================================
+
+;; Definition 4.1: Precision
+def precision {
+  p: "N^-1 = 2^-n",
+  angular_resolution: "Delta_theta = 2*pi / N"
+}
+
+;; Compute precision from bit width
+voice encoding.compute_precision / {n_bits -> encoding.compute_N -> encoding.compute_p -> precision_value}
+voice encoding.compute_p / {N -> math.power N -1 -> p}
+
+;; Compute angular resolution
+voice encoding.compute_angular_resolution / {N -> math.multiply "2*pi" -> math.divide N -> Delta_theta}
+
+;; Invariance Rule: Precision-Safe Operation
+def precision_safe_operation {
+  condition: "f(theta + Delta_theta) - f(theta) = O(Delta_theta)",
+  when_lifted: "f_tilde",
+  protects: ["numerical_stability", "opic_bootstrap_semantics"]
+}
+
+;; Check if operation is precision-safe (simplified check)
+voice encoding.check_precision_safe / {
+  operation + Delta_theta ->
+  check_linearity ->
+  if_linear -> precision_safe
+  if_nonlinear -> check_bounds ->
+  if_bounded -> precision_safe
+  if_unbounded -> precision_unsafe
+}
+
+;; ============================================================================
+;; 5. DIFFUSION AND ERROR PROPAGATION (Voice Grammar)
+;; ============================================================================
+
+;; Diffusion Coefficient
+def diffusion_coefficient {
+  f_t: "t repeated applications",
+  i_t_plus_1: "f(i_t)",
+  D_f: "lim_{t->infty} E[(i_t - E[i_t])^2] / t",
+  classification: {
+    low_D_f: "rotation_like_coherent",
+    moderate_D_f: "ALU_like_structured",
+    high_D_f: "hash_like_mixing"
+  },
+  opic_use: "classify operators into spectrum categories"
+}
+
+;; Classify operator by diffusion (simplified classification)
+voice encoding.classify_operator / {
+  operator_name ->
+  encoding.operator_type ->
+  if_rotation -> rotation_like
+  if_affine -> ALU_like
+  if_hash -> hash_like
+  if_bitwise -> check_bitwise_diffusion ->
+  classification
+}
+
+voice encoding.operator_type / {
+  operator_name ->
+  if_matches "rotate" -> rotation
+  if_matches "add|subtract" -> affine
+  if_matches "hash" -> hash
+  if_matches "xor|and|or" -> bitwise
+  type
+}
+
+;; ============================================================================
+;; 6. OPIC INTEGRATION (Voice Grammar)
+;; ============================================================================
+
+;; OPIC treats machine encodings as:
+def opic_encoding_treatment {
+  states: "finite_circles",
+  operations: "circle_diffeomorphisms",
+  precision: "precision_bounds_resolution",
+  semantics: "diffusion_classes_operator_semantics"
+}
+
+;; Unified Rule
+voice opic.unified_rule / {
+  "Every OPIC operator must be a precision-respecting map on a discretized circle, " +
+  "with controllable diffusion and stable diffeomorphic lift."
+}
+
+;; Bootstrap Requirement
+voice opic.bootstrap_requirement / opic.unified_rule
+
+;; Check if operator satisfies bootstrap requirement
+voice opic.check_bootstrap_compliance / {
+  operator_name + N ->
+  encoding.check_precision_safe ->
+  encoding.classify_operator ->
+  if_precision_safe_and_classified -> bootstrap_compliant
+  if_not_compliant -> bootstrap_non_compliant
+}
+
+;; ============================================================================
+;; OPERATOR TABLE (Voice Grammar)
+;; ============================================================================
+
+;; Standard CPU operations as circle diffeomorphisms
+voice encoding.operator_table / {
+  "ADD" -> encoding.add
+  "SUB" -> encoding.subtract
+  "XOR" -> encoding.xor
+  "AND" -> encoding.and
+  "OR" -> encoding.or
+  "ROTATE_LEFT" -> encoding.rotate_left
+  "ROTATE_RIGHT" -> encoding.rotate_right
+  "HASH" -> encoding.hash
+}
+
+;; Lookup operator
+voice encoding.lookup_operator / {operator_name -> encoding.operator_table -> lookup -> operator_voice}
+
+;; ============================================================================
+;; VOICE GRAMMAR INTEGRATION
+;; ============================================================================
+
+;; All machine operations available as OPIC voices
+;; Usage examples:
+;;   encoding.add i:5 addend:3 N:256 -> result
+;;   encoding.xor i1:10 i2:5 -> result
+;;   encoding.check_precision_safe operation:encoding.add Delta_theta:0.024 -> safe
+;;   encoding.classify_operator operator_name:"ADD" -> ALU_like
+
+;; Integration with OPIC's voice system
+voice opic.register_encoding_voices / {
+  encoding.add +
+  encoding.subtract +
+  encoding.xor +
+  encoding.and +
+  encoding.or +
+  encoding.rotate_left +
+  encoding.rotate_right +
+  encoding.hash +
+  encoding.check_precision_safe +
+  encoding.classify_operator ->
+  register_all ->
+  encoding_voices_registered
+}
+
+target machine_encodings / "machine_encodings_voice_grammar"
+voice main / encoding.core_equivalence

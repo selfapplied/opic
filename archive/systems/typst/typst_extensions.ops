@@ -1,0 +1,96 @@
+;;; typst_extensions.ops — Advanced Typst features for opic documents
+
+include systems/typst.ops
+
+;; Typst extension definitions
+def typst_ops_code { code, highlighted }
+def typst_margin_note { content, position, style }
+def typst_cryptographic_seal { signature, realm, ca, style }
+def typst_field_equation { equation, variables, explanation }
+
+;; ============================================================================
+;; OPS SYNTAX COLORING
+;; ============================================================================
+
+;; Generate Typst code block with OPS syntax highlighting
+voice typst.ops_code / {ops_code -> typst.highlight_ops -> typst_ops_code}
+voice typst.highlight_ops / {code -> colorize_ops_syntax -> highlighted_code}
+
+;; OPS syntax color scheme
+voice typst.ops_colors / {
+  keyword: "rgb(\"8B5CF6\")"  ;; Purple for voice/def
+  comment: "rgb(\"6B7280\")"  ;; Gray for comments
+  string: "rgb(\"10B981\")"   ;; Green for strings
+  operator: "rgb(\"F59E0B\")" ;; Amber for arrows/operators
+  name: "rgb(\"3B82F6\")"     ;; Blue for names
+}
+
+;; Colorize OPS syntax elements
+voice colorize_ops_syntax / {code -> highlight_keywords -> highlight_comments -> highlight_strings -> highlight_operators -> highlighted}
+
+;; ============================================================================
+;; MARGIN NOTES / EXPLAIN MARGINS
+;; ============================================================================
+
+;; Create margin note (explain in margin)
+voice typst.margin_note / {content + position -> typst.create_margin_note -> typst_margin_note}
+voice typst.create_margin_note / {content + position -> format_margin_note -> margin_note_code}
+voice format_margin_note / {content + position -> build_margin_note -> note}
+
+;; Margin note styles
+voice typst.margin_explain / {text -> typst.margin_note "right" -> margin_note}
+voice typst.margin_warning / {text -> typst.margin_note "right" "warning" -> margin_note}
+voice typst.margin_tip / {text -> typst.margin_note "right" "tip" -> margin_note}
+
+;; ============================================================================
+;; CRYPTOGRAPHIC SEALS
+;; ============================================================================
+
+;; Create cryptographic seal (certificate signature)
+voice typst.cryptographic_seal / {signature + realm + ca -> typst.create_seal -> typst_cryptographic_seal}
+voice typst.create_seal / {signature + realm + ca -> format_seal -> seal_code}
+
+;; Seal styles
+voice typst.seal_certificate / {signature + realm + ca -> typst.cryptographic_seal "certificate" -> seal}
+voice typst.seal_witness / {signature + realm + ca -> typst.cryptographic_seal "witness" -> seal}
+voice typst.seal_signed / {signature + realm + ca -> typst.cryptographic_seal "signed" -> seal}
+
+;; ============================================================================
+;; BEAUTIFUL FIELD EQUATIONS
+;; ============================================================================
+
+;; Format field equation beautifully
+voice typst.field_equation / {equation + variables -> typst.format_field_equation -> typst_field_equation}
+voice typst.format_field_equation / {equation + variables -> format_math_beautiful -> formatted_equation}
+
+;; Field equation templates
+voice typst.equation_fee / {tau_vector -> format_fee_equation -> equation}
+voice typst.equation_coherence / {field_state -> format_coherence_equation -> equation}
+voice typst.equation_zeta / {zeros -> format_zeta_equation -> equation}
+
+;; Field equation with explanation
+voice typst.equation_with_explanation / {equation + explanation -> typst.field_equation + typst.margin_explain -> equation_block}
+
+;; ============================================================================
+;; DRAW SYSTEM / 2D VISUALIZATION
+;; ============================================================================
+
+;; Generate SVG diagram from opic draw definitions
+voice typst.draw_svg / {draw_definition -> typst_draw_svg -> typst_diagram}
+voice typst.draw_diagram / {canvas + width -> typst.draw_svg -> diagram}
+voice typst.draw_canvas / {canvas_def -> typst.draw_svg -> diagram}
+voice typst.draw_shape / {shape_def -> typst.draw_svg -> diagram}
+voice typst.draw_pattern / {pattern_def -> typst.draw_svg -> diagram}
+
+;; ============================================================================
+;; RADIANT BLOOM / RADIAL PETAL VISUALIZATION
+;; ============================================================================
+
+;; Generate radiant bloom SVG from field traces (Riemann Hypothesis visualization)
+voice typst.bloom_svg / {trace_file -> typst_bloom_svg -> bloom_diagram}
+voice typst.radiant_bloom / {field_traces -> typst.bloom_svg -> bloom}
+voice typst.bloom / {traces_path -> typst.bloom_svg -> bloom_diagram}
+
+target typst_extensions / "typst_advanced_features"
+voice main / {typst.ops_code -> typst_extensions}
+

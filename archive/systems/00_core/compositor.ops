@@ -1,0 +1,232 @@
+;;; compositor.ops — OPIC's Turing Compositor Core
+;;; Defines morphism composition, signature preservation, energy coupling
+;;; 
+;;; OPIC is a Turing compositor for dynamic fields—
+;;; a system where computation composes itself.
+;;;
+;;; At its heart, OPIC is not a "simulator" or "function runner."
+;;; It's a composer of behaviors.
+
+include systems/00_core/opic_field_0.7.ops
+
+;; ============================================================================
+;; MORPHISM DEFINITION
+;; ============================================================================
+
+;; Morphism: v : X → X (state transformer with structure)
+;; A voice is not a computation—it's a computational actor with:
+;;   • invariant signature (domain/codomain structure)
+;;   • energy coupling (connection to neighbors)
+;;   • compositional behavior (how it composes with others)
+def morphism {
+  domain,           ;; Input type/structure
+  codomain,         ;; Output type/structure
+  signature,        ;; Invariant signature
+  energy_coupling,  ;; Connection to neighbors
+  body              ;; Compositional behavior
+}
+
+;; ============================================================================
+;; MORPHISM COMPOSITION
+;; ============================================================================
+
+;; Compose two morphisms: v₃ = v₂ ∘ v₁
+;; Preserves structural invariants and passes energy between them
+;; Every voice is Turing-complete in the small,
+;; but the composition rules enforce constraints in the large
+voice compose.morphisms / {
+  v1 + v2 ->
+  verify_signatures ->
+  preserve_invariants ->
+  couple_energy ->
+  v3
+}
+
+;; Verify structural invariants preserved across composition
+voice verify_signatures / {
+  v1 + v2 ->
+  check_domain_codomain ->
+  verify_invariants ->
+  signature_preserved
+}
+
+;; Check domain/codomain compatibility
+voice check_domain_codomain / {
+  v1 + v2 ->
+  extract_v1_codomain ->
+  extract_v2_domain ->
+  compare_types ->
+  compatible
+}
+
+;; Preserve structural invariants during composition
+voice preserve_invariants / {
+  v1 + v2 + compatible ->
+  extract_v1_invariants ->
+  extract_v2_invariants ->
+  merge_invariants ->
+  preserved_invariants
+}
+
+;; Couple energy between morphisms
+;; Energy flows from v1 to v2, preserving total energy
+voice couple_energy / {
+  v1 + v2 + preserved_invariants ->
+  extract_v1_energy ->
+  extract_v2_energy ->
+  compute_coupling ->
+  coupled_energy
+}
+
+;; ============================================================================
+;; COMPOSITIONAL OPERATORS
+;; ============================================================================
+
+;; Identity morphism: preserves structure, passes through energy
+voice identity.morphism / {
+  domain ->
+  create_identity ->
+  id_morphism
+}
+
+;; Parallel composition: v₁ ⊗ v₂ (monoidal product)
+;; Composes morphisms in parallel, preserving both structures
+voice compose.parallel / {
+  v1 + v2 ->
+  verify_parallel_compatibility ->
+  preserve_both_structures ->
+  couple_parallel_energy ->
+  v1_tensor_v2
+}
+
+;; Sequential composition: v₂ ∘ v₁ (already defined as compose.morphisms)
+;; This is the primary composition operator
+
+;; ============================================================================
+;; SIGNATURE PRESERVATION
+;; ============================================================================
+
+;; Extract signature from morphism
+voice extract.signature / {
+  morphism ->
+  get_domain ->
+  get_codomain ->
+  get_invariants ->
+  signature
+}
+
+;; Verify signature preserved under composition
+voice verify.signature.preserved / {
+  v1_signature + v2_signature + composed_result ->
+  compare_signatures ->
+  check_invariants_maintained ->
+  signature_preserved
+}
+
+;; ============================================================================
+;; ENERGY COUPLING
+;; ============================================================================
+
+;; Extract energy from morphism
+voice extract.energy / {
+  morphism ->
+  get_energy_field ->
+  compute_total_energy ->
+  energy
+}
+
+;; Compute energy coupling between morphisms
+voice compute.energy.coupling / {
+  v1_energy + v2_energy ->
+  compute_coupling_strength ->
+  compute_energy_flow ->
+  coupling
+}
+
+;; Preserve total energy across composition
+voice preserve.total.energy / {
+  v1_energy + v2_energy + coupling ->
+  compute_total ->
+  verify_conservation ->
+  total_energy_preserved
+}
+
+;; ============================================================================
+;; COMPOSITIONAL CONSTRAINTS
+;; ============================================================================
+
+;; Check if composition is valid
+;; Valid composition requires:
+;;   • compatible domain/codomain
+;;   • preserved invariants
+;;   • conserved energy
+voice validate.composition / {
+  v1 + v2 ->
+  verify_signatures ->
+  preserve_invariants ->
+  preserve_total_energy ->
+  composition_valid
+}
+
+;; ============================================================================
+;; EXAMPLES
+;; ============================================================================
+
+;; Example: Compose scaling and filtering behaviors
+;; Both are morphisms preserving signal structure
+voice example.scale_then_filter / {
+  signal + scale_factor + filter_params ->
+  behavior.scale ->
+  behavior.filter ->
+  composed_result
+}
+
+;; Behavior: scaling morphism
+voice behavior.scale / {
+  signal + scale_factor ->
+  apply_scaling ->
+  preserve_structure ->
+  scaled_signal
+}
+
+;; Behavior: filtering morphism
+voice behavior.filter / {
+  signal + filter_params ->
+  apply_filter ->
+  preserve_structure ->
+  filtered_signal
+}
+
+;; ============================================================================
+;; COMPOSITIONAL METRICS
+;; ============================================================================
+
+;; Measure composition complexity
+voice measure.composition.complexity / {
+  v1 + v2 ->
+  extract_v1_complexity ->
+  extract_v2_complexity ->
+  compute_composition_complexity ->
+  complexity
+}
+
+;; Measure energy efficiency of composition
+voice measure.energy.efficiency / {
+  v1 + v2 + composition_result ->
+  extract_input_energy ->
+  extract_output_energy ->
+  compute_efficiency ->
+  efficiency
+}
+
+target compositor / "opic_compositor_core"
+voice main / {
+  compose.morphisms +
+  compose.parallel +
+  verify_signatures +
+  preserve_invariants +
+  couple_energy +
+  validate.composition ->
+  compositor
+}
+

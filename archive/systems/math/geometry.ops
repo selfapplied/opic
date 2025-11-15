@@ -1,0 +1,22 @@
+;;; geometry.ops — Geometric operations
+
+;; Distance calculations
+voice geom.distance / {p1 + p2 -> geom.compute_distance -> distance}
+voice geom.compute_distance / {p1 + p2 -> geom.difference -> geom.norm -> distance}
+
+;; Angle calculations
+voice geom.angle / {p1 + p2 + p3 -> geom.compute_angle -> angle_radians}
+voice geom.angle_degrees / {angle_rad + math.pi -> multiply -> divide -> angle_deg}
+
+;; Transformations
+voice geom.translate / {point + vector -> geom.add_vectors -> translated_point}
+voice geom.rotate / {point + angle + center -> geom.apply_rotation -> rotated_point}
+voice geom.scale / {point + factor + center -> geom.apply_scaling -> scaled_point}
+
+;; Area and volume
+voice geom.area / {points -> geom.compute_area -> area_value}
+voice geom.volume / {points -> geom.compute_volume -> volume_value}
+
+target geometry / "geometric_operations"
+voice main / {geom.distance -> geometry}
+

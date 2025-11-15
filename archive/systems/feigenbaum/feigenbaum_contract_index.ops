@@ -1,0 +1,659 @@
+;;; feigenbaum_contract_index.ops — Feigenbaum Alpha-Delta Index for Actor Coupled Models
+;;; 
+;;; Layer 2: Critical Geometry (built on Layer 0: Actor Coupled Modeling)
+;;; 
+;;; Defines function Φ that assigns Feigenbaum coordinates (α_C, δ_C) to actor coupled models
+;;; Characterizes bifurcation behavior under iterative simulation
+;;; 
+;;; Base abstraction: Actor Coupled Model (actor + state + morphism + consequences)
+;;; Witness systems: Git DAG, TON ledger, semantic webs, OPIC field, zeta curvature
+;;; 
+;;; This module is witness-system agnostic. TON, git, etc. are backends, not foundations.
+
+include systems/actor_coupled_modeling.ops
+include systems/feigenbaum_field.ops
+include systems/00_core/opic_field_0.7.ops
+
+;; ============================================================================
+;; CORE DATA STRUCTURES: Actor Coupled Model Version
+;; ============================================================================
+
+;; Actor coupled model version: a snapshot of actor state
+;; This is the base abstraction. Git commits, TON contracts, etc. are instantiations.
+def actor_coupled_model_version {
+  version_id,       ;; Version identifier (could be git hash, TON address, etc.)
+  actor,            ;; Actor A with morphism F_A: S_t → S_{t+1}
+  state,            ;; State S_t
+  control_parameter, ;; Parameter r
+  witness_backend   ;; Witness system (git, ledger, semantic, etc.)
+}
+
+;; Simulation result for single parameter r
+def simulation_result {
+  r,                ;; Control parameter value
+  trajectory,       ;; State trajectory {state_t : t = 0..T}
+  x_sequence,       ;; Observable sequence {x_t = M(state_t)}
+  regime,           ;; Detected regime (fixed_point, period_2, period_4, ..., chaotic)
+  period,           ;; Period if periodic
+  values            ;; Cycle values if periodic
+}
+
+;; Regime classification
+def regime {
+  type,              ;; "fixed_point" | "period_2" | "period_4" | ... | "chaotic" | "unknown"
+  period,           ;; Period if periodic (power of 2)
+  values,           ;; Cycle values [x_1, x_2, ...]
+  fixed_value,      ;; Fixed point value if type == "fixed_point"
+  width             ;; Attractor width (max - min) if periodic
+}
+
+;; Bifurcation point
+def bifurcation_point {
+  r,                ;; Parameter value where bifurcation occurs
+  from_period,      ;; Period before bifurcation
+  to_period,        ;; Period after bifurcation
+  regime_before,    ;; Regime before bifurcation
+  regime_after      ;; Regime after bifurcation
+}
+
+;; Feigenbaum coordinates for contract C
+def feigenbaum_coordinates {
+  alpha_C,          ;; Domain scaling factor (state space)
+  delta_C,          ;; Parameter-space convergence rate
+  quality           ;; Quality metadata q_C
+}
+
+;; Quality metadata
+def quality_metadata {
+  num_bifurcations, ;; Number of bifurcations observed
+  chaos_detected,   ;; Boolean: chaos detected?
+  confidence_alpha, ;; Confidence in α_C estimate
+  confidence_delta, ;; Confidence in δ_C estimate
+  r_range,          ;; Parameter range [r_min, r_max]
+  T_simulated       ;; Number of simulation steps
+}
+
+;; ============================================================================
+;; MAIN FUNCTION: Φ(CM)
+;; ============================================================================
+
+;; Main function: Φ(actor_coupled_model) → (α_C, δ_C, q_C)
+;; Assigns Feigenbaum coordinates to actor coupled model
+;; This is witness-system agnostic. Works for any actor-oriented system.
+voice feigenbaum.actor_coupled_model_index / {
+  actor_coupled_model_version + scenario_generator + metric_M + r_min + r_max + T ->
+  simulate_parameter_grid ->
+  detect_all_regimes ->
+  extract_bifurcation_points ->
+  estimate_delta_C ->
+  estimate_alpha_C ->
+  compute_quality_metadata ->
+  feigenbaum_coordinates
+}
+
+;; Alias for backward compatibility (contracts are actor coupled models)
+voice feigenbaum.contract_index / {
+  contract_version ->
+  convert_to_actor_coupled_model ->
+  feigenbaum.actor_coupled_model_index ->
+  feigenbaum_coordinates
+}
+
+;; ============================================================================
+;; SIMULATION PHASE
+;; ============================================================================
+
+;; Simulate actor coupled model for grid of r values
+;; This is the core iteration: S_{t+1} = F_A(S_t; r)
+voice simulate_parameter_grid / {
+  actor_coupled_model_version + scenario_generator + metric_M + r_min + r_max + num_points + T ->
+  extract_actor ->
+  generate_r_grid ->
+  simulate_for_each_r ->
+  simulation_results
+}
+
+;; Generate grid of r values
+voice generate_r_grid / {
+  r_min + r_max + num_points ->
+  linspace ->
+  r_grid
+}
+
+;; Simulate actor coupled model for single r value
+;; Iterates: S_{t+1} = F_A(S_t; r) for t = 0..T
+voice simulate_for_each_r / {
+  actor_coupled_model_version + scenario_generator + metric_M + r + T ->
+  extract_actor ->
+  generate_initial_state ->
+  simulate_trajectory ->
+  extract_observable_sequence ->
+  simulation_result
+}
+
+;; Generate initial state from scenario generator
+voice generate_initial_state / {
+  scenario_generator + r ->
+  apply_scenario_generator ->
+  initial_state
+}
+
+;; Simulate actor coupled model trajectory
+;; Core iteration: S_{t+1} = F_A(S_t; r)
+voice simulate_trajectory / {
+  actor + initial_state + r + T ->
+  iterate_actor_coupled_model ->
+  trajectory
+}
+
+;; Iterate actor coupled model: S_{t+1} = F_A(S_t; r)
+voice iterate_actor_coupled_model / {
+  actor + state_0 + r + T ->
+  actor.morphism ->
+  state_1 ->
+  iterate_actor_coupled_model_recursive ->
+  trajectory
+}
+
+;; Apply actor morphism: F_A(S_t; r) → S_{t+1}
+;; This is the base primitive—everything else builds on this
+voice apply_actor_morphism / {
+  actor + state + r ->
+  actor.morphism ->
+  new_state
+}
+
+;; Extract observable sequence: x_t = M(state_t)
+voice extract_observable_sequence / {
+  trajectory + metric_M ->
+  apply_metric_to_each_state ->
+  x_sequence
+}
+
+;; ============================================================================
+;; REGIME DETECTION
+;; ============================================================================
+
+;; Detect regime from x_sequence
+voice detect_all_regimes / {
+  simulation_results ->
+  detect_regime_for_each ->
+  regimes_map
+}
+
+;; Detect regime for single simulation result
+voice detect_regime_for_each / {
+  simulation_result ->
+  extract_x_sequence ->
+  remove_warmup ->
+  detect_regime ->
+  regime
+}
+
+;; Remove warmup period
+voice remove_warmup / {
+  x_sequence + T_warmup ->
+  drop_first_N ->
+  x_tail
+}
+
+;; Detect regime from x_tail
+voice detect_regime / {
+  x_tail ->
+  check_fixed_point ->
+  check_period_2 ->
+  check_period_4 ->
+  check_period_2n ->
+  check_chaos ->
+  regime
+}
+
+;; Check for fixed point: variance < ε
+voice check_fixed_point / {
+  x_tail + epsilon ->
+  compute_variance ->
+  compare_with_epsilon ->
+  if_fixed_point ->
+  regime
+}
+
+;; Check for period-2 oscillation
+voice check_period_2 / {
+  x_tail ->
+  compute_autocorrelation ->
+  find_period ->
+  if_period_2 ->
+  extract_cycle_values ->
+  regime
+}
+
+;; Check for period-4 oscillation
+voice check_period_4 / {
+  x_tail ->
+  compute_autocorrelation ->
+  find_period ->
+  if_period_4 ->
+  extract_cycle_values ->
+  regime
+}
+
+;; Check for period-2^n (period-doubling cascade)
+voice check_period_2n / {
+  x_tail ->
+  compute_autocorrelation ->
+  find_period ->
+  if_power_of_2 ->
+  extract_cycle_values ->
+  compute_width ->
+  regime
+}
+
+;; Check for chaos: sensitive to initial conditions, no clear period
+voice check_chaos / {
+  x_tail ->
+  compute_lyapunov_exponent ->
+  check_sensitivity ->
+  if_chaotic ->
+  regime
+}
+
+;; Compute autocorrelation for period detection
+voice compute_autocorrelation / {
+  x_sequence ->
+  compute_mean ->
+  center_sequence ->
+  compute_autocorr ->
+  autocorr
+}
+
+;; Find period from autocorrelation
+voice find_period / {
+  autocorr ->
+  find_peaks ->
+  distance_to_first_significant_peak ->
+  period
+}
+
+;; Extract cycle values for periodic regime
+voice extract_cycle_values / {
+  x_sequence + period ->
+  partition_by_period ->
+  compute_cycle_values ->
+  values
+}
+
+;; Compute attractor width: max - min
+voice compute_width / {
+  values ->
+  find_max ->
+  find_min ->
+  compute_difference ->
+  width
+}
+
+;; ============================================================================
+;; BIFURCATION EXTRACTION
+;; ============================================================================
+
+;; Extract bifurcation points from regimes
+voice extract_bifurcation_points / {
+  regimes_map ->
+  sort_by_r ->
+  detect_bifurcations ->
+  bifurcation_points
+}
+
+;; Detect bifurcations: where period doubles
+voice detect_bifurcations / {
+  sorted_regimes ->
+  compare_consecutive_regimes ->
+  if_period_doubling ->
+  record_bifurcation ->
+  bifurcation_points
+}
+
+;; Compare consecutive regimes
+voice compare_consecutive_regimes / {
+  regime_prev + regime_curr + r ->
+  extract_periods ->
+  check_period_doubling ->
+  if_bifurcation ->
+  bifurcation_point
+}
+
+;; Check if period doubles: period_curr == 2 * period_prev
+voice check_period_doubling / {
+  period_prev + period_curr ->
+  compute_double ->
+  compare_equal ->
+  is_doubling
+}
+
+;; ============================================================================
+;; DELTA ESTIMATION (Parameter-Space Convergence)
+;; ============================================================================
+
+;; Estimate δ_C from bifurcation points
+voice estimate_delta_C / {
+  bifurcation_points ->
+  extract_r_values ->
+  compute_delta_ratios ->
+  aggregate_stable_ratios ->
+  delta_C + confidence_delta
+}
+
+;; Extract r values from bifurcation points
+voice extract_r_values / {
+  bifurcation_points ->
+  map_extract_r ->
+  r_values
+}
+
+;; Compute delta ratios: δ^(n) = (r^(n-1) - r^(n-2)) / (r^(n) - r^(n-1))
+voice compute_delta_ratios / {
+  r_values ->
+  compute_consecutive_differences ->
+  compute_ratios ->
+  delta_ratios
+}
+
+;; Aggregate last few stable ratios
+voice aggregate_stable_ratios / {
+  delta_ratios ->
+  take_last_N ->
+  compute_weighted_mean ->
+  compute_confidence ->
+  delta_C + confidence
+}
+
+;; ============================================================================
+;; ALPHA ESTIMATION (State-Space Scaling)
+;; ============================================================================
+
+;; Estimate α_C from regime widths
+voice estimate_alpha_C / {
+  regimes_map + bifurcation_points ->
+  extract_widths_for_periods ->
+  compute_alpha_ratios ->
+  aggregate_stable_ratios ->
+  alpha_C + confidence_alpha
+}
+
+;; Extract widths for period-2^n regimes
+voice extract_widths_for_periods / {
+  regimes_map + bifurcation_points ->
+  filter_period_2n ->
+  extract_widths ->
+  widths_map
+}
+
+;; Compute alpha ratios: α^(n) = width_{n-1} / width_n
+voice compute_alpha_ratios / {
+  widths_map ->
+  sort_by_period ->
+  compute_consecutive_ratios ->
+  alpha_ratios
+}
+
+;; ============================================================================
+;; QUALITY METADATA
+;; ============================================================================
+
+;; Compute quality metadata q_C
+voice compute_quality_metadata / {
+  bifurcation_points + regimes_map + r_min + r_max + T ->
+  count_bifurcations ->
+  detect_chaos ->
+  extract_confidences ->
+  quality_metadata
+}
+
+;; Count number of bifurcations
+voice count_bifurcations / {
+  bifurcation_points ->
+  count ->
+  num_bifurcations
+}
+
+;; Detect if chaos was observed
+voice detect_chaos / {
+  regimes_map ->
+  check_any_chaotic ->
+  chaos_detected
+}
+
+;; Extract confidence scores
+voice extract_confidences / {
+  confidence_alpha + confidence_delta ->
+  pack_confidences ->
+  confidences
+}
+
+;; ============================================================================
+;; WITNESS SYSTEM INTEGRATION: Backend-Agnostic
+;; ============================================================================
+
+;; Attach Feigenbaum coordinates to witness system
+;; Works with any witness backend: git, ledger, semantic, etc.
+voice witness.attach_feigenbaum / {
+  actor_coupled_model_version + feigenbaum_coordinates ->
+  extract_witness_backend ->
+  witness.record ->
+  witness_record
+}
+
+;; Git witness backend (historical DAG)
+voice witness.git.attach_feigenbaum / {
+  version_id + feigenbaum_coordinates ->
+  format_git_trailer ->
+  attach_trailer ->
+  commit_updated
+}
+
+;; Ledger witness backend (global chain, like TON)
+voice witness.ledger.attach_feigenbaum / {
+  version_id + feigenbaum_coordinates ->
+  create_transaction ->
+  add_to_chain ->
+  transaction_recorded
+}
+
+;; Semantic witness backend (tiddler web)
+voice witness.semantic.attach_feigenbaum / {
+  version_id + feigenbaum_coordinates ->
+  create_tiddler ->
+  add_to_web ->
+  tiddler_created
+}
+
+;; Format git trailer
+voice format_git_trailer / {
+  feigenbaum_coordinates ->
+  extract_alpha ->
+  extract_delta ->
+  format_trailer_string ->
+  trailer_string
+}
+
+;; Attach as git trailer
+voice attach_trailer / {
+  commit_hash + trailer_string ->
+  git_commit_trailer ->
+  commit_updated
+}
+
+;; Write sidecar JSON
+voice write_feigenbaum_json / {
+  commit_hash + feigenbaum_coordinates ->
+  format_json ->
+  write_file ->
+  json_file
+}
+
+;; Format Feigenbaum coordinates as JSON
+voice format_json / {
+  commit_hash + feigenbaum_coordinates ->
+  create_json_object ->
+  json_string
+}
+
+;; ============================================================================
+;; MERGE STABILITY PREDICTION: Actor Coupled Model Compatibility
+;; ============================================================================
+
+;; Compute distance in (α,δ)-space
+;; This measures universality class similarity between actor coupled models
+voice compute_feigenbaum_distance / {
+  coordinates1 + coordinates2 ->
+  extract_alpha_delta1 ->
+  extract_alpha_delta2 ->
+  compute_euclidean_distance ->
+  distance
+}
+
+;; Extract alpha and delta from coordinates
+voice extract_alpha_delta1 / {
+  coordinates ->
+  get_alpha ->
+  get_delta ->
+  {alpha, delta}
+}
+
+;; Extract alpha and delta from coordinates
+voice extract_alpha_delta2 / {
+  coordinates ->
+  get_alpha ->
+  get_delta ->
+  {alpha, delta}
+}
+
+;; Compute Euclidean distance: sqrt((α1-α2)² + (δ1-δ2)²)
+voice compute_euclidean_distance / {
+  {alpha1, delta1} + {alpha2, delta2} ->
+  compute_alpha_diff ->
+  compute_delta_diff ->
+  square_and_sum ->
+  sqrt ->
+  distance
+}
+
+;; Predict merge stability: actor coupled model compatibility
+;; Works for any witness backend (git, ledger, semantic, etc.)
+voice predict_merge_stability / {
+  version1 + version2 + threshold ->
+  feigenbaum.actor_coupled_model_index1 ->
+  feigenbaum.actor_coupled_model_index2 ->
+  compute_feigenbaum_distance ->
+  compare_with_threshold ->
+  is_stable
+}
+
+;; ============================================================================
+;; VISUALIZATION: Fractal Consequence Atlas
+;; ============================================================================
+
+;; Generate fractal consequence atlas
+;; Works with any witness backend DAG (git, ledger, semantic, etc.)
+voice visualize_fractal_atlas / {
+  version_dag ->
+  compute_feigenbaum_for_all_versions ->
+  embed_in_alpha_delta_space ->
+  draw_edges ->
+  color_by_metadata ->
+  atlas_visualization
+}
+
+;; Compute Feigenbaum coordinates for all versions in DAG
+voice compute_feigenbaum_for_all_versions / {
+  version_dag ->
+  extract_versions ->
+  map_feigenbaum_index ->
+  coordinates_map
+}
+
+;; Embed commits in (α,δ)-space
+voice embed_in_alpha_delta_space / {
+  coordinates_map ->
+  extract_alpha_delta_pairs ->
+  create_scatter_plot ->
+  embedded_plot
+}
+
+;; Draw edges between parent-child commits
+voice draw_edges / {
+  embedded_plot + git_dag ->
+  extract_parent_child_pairs ->
+  draw_lines ->
+  plot_with_edges
+}
+
+;; Color by metadata (bifurcations, chaos, confidence)
+voice color_by_metadata / {
+  plot_with_edges + coordinates_map ->
+  extract_metadata ->
+  apply_colormap ->
+  colored_plot
+}
+
+;; ============================================================================
+;; EXAMPLE: CONTRACT AS MORPHISM
+;; ============================================================================
+
+;; Example: Simple token contract as morphism
+voice example.token_contract / {
+  state + r ->
+  update_balances ->
+  apply_transfers ->
+  new_state
+}
+
+;; Metric: total token supply
+voice metric.total_supply / {
+  state ->
+  extract_balances ->
+  sum ->
+  total_supply
+}
+
+;; Scenario generator: random initial distribution
+voice scenario.random_distribution / {
+  r ->
+  generate_random_balances ->
+  initial_state
+}
+
+;; ============================================================================
+;; INTEGRATION WITH FEIGENBAUM FIELD
+;; ============================================================================
+
+;; Use Feigenbaum field primitives for measurement
+voice feigenbaum.contract_index_with_field / {
+  contract_C + scenario_generator + metric_M + r_min + r_max + T ->
+  simulate_parameter_grid ->
+  detect_all_regimes ->
+  extract_bifurcation_points ->
+  gauge.canonical ->
+  feigenbaum.alpha ->
+  feigenbaum.delta ->
+  index.feigenbaum_profile ->
+  feigenbaum_coordinates
+}
+
+target feigenbaum_contract_index / "feigenbaum_actor_coupled_model_indexing"
+voice main / {
+  feigenbaum.actor_coupled_model_index +
+  feigenbaum.contract_index +
+  simulate_parameter_grid +
+  detect_regime +
+  extract_bifurcation_points +
+  estimate_delta_C +
+  estimate_alpha_C +
+  compute_feigenbaum_distance +
+  predict_merge_stability +
+  witness.attach_feigenbaum +
+  witness.git.attach_feigenbaum +
+  witness.ledger.attach_feigenbaum +
+  witness.semantic.attach_feigenbaum ->
+  feigenbaum_contract_index
+}
+

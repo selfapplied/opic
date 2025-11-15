@@ -1,0 +1,328 @@
+;; Expansion system - defines how symbols expand to their definitions
+;; Directories expand to their files, creating flat namespace with origin tracking
+;; Everything knows how to expand itself using these base expansions
+
+;; ============================================================================
+;; SYMBOL EXPANSIONS (for auto-inclusion)
+;; ============================================================================
+
+;; Base expansion definitions (matchers)
+def expansion.directory_to_files {
+  matcher: directory
+  expand: {directory -> file.list_files -> file.filter_ops -> expansion.add_symbols}
+  description: "Directory expands to all .ops files within it"
+}
+
+def expansion.file_to_self {
+  matcher: file
+  expand: {file -> expansion.add_symbol}
+  description: "File expands to itself (its stem becomes the symbol)"
+}
+
+;; Main expansion matcher: pattern matching (no if statements)
+;; Tries expansion patterns in order, first match wins
+voice expansion.match / {
+  symbol -> 
+  expansion.pattern_directory -> 
+  expansion.pattern_file -> 
+  expansion.pattern_string
+}
+
+;; Pattern: directory expansion (returns expansion_result or null)
+voice expansion.pattern_directory / {
+  symbol -> 
+  directory.exists -> 
+  expansion.directory_to_files.expand -> 
+  expansion_result
+}
+
+;; Pattern: file expansion (returns expansion_result or null)
+voice expansion.pattern_file / {
+  symbol -> 
+  file.exists -> 
+  expansion.file_to_self.expand -> 
+  expansion_result
+}
+
+;; Pattern: string resolution (always matches, returns symbol as string)
+voice expansion.pattern_string / {
+  symbol -> 
+  expansion.resolve_string -> 
+  expansion_result
+}
+
+;; ============================================================================
+;; LINE EXPANSIONS (for parsing)
+;; ============================================================================
+
+;; Each line type is an expansion rule
+def expansion.def_expansion {
+  matcher: "def "
+  expand: {line -> expansion.parse_def -> defs.add}
+  description: "def line expands to definition object"
+}
+
+def expansion.voice_expansion {
+  matcher: "voice "
+  expand: {line -> expansion.parse_voice -> voices.add}
+  description: "voice line expands to voice object"
+}
+
+def expansion.include_expansion {
+  matcher: "include "
+  expand: {line -> expansion.parse_include -> includes.add}
+  description: "include line expands to include path"
+}
+
+def expansion.comment_expansion {
+  matcher: ";"
+  expand: {line -> expansion.skip}
+  description: "comment line expands to nothing (skipped)"
+}
+
+def expansion.empty_expansion {
+  matcher: whitespace
+  expand: {line -> expansion.skip}
+  description: "empty line expands to nothing (skipped)"
+}
+
+;; Parse line by applying expansion rules
+voice expansion.parse_line / {
+  line -> 
+  expansion.match_line_type -> 
+  expansion.apply_expansion
+}
+
+;; Match line type (try each expansion matcher)
+voice expansion.match_line_type / {
+  line -> 
+  expansion.try_def -> 
+  expansion.try_voice -> 
+  expansion.try_include -> 
+  expansion.try_comment -> 
+  expansion.try_empty -> 
+  line_type
+}
+
+;; Pattern match: each line type (returns line_type or null)
+voice expansion.try_def / {line -> string.starts_with -> "def " -> "def"}
+voice expansion.try_voice / {line -> string.starts_with -> "voice " -> "voice"}
+voice expansion.try_include / {line -> string.starts_with -> "include " -> "include"}
+voice expansion.try_comment / {line -> string.starts_with -> ";" -> "comment"}
+voice expansion.try_empty / {line -> string.is_whitespace -> "empty"}
+
+;; Apply expansion based on line type using pattern matching
+voice expansion.apply_expansion / {
+  line + line_type -> 
+  expansion.pattern_def -> 
+  expansion.pattern_voice -> 
+  expansion.pattern_include -> 
+  expansion.pattern_comment -> 
+  expansion.pattern_empty -> 
+  expanded
+}
+
+;; Pattern match: def expansion
+voice expansion.pattern_def / {
+  line_type + line -> 
+  line_type == "def" -> 
+  expansion.def_expansion.expand -> 
+  expanded
+}
+
+;; Pattern match: voice expansion
+voice expansion.pattern_voice / {
+  line_type + line -> 
+  line_type == "voice" -> 
+  expansion.voice_expansion.expand -> 
+  expanded
+}
+
+;; Pattern match: include expansion
+voice expansion.pattern_include / {
+  line_type + line -> 
+  line_type == "include" -> 
+  expansion.include_expansion.expand -> 
+  expanded
+}
+
+;; Pattern match: comment expansion
+voice expansion.pattern_comment / {
+  line_type + line -> 
+  line_type == "comment" -> 
+  expansion.comment_expansion.expand -> 
+  expanded
+}
+
+;; Pattern match: empty expansion
+voice expansion.pattern_empty / {
+  line_type + line -> 
+  line_type == "empty" -> 
+  expansion.empty_expansion.expand -> 
+  expanded
+}
+
+;; Parse definition line
+voice expansion.parse_def / {
+  line -> 
+  string.remove_prefix -> "def " -> 
+  string.split_spaces -> 
+  list.get_index -> 0 -> 
+  def_name -> 
+  expansion.create_def
+}
+
+;; Parse voice line
+voice expansion.parse_voice / {
+  line -> 
+  string.partition -> "/" -> 
+  string.split_spaces -> 
+  list.get_index -> 1 -> 
+  voice_name -> 
+  string.after_slash -> 
+  string.strip_quotes -> 
+  voice_body -> 
+  expansion.create_voice
+}
+
+;; Parse include line
+voice expansion.parse_include / {
+  line -> 
+  string.remove_prefix -> "include " -> 
+  string.strip -> 
+  include_path
+}
+
+;; Skip line (for comments and empty lines)
+voice expansion.skip / null
+
+;; Create definition object
+voice expansion.create_def / {def_name -> def_object}
+voice expansion.create_voice / {voice_name + voice_body -> voice_object}
+
+;; Add to collections
+voice defs.add / {def_object -> defs.update}
+voice voices.add / {voice_object -> voices.update}
+voice includes.add / {include_path -> includes.append}
+
+;; ============================================================================
+;; SYMBOL EXPANSION HELPERS
+;; ============================================================================
+
+;; Try directory expansion: if symbol matches a directory, expand directory to files
+voice expansion.try_directory / {
+  symbol -> 
+  directory.exists -> 
+  directory.list_files -> 
+  file.filter_ops -> 
+  expansion.add_symbols
+}
+
+;; Try file expansion: if symbol matches a file, expand file to itself
+voice expansion.try_file / {
+  symbol -> 
+  file.exists -> 
+  expansion.add_symbol
+}
+
+;; Resolve to string: if no expansion found, symbol resolves to itself
+voice expansion.resolve_string / symbol
+
+;; Add symbol to expansion map with origin tracking
+voice expansion.add_symbol / {
+  file -> 
+  file.get_stem -> 
+  expansion.map.set -> 
+  file.get_origin
+}
+
+;; Add multiple symbols from directory expansion
+voice expansion.add_symbols / {
+  files -> 
+  list.map -> 
+  expansion.add_symbol
+}
+
+;; Get origin directory for a file
+voice file.get_origin / {
+  file -> 
+  file.get_parent -> 
+  file.get_name
+}
+
+;; List files in directory
+voice directory.list_files / {
+  directory -> 
+  $pathlib.Path.iterdir$ -> 
+  list.filter -> 
+  file.is_file
+}
+
+;; Filter .ops files
+voice file.filter_ops / {
+  files -> 
+  list.filter -> 
+  file.has_ops_extension
+}
+
+;; Check if file has .ops extension
+voice file.has_ops_extension / {
+  file -> 
+  file.get_suffix -> 
+  string.equals -> 
+  ".ops"
+}
+
+;; Check if directory exists
+voice directory.exists / {
+  directory -> 
+  $pathlib.Path.exists$ -> 
+  $pathlib.Path.is_dir$
+}
+
+;; Check if file exists
+voice file.exists / {
+  file -> 
+  $pathlib.Path.exists$ -> 
+  $pathlib.Path.is_file$
+}
+
+;; Get file stem (name without extension)
+voice file.get_stem / {
+  file -> 
+  $pathlib.Path.stem$
+}
+
+;; Get file parent directory
+voice file.get_parent / {
+  file -> 
+  $pathlib.Path.parent$
+}
+
+;; Get file name
+voice file.get_name / {
+  file -> 
+  $pathlib.Path.name$
+}
+
+;; Get file suffix
+voice file.get_suffix / {
+  file -> 
+  $pathlib.Path.suffix$
+}
+
+;; Expansion map: symbol -> (path, origin)
+voice expansion.map.set / {
+  symbol -> 
+  path -> 
+  origin -> 
+  expansion.map.store
+}
+
+;; Store expansion in map
+voice expansion.map.store / {
+  symbol -> 
+  path -> 
+  origin -> 
+  expansion.map.update
+}

@@ -1,0 +1,230 @@
+;;; bloom_svg.ops — Generate radiant bloom SVG from field traces (Riemann Hypothesis visualization)
+
+include systems/typst_extensions.ops
+
+;; Generate bloom SVG from field traces
+voice bloom.generate_svg / {
+  trace_file + boundary_threshold -> 
+  bloom.load_traces -> 
+  bloom.filter_traces -> 
+  bloom.compute_field_values -> 
+  bloom.generate_petals -> 
+  bloom.render_svg -> 
+  svg_content
+}
+
+voice bloom.load_traces / {
+  trace_file -> 
+  file.read_jsonl -> 
+  traces
+}
+
+voice bloom.filter_traces / {
+  traces + boundary_threshold -> 
+  bloom.filter_by_boundary -> 
+  filtered_traces
+}
+
+voice bloom.filter_by_boundary / {
+  traces + threshold -> 
+  opic.filter -> 
+  trace.boundary_score >= threshold -> 
+  filtered
+}
+
+voice bloom.compute_field_values / {
+  traces -> 
+  bloom.extract_lines -> 
+  bloom.extract_entropy -> 
+  bloom.extract_curvature -> 
+  bloom.extract_boundary -> 
+  bloom.compute_phi_kappa -> 
+  bloom.normalize_values -> 
+  field_values
+}
+
+voice bloom.extract_lines / {
+  traces -> 
+  opic.map -> 
+  trace.get_line -> 
+  lines
+}
+
+voice bloom.extract_entropy / {
+  traces -> 
+  opic.map -> 
+  trace.get_phi_entropy -> 
+  entropy_values
+}
+
+voice bloom.extract_curvature / {
+  traces -> 
+  opic.map -> 
+  trace.get_phi_curvature -> 
+  curvature_values
+}
+
+voice bloom.extract_boundary / {
+  traces -> 
+  opic.map -> 
+  trace.get_boundary_score -> 
+  boundary_values
+}
+
+voice bloom.compute_phi_kappa / {
+  entropy + curvature -> 
+  opic.zip -> 
+  opic.map -> 
+  entropy * curvature -> 
+  phi_kappa_values
+}
+
+voice bloom.normalize_values / {
+  values -> 
+  opic.find_min_max -> 
+  opic.normalize_range -> 
+  normalized
+}
+
+voice bloom.generate_petals / {
+  traces + field_values -> 
+  bloom.compute_angles -> 
+  bloom.compute_radii -> 
+  bloom.compute_colors -> 
+  bloom.compute_opacity -> 
+  petals
+}
+
+voice bloom.compute_angles / {
+  lines + tau_max -> 
+  opic.map -> 
+  line / tau_max * 2 * pi -> 
+  angles
+}
+
+voice bloom.compute_radii / {
+  phi_kappa_normalized + r0 + R -> 
+  opic.map -> 
+  r0 + phi_kappa * R -> 
+  radii
+}
+
+voice bloom.compute_colors / {
+  traces -> 
+  bloom.extract_files -> 
+  bloom.assign_hue -> 
+  colors
+}
+
+voice bloom.extract_files / {
+  traces -> 
+  opic.map -> 
+  trace.get_file -> 
+  files
+}
+
+voice bloom.assign_hue / {
+  files -> 
+  opic.unique -> 
+  opic.enumerate -> 
+  opic.map -> 
+  index * 137 mod 360 -> 
+  hues
+}
+
+voice bloom.compute_opacity / {
+  boundary_normalized -> 
+  opic.map -> 
+  0.4 + 0.6 * boundary -> 
+  opacity_values
+}
+
+voice bloom.render_svg / {
+  petals + center_x + center_y -> 
+  bloom.render_header -> 
+  bloom.render_petals -> 
+  bloom.render_center -> 
+  bloom.render_footer -> 
+  svg_content
+}
+
+voice bloom.render_header / {
+  width + height -> 
+  "<?xml version='1.0' encoding='UTF-8'?>" + 
+  "<svg xmlns='http://www.w3.org/2000/svg' width='" + width + "' height='" + height + "' viewBox='0 0 " + width + " " + height + "'>" + 
+  "<rect x='0' y='0' width='" + width + "' height='" + height + "' fill='white'/>" + 
+  "<g transform='translate(" + center_x + "," + center_y + ")'>" -> 
+  header
+}
+
+voice bloom.render_petals / {
+  petals -> 
+  opic.for_each -> 
+  bloom.render_petal -> 
+  petal_svg -> 
+  petals_svg
+}
+
+voice bloom.render_petal / {
+  petal -> 
+  bloom.compute_petal_path -> 
+  bloom.format_path -> 
+  petal_svg
+}
+
+voice bloom.compute_petal_path / {
+  angle + radius + width_base + width_tip -> 
+  bloom.compute_base_points -> 
+  bloom.compute_tip_points -> 
+  path_points
+}
+
+voice bloom.compute_base_points / {
+  angle + width_base -> 
+  x1_base = width_base * cos(angle + pi/2) -> 
+  y1_base = width_base * sin(angle + pi/2) -> 
+  x2_base = width_base * cos(angle - pi/2) -> 
+  y2_base = width_base * sin(angle - pi/2) -> 
+  base_points
+}
+
+voice bloom.compute_tip_points / {
+  angle + radius + width_tip -> 
+  x_tip = radius * cos(angle) -> 
+  y_tip = radius * sin(angle) -> 
+  x1_tip = x_tip + width_tip * cos(angle + pi/2) -> 
+  y1_tip = y_tip + width_tip * sin(angle + pi/2) -> 
+  x2_tip = x_tip + width_tip * cos(angle - pi/2) -> 
+  y2_tip = y_tip + width_tip * sin(angle - pi/2) -> 
+  tip_points
+}
+
+voice bloom.format_path / {
+  path_points + fill_color + stroke_color + opacity -> 
+  "<path d='M " + x1_base + "," + y1_base + " L " + x_tip + "," + y_tip + " L " + x2_tip + "," + y2_tip + " L " + x2_base + "," + y2_base + " Z' " + 
+  "fill='" + fill_color + "' stroke='" + stroke_color + "' stroke-width='1' opacity='" + opacity + "'/>" -> 
+  path_svg
+}
+
+voice bloom.render_center / {
+  center_x + center_y + radius -> 
+  "<circle cx='0' cy='0' r='" + radius + "' fill='hsla(45,80%,60%,0.9)' stroke='hsla(45,90%,40%,1)' stroke-width='2'/>" -> 
+  center_svg
+}
+
+voice bloom.render_footer / {
+  "</g></svg>" -> 
+  footer
+}
+
+;; Main entry point: generate bloom SVG file
+voice bloom.generate / {
+  trace_file + output_file + boundary_threshold -> 
+  bloom.generate_svg -> 
+  file.write -> 
+  output_file
+}
+
+target bloom_svg / "radiant_bloom_visualization"
+voice main / {bloom.generate -> bloom_svg}
+

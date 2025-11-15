@@ -1,0 +1,191 @@
+;;; zeta_compression.ops — Lossless vs Statistical Compression (Pure opic)
+;;; Two valid modes: microstate-exact vs ensemble-faithful
+
+include systems/zeta_cosmological_correspondence.ops
+
+;; ============================================================================
+;; Mode A: Truly Lossless (Microstate Exact)
+;; ============================================================================
+
+;; Compress lossless: field → FFT → store complex coefficients
+voice compress.lossless / {
+  phi_k.field -> 
+  fft.unitary -> 
+  enforce.hermitian.symmetry -> 
+  store.independent.coefficients -> 
+  ⟨lossless_archive⟩
+}
+
+;; FFT unitary: Forward transform with unitary normalization
+voice fft.unitary / {
+  field.values -> 
+  compute.fourier.transform -> 
+  normalize.unitary -> 
+  complex.spectrum
+}
+
+;; Enforce Hermitian symmetry: F(-k) = F*(k) for real fields
+voice enforce.hermitian.symmetry / {
+  complex.spectrum + field.size -> 
+  handle.dc.component -> 
+  handle.nyquist.component -> 
+  enforce.symmetry -> 
+  hermitian.spectrum
+}
+
+;; Store independent coefficients: k=0 to n/2 (use Hermitian symmetry)
+voice store.independent.coefficients / {
+  hermitian.spectrum + field.size -> 
+  extract.independent.k -> 
+  store.real.imag.pairs -> 
+  stored.coefficients
+}
+
+;; Reconstruct lossless: archive → restore spectrum → IFFT → field
+voice reconstruct.lossless / {
+  lossless_archive -> 
+  restore.full.spectrum -> 
+  enforce.hermitian.symmetry -> 
+  ifft.unitary -> 
+  reconstructed.field
+}
+
+;; IFFT unitary: Inverse transform with unitary normalization
+voice ifft.unitary / {
+  complex.spectrum -> 
+  compute.inverse.fourier.transform -> 
+  normalize.unitary -> 
+  field.values
+}
+
+;; Verify lossless: field → archive → field' should equal field (errors ~10^-12)
+voice verify.lossless / {
+  original.field -> 
+  compress.lossless -> 
+  reconstruct.lossless -> 
+  compute.max.error -> 
+  compute.l2.error -> 
+  check.threshold -> 
+  lossless.verified
+}
+
+;; ============================================================================
+;; Mode B: Statistical Compression (CMB-style)
+;; ============================================================================
+
+;; Compress statistical: field → FFT → P(k) only (phases lost)
+voice compress.statistical / {
+  phi_k.field -> 
+  fft.unitary -> 
+  compute.power.spectrum -> 
+  store.power.coefficients -> 
+  ⟨statistical_archive⟩
+}
+
+;; Compute power spectrum: P(k) = |F(k)|²
+voice compute.power.spectrum / {
+  complex.spectrum -> 
+  compute.amplitude.squared -> 
+  power.spectrum
+}
+
+;; Store power coefficients: Only P(k), no phases
+voice store.power.coefficients / {
+  power.spectrum + field.size -> 
+  extract.independent.k -> 
+  stored.power.coefficients
+}
+
+;; Reconstruct statistical: P(k) + random phases → field (same ξ(r), different pattern)
+voice reconstruct.statistical / {
+  statistical_archive + random.seed -> 
+  generate.random.phases -> 
+  compose.complex.spectrum -> 
+  enforce.hermitian.symmetry -> 
+  ifft.unitary -> 
+  reconstructed.field
+}
+
+;; Generate random phases: φ_k ~ Unif[0, 2π)
+voice generate.random.phases / {
+  power.spectrum + random.seed -> 
+  generate.uniform.phases -> 
+  phase.values
+}
+
+;; Compose complex spectrum: F(k) = √P(k) e^(iφ_k)
+voice compose.complex.spectrum / {
+  power.spectrum + phase.values -> 
+  compute.amplitude -> 
+  compute.complex.exponential -> 
+  complex.spectrum
+}
+
+;; Verify statistical: P(k) matches, microstate differs
+voice verify.statistical / {
+  original.field -> 
+  compress.statistical -> 
+  reconstruct.statistical -> 
+  compare.power.spectra -> 
+  compare.fields -> 
+  statistical.verified
+}
+
+;; Compare power spectra: Should match (two-point stats preserved)
+voice compare.power.spectra / {
+  original.power + reconstructed.power -> 
+  compute.max.error -> 
+  check.threshold -> 
+  power.match.verified
+}
+
+;; Compare fields: Will differ (different microstate)
+voice compare.fields / {
+  original.field + reconstructed.field -> 
+  compute.max.error -> 
+  note.microstate.difference -> 
+  field.comparison
+}
+
+;; ============================================================================
+;; CABA Archive: Two Modes
+;; ============================================================================
+
+;; CABA Lossless: Store complex coefficients (amplitudes + phases)
+voice caba.archive.lossless / {
+  field.state -> 
+  compress.lossless -> 
+  store.archive -> 
+  reconstruct.lossless -> 
+  verify.lossless -> 
+  caba.archive.lossless.verified
+}
+
+;; CABA Statistical: Store P(k) + seed (CMB-style, ensemble-faithful)
+voice caba.archive.statistical / {
+  field.state -> 
+  compress.statistical -> 
+  store.archive + random.seed -> 
+  reconstruct.statistical -> 
+  verify.statistical -> 
+  caba.archive.statistical.verified
+}
+
+;; CABA archive: Choose mode
+voice caba.archive / {
+  field.state + compression.mode -> 
+  if.lossless -> caba.archive.lossless,
+  if.statistical -> caba.archive.statistical -> 
+  caba.archive.result
+}
+
+target zeta_compression / "zeta_compression_modes"
+voice main / {
+  compress.lossless + 
+  compress.statistical + 
+  verify.lossless + 
+  verify.statistical -> 
+  zeta_compression
+}
+
+

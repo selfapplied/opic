@@ -1,0 +1,10 @@
+;;; speak.ops — Test opic speaking
+
+voice test.goal / "Hello, I am opic. I can think, plan, and reason."
+voice test.goal_latex / "Test: opic speaks"
+
+voice audio.speak_test / {test.goal -> audio.speak_text}
+
+target speak / "test_speaking"
+voice main / {test.goal -> audio.speak_test -> speak}
+

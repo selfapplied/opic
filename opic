@@ -1,118 +1,449 @@
-#!.venv/bin/python
-"""Opic CLI — Minimal Python shim - opic executes itself via .ops files"""
+#!/usr/bin/env python3
+"""
+OPIC Bootstrap - Circular Architecture
+Circles as lossless diffeomorphisms: Python ↔ OPIC boundary preserves all information
+Equilibrium: Python provides primitives, OPIC executes itself
+Symmetry: Smooth, invertible transformations
+"""
 
 import sys
+import importlib
 from pathlib import Path
+from typing import Dict, Any
+
+# Minimal parser (circular: could be OPIC self-parser)
+parse_ops = None
+
 
 def find_project_root():
-    """Find opic installation root"""
+    """Find opic installation root (circular: self-locating)"""
     script_dir = Path(__file__).parent
-    
-    # Check if we're in development mode (script is in project root)
-    if (script_dir / "generate.py").exists() and (script_dir / "scripts" / "opic_executor.py").exists():
+    # Check if we're in .out/ directory (built binary)
+    if script_dir.name == ".out" or script_dir.name == "out":
+        # Look in parent directory
+        parent = script_dir.parent
+        if (parent / "core" / "parser.py").exists():
+            return parent
+    if (script_dir / "core" / "parser.py").exists():
         return script_dir
-    
-    # Check system installation locations (installed mode)
-    for path in [
-        Path("/usr/local/share/opic"),
-        Path("/usr/share/opic"),
-        Path.home() / ".local" / "share" / "opic",
-    ]:
-        if (path / "scripts" / "opic_executor.py").exists():
+    for path in [Path("/usr/local/share/opic"), Path("/usr/share/opic"), Path.home() / ".local" / "share" / "opic"]:
+        if (path / "core" / "parser.py").exists():
             return path
-    
-    # Fallback: try script directory even if generate.py missing
-    if (script_dir / "scripts" / "opic_executor.py").exists():
-        return script_dir
-    
-    # Last resort: return script directory
     return script_dir
 
-def execute_opic(ops_file):
-    """Execute opic file - delegates to opic_executor"""
-    project_root = find_project_root()
-    sys.path.insert(0, str(project_root))
-    sys.path.insert(0, str(project_root / "scripts"))
+
+def _init_parser(project_root: Path):
+    """Load parser (circular: minimal Python, could be OPIC self-parser)"""
+    global parse_ops
+    sys.path.insert(0, str(project_root / "core"))
+    from parser import parse_ops as _parse_ops
+    parse_ops = _parse_ops
+
+
+def call_extension(extension_path: str, env: Dict[str, Any]) -> Any:
+    """
+    Python ABI: resolve $module.function$ → call
+    Circular: Smooth, invertible transformation (Python ↔ OPIC)
+    Lossless: All information preserved through boundary
+    """
+    try:
+        parts = extension_path.split(".")
+        module = importlib.import_module(parts[0])
+        obj = module
+        for attr in parts[1:]:
+            obj = getattr(obj, attr)
+        return obj(env) if callable(obj) else obj
+    except Exception as e:
+        print(f"Extension error: ${extension_path}$: {e}", file=sys.stderr)
+        return None
+
+
+def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
+    """
+    Execute OPIC voice - Circular execution
+    Symmetry breaking: mapping definitions (data) vs execution chains (code)
+    Lossless: All information flows through circle S¹ (phase preservation)
+    """
+    # Pattern: {chain} → check if it's a mapping definition or execution chain
+    is_chain = isinstance(voice_body, str) and voice_body.startswith("{") and voice_body.endswith("}")
     
-    import importlib.util
-    # Try scripts directory first, then fallback to project root
-    executor_path = project_root / "scripts" / "opic_executor.py"
-    if not executor_path.exists():
-        executor_path = Path(__file__).parent / "scripts" / "opic_executor.py"
-    if not executor_path.exists():
-        print(f"Error: opic_executor.py not found", file=sys.stderr)
-        sys.exit(1)
+    # Pattern: $extension$ → call Python (circular boundary)
+    is_extension = isinstance(voice_body, str) and voice_body.startswith("$") and voice_body.endswith("$")
     
-    spec = importlib.util.spec_from_file_location("opic_executor", executor_path)
-    opic_executor = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(opic_executor)
-    OpicExecutor = opic_executor.OpicExecutor
+    # Symmetry breaking: mapping definitions contain "key" -> value patterns
+    # Circular: They preserve structure (lossless diffeomorphism)
+    is_mapping_definition = (is_chain and 
+                              '"' in voice_body and 
+                              voice_body.strip()[1:].strip().startswith('"'))
     
-    executor = OpicExecutor(project_root)
+    # Pattern matching (declarative routing)
+    return (
+        # Pattern 1: Mapping definition → return as data (circular: preserve structure)
+        (is_mapping_definition and voice_body) or
+        # Pattern 2: Execution chain → execute chain (circular: phase flows through S¹)
+        (is_chain and execute_opic_chain(voice_body, context)) or
+        # Pattern 3: Extension → call Python (circular boundary)
+        (is_extension and call_extension(voice_body[1:-1], context)) or
+        # Pattern 4: String/value → return as-is (lossless)
+        # Decode escape sequences for string output
+        (isinstance(voice_body, str) and voice_body.encode().decode('unicode_escape')) or voice_body
+    )
+
+
+def execute_opic_chain(chain_string: str, context: Dict[str, Any]) -> Any:
+    """
+    Execute chain - Circular bootstrap
+    Equilibrium: Python provides minimal bootstrap, OPIC executes itself
+    Never calls opic.execute_chain (that would break circular equilibrium)
+    """
+    return bootstrap_chain(chain_string, context)
+
+
+def bootstrap_chain(chain_string: str, context: Dict[str, Any]) -> Any:
+    """
+    Bootstrap chain execution - Circular phase flow
+    Equilibrium: Python provides primitives, OPIC executes itself
+    Symmetry breaking: Each step knows its role (input, voice, primitive, extension)
+    Lossless: Information preserved through circle S¹ (phase θ preserved)
+    """
+    chain_body = chain_string.strip()
+    chain_body = chain_body[1:-1].strip() if chain_body.startswith("{") and chain_body.endswith("}") else chain_body
     
-    # Resolve ops file path
-    ops_path = Path(ops_file)
-    if not ops_path.is_absolute():
-        if (Path.cwd() / ops_file).exists():
-            ops_path = Path.cwd() / ops_file
+    steps = [s.strip() for s in chain_body.split("->")]
+    result = None
+    env = dict(context)
+    voices = context.get("voices", {})
+    
+    # Primitives (Python provides these - circular boundary)
+    # Lossless: Phase θ preserved through lookup (circle S¹)
+    def lookup_primitive(mapping, key):
+        """Lookup key in dict or chain result - Circular: preserves phase"""
+        if isinstance(mapping, dict):
+            return mapping.get(key)
+        # If result is a chain string, convert it to dict (circular transformation)
+        if isinstance(mapping, str):
+            mapping_stripped = mapping.strip()
+            if mapping_stripped.startswith("{") and mapping_stripped.endswith("}"):
+                d = _chain_to_dict(mapping_stripped)
+                return d.get(key)
+        return None
+    
+    for i, step in enumerate(steps):
+        # Pattern matching (declarative routing)
+        # Symmetry breaking: check primitives first (they have specific roles)
+        is_lookup = step == "lookup"
+        is_get = step == "get"
+        is_extension = step.startswith("$") and step.endswith("$")
+        in_env = step in env
+        is_voice = step in voices
+        is_last_step = i == len(steps) - 1
+        
+        # Execute step (circular: phase flows through S¹, information preserved)
+        # Symmetry breaking: lookup/get use result (mapping) and original chain input
+        if is_lookup or is_get:
+            # Lookup uses: mapping (result from previous step) + key (original chain input)
+            # Circular: Preserve original input (phase θ from chain start)
+            key = env.get("command")  # Original chain input (circular: phase preservation)
+            mapping = result if result is not None else env
+            step_result = lookup_primitive(mapping, key)
+        elif is_extension:
+            step_result = call_extension(step[1:-1], env)
+        elif in_env:
+            step_result = env[step]
+        elif is_voice:
+            # Circular: preserve original inputs (command) through recursive execution
+            # Lossless: Information flows through circle S¹ (phase preserved)
+            step_result = execute_opic(voices[step], {**context, **env, "input": result, "command": env.get("command")})
+        elif is_last_step:
+            # Symmetry breaking: final step is output variable name, not execution
+            # Circular: Result flows back (lossless diffeomorphism)
+            step_result = result
+            env[step] = result  # Store result under output variable name
         else:
-            ops_path = project_root / ops_file
+            step_result = step
+        
+        # Update result and env (circular: phase flows forward, information preserved)
+        # Symmetry breaking: result flows forward, env stores intermediate values
+        result = step_result
+        env["input"] = result
+        if not is_last_step:  # Don't overwrite output variable with step name
+            env[step] = result
     
-    if not ops_path.exists():
-        print(f"Error: File not found: {ops_file}", file=sys.stderr)
-        sys.exit(1)
+    return result
+
+
+def _chain_to_dict(chain_str: str) -> Dict[str, Any]:
+    """
+    Convert OPIC chain mapping to Python dict
+    Circular: Smooth, invertible transformation (lossless diffeomorphism)
+    """
+    import re
+    # Handle chain like: { "key" -> value "key2" -> value2 }
+    chain_body = chain_str.strip()
+    chain_body = chain_body[1:-1].strip() if chain_body.startswith("{") and chain_body.endswith("}") else chain_body
     
-    # Load the ops file
-    executor._load_ops_file(ops_path)
+    # Extract "key" -> value pairs (circular: preserves structure)
+    pairs = re.findall(r'"([^"]+)"\s*->\s*([^\s]+)', chain_body)
+    result = {k: v.strip('"') for k, v in pairs}
     
-    # Execute main voice if it exists
-    if "main" in executor.voices:
-        main_voice = executor.voices["main"]
-        if isinstance(main_voice, str) and main_voice.startswith("{") and main_voice.endswith("}"):
-            result = executor._execute_opic_chain(main_voice)
-            if result:
-                print(result)
+    # Handle default case (not quoted) - Circular: preserves all information
+    default_match = re.search(r'default\s*->\s*([^\s}]+)', chain_body)
+    if default_match:
+        result["default"] = default_match.group(1).strip('"')
+    
+    return result
+
+
+def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dict = None, def_sources: Dict = None, base_dir: Path = None):
+    """
+    Load .ops file - Circular: Python provides file I/O
+    Lossless: All information preserved (no transformation, just reading)
+    Auto-detects namespace usage and includes files automatically
+    Conflict resolution: nearest definition wins (same directory > parent > grandparent)
+    Expansions are idempotent: if already expanded, don't expand again
+    """
+    if voice_sources is None:
+        voice_sources = {}
+    if def_sources is None:
+        def_sources = {}
+    if base_dir is None:
+        base_dir = file_path.parent
+    
+    # Lambda expansion: if file already loaded (voice/def exists), don't expand again
+    file_key = str(file_path.resolve())
+    if file_key in voice_sources.values() or file_key in def_sources.values():
+        return  # Already expanded
+    
+    content = file_path.read_text()
+    inc_defs, inc_voices, inc_includes, boundary_matrix, symbol_list = parse_ops(content, file_path)
+    
+    # Semantic boundary matrix available for symbol extraction and type filtering
+    # boundary_matrix: [line, char, type, content, position] for each semantic change
+    # symbol_list: extracted symbols ready for expansion operations
+    # Can use expansion.batch_expand, expansion.expand_namespaces, etc. on symbol_list
+    
+    # Calculate distance using OPIC voices (declarative)
+    def calculate_distance(path: Path) -> int:
+        """Calculate directory distance using OPIC - delegates to file.calculate_distance"""
+        try:
+            rel_path = path.parent.relative_to(base_dir)
+            return len(rel_path.parts)
+        except ValueError:
+            # Different tree - use OPIC to calculate
+            # Call file.calculate_distance voice if available
+            if "file.calculate_distance" in voices:
+                # Build context for OPIC voice
+                context = {
+                    "voices": voices,
+                    "defs": defs,
+                    "call_extension": call_extension,
+                    "file_path": str(path),
+                    "base_dir": str(base_dir)
+                }
+                try:
+                    result = execute_opic(voices["file.calculate_distance"], context)
+                    return int(result) if isinstance(result, (int, float)) else 999
+                except:
+                    pass
+            # Fallback: calculate manually
+            path_parts = path.parent.parts
+            base_parts = base_dir.parts
+            common = 0
+            for p_part, b_part in zip(path_parts, base_parts):
+                if p_part == b_part:
+                    common += 1
+                else:
+                    break
+            up_levels = len(base_parts) - common
+            down_levels = len(path_parts) - common
+            return up_levels + down_levels
+    
+    current_distance = calculate_distance(file_path)
+    
+    # Merge voices with conflict resolution: nearest wins
+    # Lambda expansion: track source file so we know if already expanded
+    for name, body in inc_voices.items():
+        if name in voices:
+            # Conflict: check which is nearer
+            existing_source = voice_sources.get(name)
+            if existing_source and existing_source != file_key:
+                # Different file - compare distances
+                existing_distance = calculate_distance(Path(existing_source)) if existing_source.startswith('/') else 999
+                if current_distance <= existing_distance:
+                    voices[name] = body
+                    voice_sources[name] = file_key
+            # else: same file or no existing, keep current
         else:
-            print(main_voice)
-    else:
-        print(f"Loaded {len(executor.voices)} voices from {ops_path.name}")
+            # No conflict, add it (lambda expansion: mark as expanded)
+            voices[name] = body
+            voice_sources[name] = file_key
+    
+    # Merge defs with conflict resolution: nearest wins (using OPIC)
+    # Lambda expansion: track source file so we know if already expanded
+    for name, fields in inc_defs.items():
+        if name in defs:
+            # Conflict: check which is nearer
+            existing_source = def_sources.get(name)
+            if existing_source and existing_source != file_key:
+                # Different file - compare distances
+                existing_distance = calculate_distance(Path(existing_source)) if existing_source.startswith('/') else 999
+                if "file.resolve_conflict" in voices:
+                    context = {
+                        "voices": voices,
+                        "defs": defs,
+                        "call_extension": call_extension,
+                        "existing_distance": existing_distance,
+                        "current_distance": current_distance
+                    }
+                    try:
+                        resolution = execute_opic(voices["file.resolve_conflict"], context)
+                        if resolution == "current_wins":
+                            defs[name] = fields
+                            def_sources[name] = file_key
+                        # else: existing wins, keep it
+                        continue
+                    except:
+                        pass
+                # Fallback: simple comparison
+                if current_distance <= existing_distance:
+                    defs[name] = fields
+                    def_sources[name] = file_key
+            # else: same file or no existing, keep current
+        else:
+            # No conflict, add it (lambda expansion: mark as expanded)
+            defs[name] = fields
+            def_sources[name] = file_key
+    
+    # Load includes recursively
+    for include_file in inc_includes:
+        include_path = file_path.parent / include_file
+        if not include_path.exists():
+            # Search up the directory tree for the file
+            search_dir = file_path.parent.parent
+            while search_dir != search_dir.parent:  # Stop at filesystem root
+                alt_path = search_dir / include_file
+                if alt_path.exists():
+                    include_path = alt_path
+                    break
+                # Also check common subdirectories
+                for subdir in search_dir.iterdir():
+                    if subdir.is_dir():
+                        alt_path = subdir / include_file
+                        if alt_path.exists():
+                            include_path = alt_path
+                            break
+                    if include_path.exists():
+                        break
+                if include_path.exists():
+                    break
+                search_dir = search_dir.parent
+        if include_path.exists():
+            _load_ops_file(include_path, voices, defs, voice_sources, def_sources, base_dir)
+
 
 def main():
-    """CLI entry point"""
-    if len(sys.argv) < 2:
-        execute_opic("opic_help.ops")
-        return
-    
-    command = sys.argv[1]
+    """
+    CLI entry point - Circular architecture
+    Equilibrium: Python provides bootstrap, OPIC executes itself
+    Lossless: All information preserved through circle S¹
+    """
     project_root = find_project_root()
+    sys.path.insert(0, str(project_root))
     
-    # Route commands to .ops files
-    command_map = {
-        "execute": sys.argv[2] if len(sys.argv) > 2 else None,
-        "eval": sys.argv[2] if len(sys.argv) > 2 else None,
-        "repos": "repos.ops",
-        "test": "runtime_test.ops",
-        "compile": "opic_compile.ops",
-        "plan": "opic_plan.ops",
-        "bootstrap": "bootstrap.ops",
-        "help": "opic_help.ops",
-    }
+    # Initialize parser (circular: minimal Python)
+    _init_parser(project_root)
     
-    if command in command_map:
-        ops_file = command_map[command]
-        if not ops_file:
+    # Load bootstrap.ops for command routing (circular: OPIC routes itself)
+    bootstrap_path = project_root / "core" / "bootstrap.ops"
+    bootstrap_path.exists() or (print(f"Error: bootstrap.ops not found", file=sys.stderr) or sys.exit(1))
+    
+    voices = {}
+    defs = {}
+    voice_sources = {}
+    def_sources = {}
+    _load_ops_file(bootstrap_path, voices, defs, voice_sources, def_sources, project_root)
+    
+    # Load file resolution system for distance calculation
+    file_resolution_path = project_root / "systems" / "file_resolution.ops"
+    if file_resolution_path.exists():
+        _load_ops_file(file_resolution_path, voices, defs, voice_sources, def_sources, project_root)
+    
+    # Load OPIC executor implementation (circular: OPIC executes itself)
+    executor_impl = project_root / "systems" / "opic_executor_impl.ops"
+    if executor_impl.exists():
+        _load_ops_file(executor_impl, voices, defs, voice_sources, def_sources, project_root)
+    
+    # Get command (empty command -> "help") - Circular: self-routing
+    command_line_args = sys.argv[1:] if len(sys.argv) > 1 else []
+    command = command_line_args[0] if command_line_args else "help"
+    
+    # Check if command is a file path (ends with .ops or exists as file)
+    ops_file = None
+    if command.endswith(".ops"):
+        # Direct file path - execute it
+        ops_file = command
+    elif (Path(command).exists() and Path(command).is_file()):
+        # Existing file - execute it
+        ops_file = command
+    elif command == "execute":
+        # Legacy "execute" command - still supported but not needed
+        if len(command_line_args) < 2:
             print(f"Error: {command} requires an argument", file=sys.stderr)
             sys.exit(1)
-        execute_opic(ops_file)
+        ops_file = command_line_args[1]
     else:
-        # Try <command>.ops file
-        ops_file = project_root / f"{command}.ops"
-        if ops_file.exists():
-            execute_opic(str(ops_file))
-        else:
-            print(f"Unknown command: {command}", file=sys.stderr)
-            execute_opic("opic_help.ops")
+        # Route command using OPIC (circular: OPIC routes itself)
+        # First try direct command routing, then search action/ directories
+        try:
+            context = {
+                "voices": voices,
+                "defs": defs,
+                "call_extension": call_extension,  # Circular boundary: Python ↔ OPIC
+                "command": command,
+                "command_line_args": command_line_args,
+                "project_root": str(project_root)
+            }
+            find_command_voice = voices.get("opic.cli.find_command")
+            # Circular: Preserve original command (phase θ) through execution
+            ops_file = find_command_voice and execute_opic(find_command_voice, {**context, "command": command})
+            
+            # If not found via routing, search action/ directories directly
+            if not ops_file or ops_file == "default":
+                action_dirs = [
+                    project_root / "action" / "examples" / f"{command}.ops",
+                    project_root / "action" / "tests" / f"{command}.ops",
+                    project_root / "action" / "ml" / f"{command}.ops",
+                    project_root / "action" / f"{command}.ops",
+                    project_root / f"{command}.ops",
+                    Path.cwd() / f"{command}.ops"
+                ]
+                for path in action_dirs:
+                    if path.exists():
+                        ops_file = str(path.relative_to(project_root)) if path.is_relative_to(project_root) else str(path)
+                        break
+            
+            ops_file or (print(f"Error: Command '{command}' not found. Try 'opic help'", file=sys.stderr) or sys.exit(1))
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
+    
+    # Resolve and execute ops file (circular: OPIC executes itself)
+    ops_path = project_root / ops_file if not Path(ops_file).is_absolute() else Path(ops_file)
+    (ops_path.exists() or (Path.cwd() / ops_file).exists()) or (print(f"Error: File not found: {ops_file}", file=sys.stderr) or sys.exit(1))
+    ops_path = ops_path if ops_path.exists() else Path.cwd() / ops_file
+    
+    _load_ops_file(ops_path, voices, defs, voice_sources, def_sources, project_root)
+    main_voice = voices.get("main")
+    # Circular: OPIC executes itself, information preserved through circle S¹
+    context = {
+        "voices": voices,
+        "defs": defs,
+        "call_extension": call_extension,
+        "command": command,
+        "command_line_args": command_line_args
+    }
+    main_voice and (result := execute_opic(main_voice, context)) and print(result)
+
 
 if __name__ == "__main__":
     main()

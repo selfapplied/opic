@@ -1,0 +1,112 @@
+;;; add_domain.ops — Add domain-specific knowledge using field operations
+
+include systems/knowledge_base.ops
+include systems/mappers/biology_field.ops
+include systems/mappers/astronomy_field.ops
+include systems/mappers/pharmacology_evolution.ops
+include systems/mappers/cancer_autoimmune.ops
+
+;; Add domain knowledge entry
+voice knowledge.add_domain_entry / {
+  entry + knowledge_base -> 
+  knowledge.check_duplicate -> 
+  if_duplicate skip -> 
+  if_new knowledge.map_field -> 
+  knowledge.store_entry -> 
+  knowledge_base_updated
+}
+
+voice knowledge.check_duplicate / {
+  entry + knowledge_base -> 
+  knowledge.hash_entry -> 
+  knowledge_base.lookup_hash -> 
+  if_found duplicate -> 
+  if_not_found new
+}
+
+voice knowledge.hash_entry / {
+  entry -> 
+  entry.get_text -> 
+  opic.hash_md5 -> 
+  hash
+}
+
+voice knowledge.map_field / {
+  entry -> 
+  knowledge.determine_domain -> 
+  knowledge.select_mapper -> 
+  mapper.explain -> 
+  field_mapping
+}
+
+voice knowledge.determine_domain / {
+  entry -> 
+  entry.get_domain -> 
+  domain
+}
+
+voice knowledge.select_mapper / {
+  domain + entry -> 
+  if_domain "biology" biology_mapper.explain -> 
+  if_domain "astronomy" astronomy_mapper.explain -> 
+  if_domain "pharmacology" pharmacology_mapper.explain -> 
+  if_domain "evolution" evolution_mapper.explain -> 
+  if_domain "cancer" cancer_mapper.explain -> 
+  if_domain "autoimmune" autoimmune_mapper.explain -> 
+  mapper
+}
+
+;; Try pharmacology/evolution mapper first
+voice knowledge.try_pharmacology_evolution / {
+  entry -> 
+  pharmacology_evolution_mapper.explain -> 
+  if_concepts_found field_mapping -> 
+  if_no_concepts try_next
+}
+
+;; Try cancer/autoimmune mapper if pharmacology/evolution didn't match
+voice knowledge.try_cancer_autoimmune / {
+  entry -> 
+  cancer_autoimmune_mapper.explain -> 
+  if_concepts_found field_mapping -> 
+  if_no_concepts try_next
+}
+
+;; Use biology mapper for general biology concepts
+voice knowledge.use_biology_mapper / {
+  entry -> 
+  biology_mapper.add_biology_knowledge -> 
+  field_mapping
+}
+
+;; Use astronomy mapper for astronomy concepts
+voice knowledge.use_astronomy_mapper / {
+  entry -> 
+  astronomy_mapper.explain_astronomy_as_field -> 
+  field_mapping
+}
+
+voice knowledge.store_entry / {
+  entry + field_mapping + knowledge_base -> 
+  knowledge.create_entry -> 
+  knowledge_base.add_entry -> 
+  knowledge_base_updated
+}
+
+voice knowledge.create_entry / {
+  entry + field_mapping -> 
+  knowledge.combine -> 
+  knowledge_entry
+}
+
+;; Process domain knowledge entries
+voice knowledge.add_domain_knowledge / {
+  entries + knowledge_base -> 
+  opic.for_each_entry -> 
+  knowledge.add_domain_entry -> 
+  knowledge_base_updated
+}
+
+target knowledge_add_domain / "add_domain_knowledge"
+voice main / {knowledge.add_domain_knowledge -> knowledge_add_domain}
+

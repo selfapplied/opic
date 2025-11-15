@@ -1,0 +1,86 @@
+;;; consequence_checks.ops — Checks as Actor Coupled Modeling Metrics
+
+;; All checks are metric functionals M(S_t) observing outcomes
+;; Part of Actor Coupled Modeling (ACM): S_{t+1} = F_A(S_t; r)
+;; Checks observe state transitions and validate actor morphisms
+
+include systems/actor_coupled_modeling.ops
+
+;; ============================================================================
+;; METRIC FUNCTIONAL: M(S_t) → scalar
+;; ============================================================================
+
+;; Metric functional observes state and produces measurable scalar
+;; This is the observation layer of ACM
+voice metric_functional.apply / {
+  metric_functional + state ->
+  observe_state ->
+  compute_scalar ->
+  observable
+}
+
+;; Type checks - observing state structure
+voice metric.observe_structure / {state -> metric_functional.apply -> structure_observable}
+voice metric.check_type / {state + expected_type -> metric.observe_structure -> metric.compare_type -> type_valid}
+voice metric.is_string / {state -> metric.check_type "string" -> is_string}
+voice metric.is_dict / {state -> metric.check_type "dict" -> is_dict}
+voice metric.is_list / {state -> metric.check_type "list" -> is_list}
+
+;; Existence checks - validating state presence in causal graph
+voice metric.observe_presence / {state_path + causal_graph -> metric.query_causal_graph -> present}
+voice metric.check_exists / {state_path -> metric.observe_presence -> exists}
+voice metric.file_exists / {path -> metric.check_exists -> exists}
+voice metric.voice_exists / {voice_name + voices -> metric.check_exists -> exists}
+
+;; Permission checks - validating actor morphism authorization
+;; Checks if actor A can apply morphism F_A in realm
+voice metric.observe_authorization / {actor + action + realm -> metric.query_consequence_graph -> authorized}
+voice metric.check_permission / {actor + action + realm -> metric.observe_authorization -> permitted}
+voice metric.check_file_permission / {file_path + realm -> metric.check_permission "read" -> permitted}
+voice metric.check_voice_permission / {voice_name + realm -> metric.check_permission "execute" -> permitted}
+
+;; Pattern checks - classifying state regimes
+;; Regime is not detected - it is revealed by the sequence's geometric properties
+voice metric.observe_regime / {observable_sequence -> regime.reveal -> regime}
+voice metric.check_pattern / {state + pattern -> metric.observe_regime -> matches}
+voice metric.check_type_pattern / {line -> metric.check_pattern "def " -> is_def}
+voice metric.check_voice_pattern / {line -> metric.check_pattern "voice " -> is_voice}
+voice metric.check_runtime_pattern / {main_voice -> metric.observe_regime -> runtime_type}
+
+;; Constraint checks - validating invariants during iteration
+;; Checks if S_{t+1} = F_A(S_t; r) preserves invariants
+voice metric.observe_invariant / {state + invariant -> metric_functional.apply -> within_bounds}
+voice metric.check_constraint / {state + constraint -> metric.observe_invariant -> satisfied}
+voice metric.check_loaded / {file_path + loaded_set -> metric.check_constraint "not_loaded" -> is_new}
+voice metric.check_health / {state + health_bounds -> metric.observe_invariant -> healthy}
+
+;; Semantic checks - observing consequence relationships in causal graph
+;; Measures distance/similarity between actors/states in consequence space
+voice metric.observe_similarity / {a + b + causal_graph -> metric.measure_consequence_distance -> similarity_score}
+voice metric.check_semantic_match / {query + candidate -> metric.observe_similarity -> matches}
+voice metric.check_contains / {text + substring -> metric.check_semantic_match -> contains}
+
+;; ============================================================================
+;; INTEGRATION WITH ACM
+;; ============================================================================
+
+;; Apply metric during actor iteration
+voice actor_coupled_model.observe / {
+  actor_coupled_model ->
+  extract_state ->
+  extract_metric_functional ->
+  metric_functional.apply ->
+  observation
+}
+
+;; Validate state transition
+voice actor_coupled_model.validate_transition / {
+  state_t + actor + state_t_plus_1 ->
+  metric.observe_invariant ->
+  metric.check_constraint ->
+  transition_valid
+}
+
+;; All checks are metric functionals M(S_t) observing outcomes
+;; They validate: S_{t+1} = F_A(S_t; r) preserves invariants and follows consequences
+

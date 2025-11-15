@@ -1,0 +1,43 @@
+;;; self.ops — Understanding of the action directory
+
+;; Purpose: The action directory contains executable OPIC applications:
+;;          examples, tests, ML models, and other runnable code.
+
+;; Convention: Action contains things that DO something - they execute, demonstrate,
+;;            or perform work. This is where OPIC's capabilities are applied.
+
+;; Action Structure:
+;;   - examples/: Demonstrations of OPIC capabilities
+;;   - tests/: Test files that validate behavior
+;;   - ml/: Machine learning models and training
+;;   - benchmarks/: Performance benchmarks
+
+;; Discovery: Action files are discovered through direct execution.
+;;            They can be run via `opic <name>` or `opic execute action/<name>.ops`
+
+;; Action Categories:
+;;   - Examples: hello.ops, demonstrations
+;;   - Tests: Validation and correctness checks
+;;   - ML: Machine learning capabilities
+;;   - Benchmarks: Performance evaluation
+
+;; Self-understanding: Action is where OPIC does work. These are executable
+;;                     applications that demonstrate and validate capabilities.
+
+voice action.understand / {
+  "What is the action directory?" ->
+  "The action directory contains executable OPIC applications." ->
+  "Action contains examples, tests, ML models, and other runnable code." ->
+  "Action files can be executed via opic <name> or opic execute." ->
+  understanding
+}
+
+voice action.list / {
+  "action" ->
+  file.find "*.ops" ->
+  action_files
+}
+
+target action / "action_directory_understanding"
+voice main / {action.understand -> action}
+

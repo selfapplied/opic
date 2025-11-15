@@ -1,13 +1,24 @@
 ;;; parser.ops — Grammar extension parser for OPIC
+;;; Extends root grammar (core/bootstrap.ops) with domain-specific patterns
 
-include core/bootstrap.ops
-include ../registry/base.ops
+;; Root grammar reference (core/bootstrap.ops)
+;; • def <name> { <fields> } — Type definition
+;; • voice <name> / { <chain> } — Voice definition
+;; • target <name> / "<description>" — Named entry point (creates implicit entry point)
+;; • include <path> — DEPRECATED: Use attention-based discovery instead
+
+;; Grammar extensions add patterns via registry:
+;; • register status "name" with { ... }
+;; • register filter "name" in "category" with { ... }
+;; • register translation "name" from "lang1" to "lang2" with { ... }
 
 ;; ============================================================================
 ;; GRAMMAR EXTENSION PARSER
 ;; ============================================================================
 
 ;; Parse line with grammar extensions (from registry)
+;; Flow: Try extensions → if match → transform → parse transformed
+;;       If no match → use root grammar (opic.parse_line)
 voice grammar.parse_line / {
   line + grammar_registry -> 
   grammar.get_all_rules -> 

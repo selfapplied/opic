@@ -1,0 +1,522 @@
+;;; phik_field_impl.ops — Complete Φκ-Field Implementation in OPIC
+;;; All Python logic rewritten as declarative OPIC voices
+;;; Files auto-included: bootstrap.ops, primitives.ops, numpy_primitives.ops
+
+;; ============================================================================
+;; FIELD STRUCTURE DEFINITION
+;; ============================================================================
+
+def phik_field_structure {
+  I: "intensity array",
+  A: "alignment array",
+  C: "chroma array",
+  alpha: "gradient magnitude array",
+  Phi_kappa: "field potential array",
+  kappa: "weights dict",
+  x_0: "reference point tuple",
+  H: "height",
+  W: "width"
+}
+
+;; ============================================================================
+;; 1. DOMAIN Ω CONSTRUCTION
+;; ============================================================================
+
+;; Create domain grid: zeros((H, W))
+voice phik.create_domain / {
+  H + W ->
+  phik.build_shape_tuple ->
+  numpy.zeros ->
+  domain
+}
+
+voice phik.build_shape_tuple / {
+  H + W ->
+  "(" + H + ", " + W + ")" ->
+  shape_tuple
+}
+
+;; ============================================================================
+;; 2. FOUR BASE CHANNELS
+;; ============================================================================
+
+;; Initialize intensity: randn(H, W) or from source
+voice phik.init_intensity / {
+  H + W + source ->
+  if_source_exists -> phik.load_intensity_from_source
+  if_no_source -> phik.generate_noise_intensity ->
+  I
+}
+
+voice phik.generate_noise_intensity / {
+  H + W ->
+  numpy.random.randn ->
+  I
+}
+
+voice phik.load_intensity_from_source / {
+  source ->
+  numpy.array ->
+  numpy.astype "float64" ->
+  I
+}
+
+;; Compute gradient orientation: A = arctan2(gy, gx)
+voice phik.compute_gradient_orientation / {
+  I ->
+  phik.compute_gx ->
+  phik.compute_gy ->
+  numpy.arctan2 ->
+  A
+}
+
+;; Compute gx: I[2:,1:-1] - I[:-2,1:-1]
+voice phik.compute_gx / {
+  I ->
+  phik.slice_gx_forward ->
+  phik.slice_gx_backward ->
+  numpy.subtract ->
+  gx
+}
+
+voice phik.slice_gx_forward / {
+  I ->
+  numpy.slice "2:,1:-1" ->
+  I_forward
+}
+
+voice phik.slice_gx_backward / {
+  I ->
+  numpy.slice ":-2,1:-1" ->
+  I_backward
+}
+
+;; Compute gy: I[1:-1,2:] - I[1:-1,:-2]
+voice phik.compute_gy / {
+  I ->
+  phik.slice_gy_forward ->
+  phik.slice_gy_backward ->
+  numpy.subtract ->
+  gy
+}
+
+voice phik.slice_gy_forward / {
+  I ->
+  numpy.slice "1:-1,2:" ->
+  I_forward
+}
+
+voice phik.slice_gy_backward / {
+  I ->
+  numpy.slice "1:-1,:-2" ->
+  I_backward
+}
+
+;; Initialize chroma: rand(H, W, num_channels)
+voice phik.init_chroma / {
+  H + W + num_channels ->
+  phik.build_chroma_shape ->
+  numpy.random.rand ->
+  C
+}
+
+voice phik.build_chroma_shape / {
+  H + W + num_channels ->
+  "(" + H + ", " + W + ", " + num_channels + ")" ->
+  chroma_shape
+}
+
+;; Compute gradient magnitude: alpha = sqrt(gx^2 + gy^2)
+voice phik.compute_gradient_magnitude / {
+  I ->
+  phik.compute_gx ->
+  phik.compute_gy ->
+  phik.compute_magnitude_from_gradients ->
+  alpha
+}
+
+voice phik.compute_magnitude_from_gradients / {
+  gx + gy ->
+  numpy.power gx 2 ->
+  numpy.power gy 2 ->
+  numpy.add ->
+  numpy.sqrt ->
+  magnitude
+}
+
+;; Initialize all channels
+voice phik.init_channels / {
+  H + W + source ->
+  phik.init_intensity ->
+  phik.init_alignment ->
+  phik.init_chroma ->
+  phik.init_gradient_magnitude ->
+  channels_dict
+}
+
+voice phik.init_alignment / {
+  I ->
+  phik.compute_gradient_orientation ->
+  A
+}
+
+voice phik.init_gradient_magnitude / {
+  I ->
+  phik.compute_gradient_magnitude ->
+  alpha
+}
+
+;; ============================================================================
+;; 3. FIELD CONSTRUCTION: Φκ(x)
+;; ============================================================================
+
+;; Compute Φκ field: kappa_1*I + kappa_2*A - kappa_3*d_1 + kappa_4*alpha
+voice phik.compute_field / {
+  I + A + alpha + x_0 + kappa + H + W ->
+  phik.compute_intensity_term ->
+  phik.compute_alignment_term ->
+  phik.compute_distance_field ->
+  phik.compute_distance_term ->
+  phik.compute_gradient_term ->
+  phik.combine_field_terms ->
+  Phi_kappa
+}
+
+voice phik.compute_intensity_term / {
+  I + kappa ->
+  dict.lookup kappa "kappa_1" ->
+  numpy.multiply ->
+  term_1
+}
+
+voice phik.compute_alignment_term / {
+  A + kappa ->
+  dict.lookup kappa "kappa_2" ->
+  numpy.multiply ->
+  term_2
+}
+
+voice phik.compute_gradient_term / {
+  alpha + kappa ->
+  dict.lookup kappa "kappa_4" ->
+  numpy.multiply ->
+  term_4
+}
+
+;; Build Manhattan distance field
+voice phik.compute_distance_field / {
+  H + W + x_0 ->
+  phik.build_distance_grid ->
+  d_field
+}
+
+voice phik.build_distance_grid / {
+  H + W + x_0 ->
+  phik.create_domain ->
+  phik.fill_manhattan_distances ->
+  d_field
+}
+
+voice phik.fill_manhattan_distances / {
+  domain + x_0 ->
+  phik.compute_manhattan_for_each_point ->
+  d_field
+}
+
+voice phik.compute_manhattan_for_each_point / {
+  i + j + x_0 ->
+  phik.manhattan_distance_single ->
+  d_value
+}
+
+voice phik.manhattan_distance_single / {
+  i + j + x_0 ->
+  phik.extract_x0_coords ->
+  math.abs i x0_i ->
+  math.abs j x0_j ->
+  math.add ->
+  d_value
+}
+
+voice phik.extract_x0_coords / {
+  x_0 ->
+  tuple.get_item 0 ->
+  tuple.get_item 1 ->
+  x0_i + x0_j
+}
+
+voice phik.compute_distance_term / {
+  d_field + kappa ->
+  dict.lookup kappa "kappa_3" ->
+  numpy.multiply ->
+  numpy.negate ->
+  term_3
+}
+
+;; Combine all terms
+voice phik.combine_field_terms / {
+  term_1 + term_2 + term_3 + term_4 ->
+  numpy.add term_1 term_2 ->
+  numpy.add term_3 ->
+  numpy.add term_4 ->
+  Phi_kappa
+}
+
+;; ============================================================================
+;; 4. DERIVE FLOWS
+;; ============================================================================
+
+;; Alignment: A = grad(Phi_kappa)
+voice phik.compute_alignment_from_field / {
+  Phi_kappa ->
+  phik.compute_gradient_orientation ->
+  A
+}
+
+;; Momentum: M = A - A_prev
+voice phik.compute_momentum / {
+  A + A_prev ->
+  if_A_prev_exists -> numpy.subtract
+  if_no_A_prev -> phik.zero_momentum ->
+  M
+}
+
+voice phik.zero_momentum / {
+  A ->
+  numpy.zeros_like ->
+  M
+}
+
+;; Kinetics: K = Phi_kappa - Phi_kappa_prev
+voice phik.compute_kinetics / {
+  Phi_kappa + Phi_kappa_prev ->
+  if_prev_exists -> numpy.subtract
+  if_no_prev -> phik.zero_kinetics ->
+  K
+}
+
+voice phik.zero_kinetics / {
+  Phi_kappa ->
+  numpy.zeros_like ->
+  K
+}
+
+;; Charge: Q = laplacian(Phi_kappa)
+voice phik.compute_charge / {
+  Phi_kappa ->
+  phik.compute_laplacian ->
+  Q
+}
+
+voice phik.compute_laplacian / {
+  Phi_kappa ->
+  phik.compute_laplacian_discrete ->
+  laplacian
+}
+
+voice phik.compute_laplacian_discrete / {
+  Phi_kappa ->
+  phik.slice_up ->
+  phik.slice_down ->
+  phik.slice_left ->
+  phik.slice_right ->
+  phik.combine_laplacian_terms ->
+  laplacian
+}
+
+voice phik.combine_laplacian_terms / {
+  up + down + left + right + center ->
+  numpy.add up down ->
+  numpy.add left ->
+  numpy.add right ->
+  numpy.subtract center ->
+  numpy.multiply 4 ->
+  numpy.subtract ->
+  laplacian
+}
+
+;; ============================================================================
+;; 5. STABILITY CHECKING
+;; ============================================================================
+
+;; Check stability: |M|.mean() < ε AND |K|.mean() < ε AND Q sign-consistent
+voice phik.check_stability / {
+  M + K + Q + epsilon ->
+  phik.check_momentum_stable ->
+  phik.check_kinetics_stable ->
+  phik.check_charge_stable ->
+  phik.combine_stability_checks ->
+  is_stable
+}
+
+voice phik.check_momentum_stable / {
+  M + epsilon ->
+  numpy.abs ->
+  numpy.mean ->
+  math.less_than epsilon ->
+  momentum_stable
+}
+
+voice phik.check_kinetics_stable / {
+  K + epsilon ->
+  numpy.abs ->
+  numpy.mean ->
+  math.less_than epsilon ->
+  kinetics_stable
+}
+
+voice phik.check_charge_stable / {
+  Q ->
+  phik.check_sign_consistency ->
+  charge_stable
+}
+
+voice phik.check_sign_consistency / {
+  Q ->
+  numpy.sign ->
+  phik.count_sign_changes ->
+  phik.check_low_sign_changes ->
+  charge_stable
+}
+
+voice phik.count_sign_changes / {
+  Q_sign ->
+  numpy.diff axis:0 ->
+  numpy.diff axis:1 ->
+  numpy.abs ->
+  numpy.sum ->
+  sign_changes
+}
+
+voice phik.check_low_sign_changes / {
+  sign_changes + Q ->
+  numpy.size Q ->
+  math.multiply 0.1 ->
+  math.less_than sign_changes ->
+  charge_stable
+}
+
+voice phik.combine_stability_checks / {
+  momentum_stable + kinetics_stable + charge_stable ->
+  phik.all_true ->
+  is_stable
+}
+
+voice phik.all_true / {
+  momentum_stable + kinetics_stable + charge_stable ->
+  if_all_true -> true
+  if_any_false -> false
+}
+
+;; ============================================================================
+;; 6. EVOLUTION
+;; ============================================================================
+
+;; Evolve field: I = I + eta * Q
+voice phik.evolve_intensity / {
+  I + Q + eta ->
+  numpy.multiply Q eta ->
+  numpy.add I ->
+  I_next
+}
+
+;; Complete evolution step
+voice phik.evolve_field / {
+  field + eta ->
+  phik.extract_field_components ->
+  phik.compute_flows ->
+  phik.evolve_intensity ->
+  phik.recompute_field ->
+  field_next
+}
+
+voice phik.extract_field_components / {
+  field ->
+  dict.lookup "I" ->
+  dict.lookup "A" ->
+  dict.lookup "alpha" ->
+  dict.lookup "x_0" ->
+  dict.lookup "kappa" ->
+  dict.lookup "H" ->
+  dict.lookup "W" ->
+  components
+}
+
+voice phik.compute_flows / {
+  Phi_kappa + A_prev + Phi_kappa_prev ->
+  phik.compute_alignment_from_field ->
+  phik.compute_momentum ->
+  phik.compute_kinetics ->
+  phik.compute_charge ->
+  flows
+}
+
+voice phik.recompute_field / {
+  I_next + A + alpha + x_0 + kappa + H + W ->
+  phik.compute_field ->
+  Phi_kappa_next
+}
+
+;; ============================================================================
+;; 7. COMPLETE FIELD BUILDER
+;; ============================================================================
+
+;; Build complete field from parameters
+voice phik.build_field / {
+  H + W + source + kappa + x_0 ->
+  phik.create_domain ->
+  phik.init_channels ->
+  phik.compute_field ->
+  phik.assemble_field_structure ->
+  field
+}
+
+voice phik.assemble_field_structure / {
+  I + A + C + alpha + Phi_kappa + kappa + x_0 + H + W ->
+  phik.create_field_dict ->
+  field
+}
+
+voice phik.create_field_dict / {
+  I + A + C + alpha + Phi_kappa + kappa + x_0 + H + W ->
+  "{" +
+    "\"I\": " + I + ", " +
+    "\"A\": " + A + ", " +
+    "\"C\": " + C + ", " +
+    "\"alpha\": " + alpha + ", " +
+    "\"Phi_kappa\": " + Phi_kappa + ", " +
+    "\"kappa\": " + kappa + ", " +
+    "\"x_0\": " + x_0 + ", " +
+    "\"H\": " + H + ", " +
+    "\"W\": " + W +
+  "}" ->
+  field_dict
+}
+
+;; Default kappa weights
+voice phik.default_kappa / {
+  "{" +
+    "\"kappa_1\": 1.0, " +
+    "\"kappa_2\": 0.5, " +
+    "\"kappa_3\": 0.1, " +
+    "\"kappa_4\": 0.8" +
+  "}" ->
+  kappa
+}
+
+;; Default reference point (center)
+voice phik.default_x0 / {
+  H + W ->
+  math.divide H 2 ->
+  math.divide W 2 ->
+  "(" + H_half + ", " + W_half + ")" ->
+  x_0
+}
+
+target phik_field_impl / "complete_phik_field_implementation"
+voice main / {
+  H:64 + W:64 ->
+  phik.build_field ->
+  field_result
+}
+

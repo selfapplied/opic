@@ -1,0 +1,40 @@
+;;; declarative_doc_core.ops — Core declarative document generation system
+;;; This is the evolved core - minimal setup, maximum automation
+
+include systems/00_core/opic_field_0.7.ops
+
+;; ============================================================================
+;; CORE PRINCIPLE: Declarative Definitions → Automatic Generation
+;; ============================================================================
+
+;; Define structures as data - OPIC infers everything else
+;; Example:
+;;   def X { type: metric_space, compact: true, metric: d_X }
+;;   → OPIC infers: symbol, description, text generation, math notation
+
+;; Define sections as lists - OPIC infers structure
+;; Example:
+;;   def section_1 { definitions: [X, F, R] }
+;;   → OPIC infers: title, order, subsections, formatting
+
+;; Generate documents - OPIC handles all formatting
+;; Example:
+;;   voice main / typst.generate
+;;   → Complete Typst document with proper formatting
+
+;; ============================================================================
+;; USAGE PATTERN
+;; ============================================================================
+
+;; 1. Define your mathematical structures
+;; 2. List them in sections
+;; 3. Generate
+
+;; That's it! Everything else is automatic.
+
+target declarative_doc_core / "declarative_document_generation"
+voice main / {
+  "Declarative document generation core ready!" ->
+  declarative_doc_core
+}
+

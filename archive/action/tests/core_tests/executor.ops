@@ -1,0 +1,40 @@
+;;; executor.ops — Test main executor flow: file discovery, file-output association, comment learning
+
+;; Test that executor discovers files (tests natural discovery)
+voice test.file_discovery / {
+  "test" -> 
+  opic.discover_file -> 
+  file_found -> 
+  "File discovery: PASS"
+}
+
+;; Test that executor associates files with outputs
+voice test.file_output_association / {
+  test_file -> 
+  opic.execute_file -> 
+  capture_output -> 
+  associate_file_output -> 
+  file_output_pair -> 
+  "File-output association: PASS"
+}
+
+;; Test that executor learns from comments
+voice test.comment_learning / {
+  test_file -> 
+  extract_comments -> 
+  extract_code -> 
+  couple_comment_code -> 
+  learn_from_pairs -> 
+  "Comment learning: PASS"
+}
+
+;; Test full executor flow: discover -> execute -> associate -> learn
+voice test.executor_flow / {
+  test.file_discovery -> 
+  test.file_output_association -> 
+  test.comment_learning -> 
+  "Executor flow: PASS"
+}
+
+target executor / "opic_executor_tests"
+voice main / {test.executor_flow -> executor}

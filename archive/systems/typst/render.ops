@@ -1,0 +1,41 @@
+;;; render.ops — Typst document rendering
+
+include systems/typst.ops
+
+;; Render Typst document to PDF
+voice typst.render / {
+  typst_document + output_path -> 
+  typst.write_file -> 
+  typst.compile -> 
+  pdf_path
+}
+
+voice typst.write_file / {
+  typst_document + output_path -> 
+  file.write -> 
+  typ_file
+}
+
+voice typst.compile / {
+  typ_file -> 
+  typst.compile_to_pdf -> 
+  pdf_path
+}
+
+voice typst.compile_to_pdf / {
+  typ_file -> 
+  typst.run_compiler -> 
+  pdf_path
+}
+
+;; Render and verify
+voice typst.render_and_verify / {
+  typst_document + output_path -> 
+  typst.render -> 
+  typst.verify -> 
+  verification_report
+}
+
+target typst_render / "typst_rendering"
+voice main / {typst.render -> typst_render}
+

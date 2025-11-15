@@ -1,0 +1,44 @@
+;;; duplication.ops — Duplication analysis trait
+
+include analysis.ops
+
+voice analyze duplication / {
+  content + project files
+  find patterns
+  detect
+  find opportunities
+  weights
+}
+
+voice find patterns / {
+  content
+  extract voice patterns
+  extract def patterns
+  patterns
+}
+
+voice detect / {
+  patterns + project_files
+  search similar
+  find duplicates
+  duplicates
+}
+
+voice find opportunities / {
+  duplicates + project_files
+  check base
+  find missing
+  opportunities
+}
+
+voice check base / {
+  pattern + project_files
+  search base
+  found
+}
+
+
+
+
+
+

@@ -1,0 +1,82 @@
+;;; test_performance.ops — Performance and stress tests
+
+include core/bootstrap.ops
+
+;; Test 1: Deep chain execution
+voice test.performance.deep_chain / {
+  "start" -> 
+  deep_chain_10 -> 
+  "Deep chain: PASS"
+}
+
+voice deep_chain_10 / {
+  "start" -> 
+  step1 -> step2 -> step3 -> step4 -> step5 -> 
+  step6 -> step7 -> step8 -> step9 -> step10 -> 
+  "deep_done"
+}
+
+voice step1 / {"start" -> "step1"}
+voice step2 / {"step1" -> "step2"}
+voice step3 / {"step2" -> "step3"}
+voice step4 / {"step3" -> "step4"}
+voice step5 / {"step4" -> "step5"}
+voice step6 / {"step5" -> "step6"}
+voice step7 / {"step6" -> "step7"}
+voice step8 / {"step7" -> "step8"}
+voice step9 / {"step8" -> "step9"}
+voice step10 / {"step9" -> "step10"}
+
+;; Test 2: Wide chain execution
+voice test.performance.wide_chain / {
+  "input" -> 
+  branch1 -> branch2 -> branch3 -> branch4 -> branch5 -> 
+  merge_all -> 
+  "Wide chain: PASS"
+}
+
+voice branch1 / {"input" -> "branch1"}
+voice branch2 / {"input" -> "branch2"}
+voice branch3 / {"input" -> "branch3"}
+voice branch4 / {"input" -> "branch4"}
+voice branch5 / {"input" -> "branch5"}
+voice merge_all / {"branch1" + "branch2" + "branch3" + "branch4" + "branch5" -> "merged"}
+
+;; Test 3: Many voices resolution
+voice test.performance.many_voices / {
+  "test" -> 
+  voice1 -> voice2 -> voice3 -> voice4 -> voice5 -> 
+  "Many voices: PASS"
+}
+
+voice voice1 / {"test" -> "voice1"}
+voice voice2 / {"voice1" -> "voice2"}
+voice voice3 / {"voice2" -> "voice3"}
+voice voice4 / {"voice3" -> "voice4"}
+voice voice5 / {"voice4" -> "voice5"}
+
+;; Test 4: Recursive execution depth
+voice test.performance.recursive_depth / {
+  "start" -> 
+  recursive_5 -> 
+  "Recursive depth: PASS"
+}
+
+voice recursive_5 / {"start" -> recursive_4 -> "done"}
+voice recursive_4 / {"start" -> recursive_3 -> "done"}
+voice recursive_3 / {"start" -> recursive_2 -> "done"}
+voice recursive_2 / {"start" -> recursive_1 -> "done"}
+voice recursive_1 / {"start" -> "done"}
+
+;; Main test runner
+voice test.performance.all / {
+  test.performance.deep_chain -> 
+  test.performance.wide_chain -> 
+  test.performance.many_voices -> 
+  test.performance.recursive_depth -> 
+  "Performance tests: PASS"
+}
+
+target test_performance / "performance_tests"
+voice main / {test.performance.all -> test_performance}
+

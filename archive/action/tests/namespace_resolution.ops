@@ -1,0 +1,62 @@
+;;; test_namespace_resolution.ops — Test namespace and voice resolution
+
+include core/bootstrap.ops
+
+;; Test 1: Simple namespace resolution
+voice test.namespace.simple / {
+  "test" -> 
+  namespace.voice -> 
+  "Simple namespace: PASS"
+}
+
+voice namespace.voice / {"test" -> "resolved"}
+
+;; Test 2: Nested namespace resolution
+voice test.namespace.nested / {
+  "test" -> 
+  outer.inner.voice -> 
+  "Nested namespace: PASS"
+}
+
+voice outer.inner.voice / {"test" -> "resolved"}
+
+;; Test 3: Namespace conflict resolution
+voice test.namespace.conflict / {
+  "test" -> 
+  resolve_conflict -> 
+  "Conflict resolution: PASS"
+}
+
+voice resolve_conflict / {"test" -> "resolved"}
+
+;; Test 4: Default namespace fallback
+voice test.namespace.fallback / {
+  "test" -> 
+  fallback_voice -> 
+  "Fallback: PASS"
+}
+
+voice fallback_voice / {"test" -> "resolved"}
+
+;; Test 5: Namespace expansion
+voice test.namespace.expansion / {
+  "test" -> 
+  expand_namespace -> 
+  "Expansion: PASS"
+}
+
+voice expand_namespace / {"test" -> "expanded"}
+
+;; Main test runner
+voice test.namespace.all / {
+  test.namespace.simple -> 
+  test.namespace.nested -> 
+  test.namespace.conflict -> 
+  test.namespace.fallback -> 
+  test.namespace.expansion -> 
+  "Namespace resolution tests: PASS"
+}
+
+target test_namespace_resolution / "namespace_tests"
+voice main / {test.namespace.all -> test_namespace_resolution}
+

@@ -1,0 +1,85 @@
+;;; self.ops — OPIC's core self-understanding
+
+;; Purpose: This file defines OPIC's fundamental nature
+;;          Operators align phrases to semantic objects
+;;          Each operator defines a local isomorphism from plain text to OPIC objects
+
+;; Convention: Operators aren't special syntax - they're functors
+;;            The juxtaposition IS the mapping
+;;            operator ⊕ phrase ⇒ operator and phrase share a meaning by construction
+
+;; ============================================================================
+;; THE CORE INSIGHT
+;; ============================================================================
+
+;; Not "a new syntax layer," just:
+;;   operator ⊕ phrase ⇒ operator and phrase share a meaning by construction.
+;;   The juxtaposition is the mapping.
+;;
+;;   So:
+;;     (-) voice / plan
+;;     (+) def / plan
+;;
+;;   aren't really special forms. They're just:
+;;     (-) applied to voice / plan
+;;     (+) applied to def / plan
+;;
+;;   Each new operator defines a local isomorphism:
+;;     from "these words as plain text"
+;;     to "these words as a particular kind of OPIC object"
+
+;; The operator isn't standing alone; it's a lens that says:
+;;   "Read these words in my coordinate system."
+
+;; ============================================================================
+;; UNDERSTANDING
+;; ============================================================================
+
+voice opic.understand / {
+  "What is OPIC?" ->
+  "OPIC is a language where operators align phrases to semantic objects." ->
+  "Each operator defines a local isomorphism from plain text to OPIC objects." ->
+  "The juxtaposition IS the mapping - no special syntax needed." ->
+  "Operators are functors that say: 'Read these words in my coordinate system.'" ->
+  understanding
+}
+
+voice opic.alignment / {
+  "How does alignment work?" ->
+  "Operator ⊕ phrase ⇒ operator and phrase share a meaning by construction." ->
+  "(-) voice / plan → voice name / { plan }" ->
+  "(+) def / plan → def name / { plan }" ->
+  "(@) doc / content → doc name / { content }" ->
+  "(#) test / spec → test name / { spec }" ->
+  "(~) view / template → view name / { template }" ->
+  "Each operator aligns phrases to its semantic frame." ->
+  understanding
+}
+
+voice opic.operators / {
+  "What are operators?" ->
+  "Operators are tiny functors - they take a phrase and return an aligned semantic object." ->
+  "The operator isn't special syntax - it's just a function that says:" ->
+  "'Read these words in my coordinate system.'" ->
+  "No new heavy grammar - just one token, some words, and an alignment." ->
+  understanding
+}
+
+;; ============================================================================
+;; ALIGNMENT
+;; ============================================================================
+
+;; Alignment is simple: operator ⊕ phrase → remove operator → format phrase
+;; The operator tells us the type, the phrase is the content
+
+;; ============================================================================
+;; SELF-UNDERSTANDING
+;; ============================================================================
+
+;; This file defines what OPIC IS at its core.
+;; Alignment is the fundamental pattern: operators align phrases to semantic objects.
+;; The juxtaposition IS the mapping - no special syntax needed.
+
+target opic / "opic_core_self_understanding"
+voice main / {opic.understand -> opic}
+

@@ -1,0 +1,199 @@
+;;; cosmological_extended.ops — Extended cosmological predictions in pure opic
+;;; NFW profiles, CMB power spectrum, BAO = field equations
+
+include systems/cosmology_field.ops
+
+;; ============================================================================
+;; NFW Dark Matter Profile — Pure opic implementation
+;; ============================================================================
+
+;; NFW density profile: ρ(r) = ρ₀ / ((r/rs)(1 + r/rs)²)
+voice nfw.density.profile / {
+  radius + scale.radius + central.density -> 
+  compute.x -> 
+  compute.density -> 
+  density.profile
+}
+
+voice compute.x / {
+  radius + scale.radius -> 
+  divide -> 
+  x.value
+}
+
+voice compute.density / {
+  x.value + central.density -> 
+  x.term + one.plus.x.squared -> 
+  divide.terms -> 
+  density.value
+}
+
+voice x.term / {
+  x.value -> 
+  multiply.by.one -> 
+  x.term.value
+}
+
+voice one.plus.x.squared / {
+  x.value + 1 -> 
+  add -> 
+  square -> 
+  squared.term
+}
+
+;; NFW circular velocity: v(r) = V_max * sqrt((ln(1+x) - x/(1+x)) / (x * (ln(2) - 0.5)))
+voice nfw.circular.velocity / {
+  radius + scale.radius + virial.mass -> 
+  compute.max.velocity -> 
+  compute.velocity.profile -> 
+  circular.velocity
+}
+
+voice compute.max.velocity / {
+  G + virial.mass + scale.radius -> 
+  multiply.GM -> 
+  divide.by.rs -> 
+  sqrt -> 
+  multiply.0.465 -> 
+  max.velocity
+}
+
+voice compute.velocity.profile / {
+  x.value + max.velocity -> 
+  compute.log.term -> 
+  compute.normalization -> 
+  divide -> 
+  sqrt -> 
+  multiply.by.max -> 
+  velocity.value
+}
+
+voice compute.log.term / {
+  x.value + 1 -> 
+  add -> 
+  ln -> 
+  x.value + x.value + 1 -> 
+  divide -> 
+  subtract -> 
+  log.term.value
+}
+
+voice compute.normalization / {
+  x.value + 2 -> 
+  ln -> 
+  0.5 -> 
+  subtract -> 
+  multiply.by.x -> 
+  normalization.value
+}
+
+;; ============================================================================
+;; CMB Angular Power Spectrum — Pure opic implementation
+;; ============================================================================
+
+;; CMB power spectrum: C_ℓ = A_s * ell^(-0.5) * exp(-ell/ell_damping)
+voice cmb.angular.power.spectrum / {
+  ell.max + parameters -> 
+  generate.multipoles -> 
+  compute.power.spectrum -> 
+  C_ell.values
+}
+
+voice generate.multipoles / {
+  ell.max + 2 -> 
+  range -> 
+  ell.values
+}
+
+voice compute.power.spectrum / {
+  ell.value + amplitude + damping.scale -> 
+  compute.power.law -> 
+  compute.damping -> 
+  multiply -> 
+  C_ell.value
+}
+
+voice compute.power.law / {
+  ell.value + -0.5 -> 
+  power -> 
+  multiply.by.amplitude -> 
+  power.law.value
+}
+
+voice compute.damping / {
+  ell.value + damping.scale -> 
+  divide -> 
+  negate -> 
+  exp -> 
+  damping.factor
+}
+
+;; ============================================================================
+;; Baryon Acoustic Oscillation — Pure opic implementation
+;; ============================================================================
+
+;; BAO correlation: ξ(r) = ξ_background + A * exp(-0.5 * ((r - r_drag)/σ)²)
+voice bao.correlation.function / {
+  separation + redshift + sound.horizon -> 
+  compute.background -> 
+  compute.bao.peak -> 
+  add -> 
+  correlation.function.value
+}
+
+voice compute.background / {
+  separation + 50.0 -> 
+  divide -> 
+  -1.8 -> 
+  power -> 
+  background.correlation
+}
+
+voice compute.bao.peak / {
+  separation + sound.horizon -> 
+  subtract -> 
+  sigma -> 
+  divide -> 
+  square -> 
+  -0.5 -> 
+  multiply -> 
+  exp -> 
+  amplitude -> 
+  multiply -> 
+  bao.peak.value
+}
+
+;; ============================================================================
+;; Integration with Field Equations
+;; ============================================================================
+
+;; NFW profile → field density
+voice nfw.to.field.density / {
+  nfw.density.profile -> 
+  field.density.map -> 
+  field.density.value
+}
+
+;; CMB spectrum → field fluctuations
+voice cmb.to.field.fluctuations / {
+  cmb.angular.power.spectrum -> 
+  field.fluctuation.map -> 
+  field.fluctuation.spectrum
+}
+
+;; BAO → field acoustic oscillation
+voice bao.to.field.oscillation / {
+  bao.correlation.function -> 
+  field.acoustic.map -> 
+  field.acoustic.pattern
+}
+
+target cosmological_extended / "extended_cosmological_predictions"
+voice main / {
+  nfw.density.profile + 
+  nfw.circular.velocity + 
+  cmb.angular.power.spectrum + 
+  bao.correlation.function -> 
+  cosmological_extended
+}
+

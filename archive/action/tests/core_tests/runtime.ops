@@ -1,0 +1,47 @@
+;;; runtime.ops — test that all backends implement core runtime interface
+
+;; Test definitions
+def test_result { name, passed, message }
+
+;; Test runtime detection patterns (verifies opic.check_patterns works)
+voice test.interactive_pattern / {"interactive" -> opic.check_interactive -> test.pass}
+voice test.evaluation_pattern / {"evaluate" -> opic.check_evaluation -> test.pass}
+voice test.repos_pattern / {"repos" -> opic.check_repos -> test.pass}
+voice test.compile_pattern / {"compile" -> opic.check_compile -> test.pass}
+voice test.pass / {result -> "PASS"}
+
+;; Test that bootstrap chain voices exist (verifies interface stability)
+;; These voices should exist in bootstrap.ops - if they don't, the chain will fail
+voice test.has_bootstrap / {opic.bootstrap -> test.verify_voice -> "✓ opic.bootstrap"}
+voice test.has_load / {opic.load_bootstrap -> test.verify_voice -> "✓ opic.load_bootstrap"}
+voice test.has_find_main / {opic.find_main -> test.verify_voice -> "✓ opic.find_main"}
+voice test.has_execute_main / {opic.execute_main -> test.verify_voice -> "✓ opic.execute_main"}
+
+;; Test that runtime execution voices exist
+voice test.has_execute_runtime / {opic.execute_runtime -> test.verify_voice -> "✓ opic.execute_runtime"}
+voice test.has_detect_type / {opic.detect_runtime_type -> test.verify_voice -> "✓ opic.detect_runtime_type"}
+voice test.has_execute_specialized / {opic.execute_specialized -> test.verify_voice -> "✓ opic.execute_specialized"}
+voice test.has_execute_interactive / {opic.execute_interactive -> test.verify_voice -> "✓ opic.execute_interactive"}
+voice test.has_execute_evaluation / {opic.execute_evaluation -> test.verify_voice -> "✓ opic.execute_evaluation"}
+voice test.has_execute_repos / {opic.execute_repos -> test.verify_voice -> "✓ opic.execute_repos"}
+voice test.has_execute_compile / {opic.execute_compile -> test.verify_voice -> "✓ opic.execute_compile"}
+
+;; Verify voice exists by attempting to reference it (if missing, chain fails)
+voice test.verify_voice / {voice_ref -> identity -> verified}
+
+;; Run all pattern detection tests
+voice test.all_patterns / {test.interactive_pattern -> test.evaluation_pattern -> test.repos_pattern -> test.compile_pattern -> "Pattern detection: PASS"}
+
+;; Run all interface existence tests
+voice test.all_interfaces / {test.has_bootstrap -> test.has_load -> test.has_find_main -> test.has_execute_main -> test.has_execute_runtime -> test.has_detect_type -> test.has_execute_specialized -> test.has_execute_interactive -> test.has_execute_evaluation -> test.has_execute_repos -> test.has_execute_compile -> "Interface stability: PASS"}
+
+;; Main test chain - verifies runtime interface stability
+;; If any voice is missing, this chain will fail during execution
+voice test.runtime_stability / {test.all_patterns -> test.all_interfaces -> "Runtime interface stable"}
+
+;; Witness-based stability verification
+voice test.with_witness / {witness.install -> test.runtime_stability -> witness.verify -> proof.verify_runtime -> "Runtime stable with witness"}
+
+target runtime / "opic_runtime_tests"
+voice main / {test.runtime_stability -> runtime}
+

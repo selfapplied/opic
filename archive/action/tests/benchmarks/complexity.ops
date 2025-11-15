@@ -1,0 +1,58 @@
+;;; complexity.ops — 3-SAT benchmark with solver metrics
+
+include systems/flow3d_core.ops
+
+;; Inputs: n, α, seeds, solver
+voice complexity.sat_benchmark / {
+  n + alpha + seeds + solver -> 
+  generate.3sat.instance -> 
+  run.solver -> 
+  log.steps -> 
+  log.time -> 
+  log.entropy -> 
+  compute.verification.cost -> 
+  results
+}
+
+;; Steps: generate Φ, run solver, log steps/time/entropy, verification cost
+voice generate.3sat.instance / {
+  n + alpha -> 
+  compute.n_clauses -> 
+  generate.uniform.random.clauses -> 
+  sat_instance
+}
+
+voice run.solver / {
+  sat_instance + solver -> 
+  execute.solver -> 
+  record.branching.choices -> 
+  solver_result
+}
+
+voice log.steps / {
+  solver_result -> 
+  extract.step.count -> 
+  log.steps.entry
+}
+
+voice log.entropy / {
+  branching_choices -> 
+  compute.probability.distribution -> 
+  compute.search.entropy -> 
+  search_entropy
+}
+
+;; Outputs: curves vs n, α; baselines; CIs
+voice generate.outputs / {
+  results + n_values + alpha_values -> 
+  compute.success.rate -> 
+  compute.median.steps -> 
+  compute.variance -> 
+  compute.confidence.intervals -> 
+  generate.curves -> 
+  outputs
+}
+
+target complexity / "complexity_sat_benchmark"
+voice main / { complexity.sat_benchmark + generate.outputs -> complexity }
+

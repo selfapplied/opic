@@ -1,0 +1,52 @@
+;;; opic_executor_impl.ops — Full executor implementation in OPIC
+
+;; This implements bootstrap.ops execution structure entirely in OPIC
+;; Python just provides primitives, OPIC does the execution
+
+;; Main executor (from bootstrap.ops)
+voice opic.execute_chain / {chain_string + voices + agent_realm + ca -> opic.parse_chain -> opic.resolve_steps -> opic.execute_steps -> result}
+
+;; Parse chain (from bootstrap.ops)
+voice opic.parse_chain / {chain -> opic.remove_braces -> opic.split_arrows -> steps}
+voice opic.remove_braces / {chain -> python.strip -> check_starts_with_brace -> if_brace_remove -> inner}
+voice opic.check_starts_with_brace / {text -> python.contains "{ " -> is_brace}
+voice opic.if_brace_remove / {text + is_brace -> if_true_remove_braces -> if_false_return -> inner}
+voice opic.split_arrows / {inner -> python.split "->" -> python.strip_each -> steps}
+voice opic.strip_each / {list -> python.for_each python.strip -> stripped_list}
+
+;; Resolve steps (from bootstrap.ops)
+voice opic.resolve_steps / {steps + voices + agent_realm + ca -> python.for_each opic.resolve_step -> resolved_steps}
+voice opic.resolve_step / {step + voices + agent_realm + ca -> opic.check_voice_permission -> opic.find_voice -> opic.resolve_body -> resolved}
+voice opic.check_voice_permission / {voice_name + agent_realm + ca -> cert.check_voice_execute -> if_permitted -> if_denied_reject}
+voice opic.find_voice / {step_name + voices -> python.lookup -> voice_body}
+voice opic.resolve_body / {voice_body -> opic.if_chain_recurse -> opic.if_string_return -> resolved}
+voice opic.if_chain_recurse / {voice_body -> python.is_string -> check_is_chain -> if_chain_return -> if_not_chain_continue}
+voice opic.check_is_chain / {text -> python.contains "{ " -> is_chain}
+voice opic.if_string_return / {voice_body -> python.is_string -> if_string_return -> if_not_string_return_as_is}
+
+;; Execute steps (from bootstrap.ops)
+voice opic.execute_steps / {resolved_steps + agent_realm + ca -> python.for_each opic.execute_step -> opic.collect_results -> result}
+voice opic.execute_step / {step_body + env + last_result -> opic.check_step_type -> opic.execute_chain_step -> opic.execute_string_step -> opic.execute_primitive_step -> opic.execute_value_step -> result}
+voice opic.check_step_type / {step_body -> python.is_string -> check_is_chain_string -> check_is_primitive -> step_type}
+voice opic.execute_chain_step / {step_body + step_type + env + last_result -> if_type_chain -> opic.execute_chain_recursive -> result}
+voice opic.execute_string_step / {step_body + step_type + env + last_result -> if_type_string -> opic.evaluate_string -> result}
+voice opic.execute_primitive_step / {step_body + step_type + env + last_result -> if_type_primitive -> python.call_primitive -> result}
+voice opic.execute_value_step / {step_body + step_type -> if_type_value -> return_value}
+voice opic.collect_results / {results -> python.take_last -> final_result}
+
+;; String evaluation (for step tokens)
+voice opic.evaluate_string / {token + env + last_result -> opic.check_token_type -> opic.evaluate_variable -> opic.evaluate_literal -> opic.evaluate_expression -> result}
+voice opic.check_token_type / {token -> python.contains " + " -> is_expression -> python.contains "\"" -> is_literal -> token_type}
+voice opic.evaluate_variable / {token + env -> python.lookup -> if_found_return -> if_not_found_continue}
+voice opic.evaluate_literal / {token -> python.strip_quotes -> literal_value}
+voice opic.evaluate_expression / {token + env + last_result -> python.split " + " -> opic.evaluate_each_part -> opic.combine_results -> result}
+voice opic.evaluate_each_part / {parts + env + last_result -> python.for_each opic.evaluate_string -> evaluated_parts}
+voice opic.combine_results / {parts -> python.join "" -> combined_string}
+
+;; Environment management
+voice opic.create_env / {inputs -> python.dict_from_inputs -> env}
+voice opic.update_env / {env + key + value -> python.update -> updated_env}
+voice opic.get_from_env / {env + key -> python.lookup -> value}
+
+;; This is the full executor - Python just needs to implement the primitives
+

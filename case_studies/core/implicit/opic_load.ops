@@ -1,0 +1,54 @@
+;;; opic_load.ops — opic's self-loading system (implemented in opic)
+
+;; Loading system (all in opic)
+voice opic.load_ops / {ops_file -> opic.resolve_path -> opic.load_file -> opic.merge_voices -> voices + defs}
+voice opic.resolve_path / {file -> check_absolute -> if_absolute_use -> if_relative_resolve -> absolute_path}
+voice opic.load_file / {file_path -> opic.read_file -> opic.parse_ops -> defs + voices + includes}
+voice opic.merge_voices / {existing_voices + new_voices -> update_dict -> merged_voices}
+voice opic.merge_defs / {existing_defs + new_defs -> update_dict -> merged_defs}
+
+;; Include handling
+voice opic.parse_includes / {ops_text -> opic.find_include_lines -> opic.extract_include_files -> include_files}
+voice opic.find_include_lines / {text -> split_lines -> filter_starts_with "include " -> include_lines}
+voice opic.extract_include_files / {include_lines -> for_each -> opic.extract_filename -> filenames}
+voice opic.extract_filename / {include_line -> remove "include " -> strip -> filename}
+
+;; Recursive loading with includes
+voice opic.load_recursive / {file_path + loaded_set + all_defs + all_voices -> opic.check_loaded -> opic.load_if_new -> opic.load_includes -> opic.load_attention -> loaded}
+voice opic.check_loaded / {file_path + loaded_set -> contains -> is_loaded}
+voice opic.load_if_new / {file_path + is_loaded -> if_not_loaded -> opic.load_file}
+voice opic.load_includes / {includes + file_dir + loaded_set -> for_each -> opic.resolve_include -> opic.load_recursive}
+voice opic.resolve_include / {include_file + base_dir -> join_path -> absolute_include_path}
+
+;; Attention-based auto-inclusion
+voice opic.load_attention / {voices + file_dir + loaded_set -> opic.detect_namespaces -> opic.map_namespaces -> opic.auto_load -> loaded}
+voice opic.detect_namespaces / {voices -> opic.extract_references -> opic.find_namespaces -> namespaces}
+voice opic.extract_references / {voice_body -> opic.parse_chain -> opic.extract_voice_names -> references}
+voice opic.parse_chain / {body -> remove_braces -> split_arrows -> steps}
+voice opic.extract_voice_names / {steps -> for_each -> opic.split_plus -> opic.take_first -> opic.check_namespace -> namespaced_names}
+voice opic.find_namespaces / {namespaced_names -> for_each -> opic.extract_prefix -> namespaces}
+voice opic.extract_prefix / {name -> split_dot -> take_first -> add_dot -> namespace}
+voice opic.map_namespaces / {namespaces + namespace_map -> for_each -> opic.lookup_file -> files_to_load}
+voice opic.lookup_file / {namespace + namespace_map -> get -> filename}
+voice opic.auto_load / {files_to_load + file_dir + loaded_set -> for_each -> opic.load_recursive -> loaded}
+
+;; Namespace mapping (defined in opic)
+voice opic.namespace_map / {namespace -> lookup -> filename}
+voice opic.namespace_map.ml / "ml.ops"
+voice opic.namespace_map.audio / "audio.ops"
+voice opic.namespace_map.train / "train_model.ops"
+voice opic.namespace_map.generate / "generate_words.ops"
+voice opic.namespace_map.interactive / "interactive.ops"
+voice opic.namespace_map.evaluate / "evaluate.ops"
+voice opic.namespace_map.topological / "topological_map.ops"
+voice opic.namespace_map.metal / "metal_tensors.ops"
+
+;; Main loading chain
+voice opic.load_with_includes / {main_file + core_files -> opic.load_core -> opic.load_main -> opic.resolve_all -> all_voices + all_defs}
+voice opic.load_core / {core_files -> for_each -> opic.load_recursive -> core_voices + core_defs}
+voice opic.load_main / {main_file -> opic.load_recursive -> main_voices + main_defs}
+voice opic.resolve_all / {core + main -> opic.merge_all -> final_voices + final_defs}
+
+target opic_load / "opic_self_loader"
+voice main / {opic.load_with_includes -> opic_load}
+

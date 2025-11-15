@@ -1,0 +1,344 @@
+;;; bundle_dynamics_curvature.ops — Bundle Dynamics and Curvature Bounds on X × S¹
+;;; Formalizes bundle dynamics on product space X̃ = X × S¹
+;;; Proves curvature bounds for rotation-number field
+;;; Outputs to Typst format
+
+include systems/00_core/opic_field_0.7.ops
+
+;; ============================================================================
+;; TYPE DEFINITIONS
+;; ============================================================================
+
+;; Base space: compact metric space
+def base_space {
+  X,              ;; Compact metric space
+  d_X             ;; Metric: d_X : X × X → ℝ
+}
+
+;; Circle: S¹ = ℝ / 2πℤ
+def circle {
+  S1,             ;; Unit circle
+  d_S1,           ;; Metric: d_S1(θ, θ') = min_k |θ - θ' + 2πk|
+  theta_mod_2pi    ;; Quotient representation
+}
+
+;; Bundle: X̃ = X × S¹
+def bundle {
+  tilde_X,        ;; Product space X × S¹
+  d_product,      ;; Product metric: d((x,θ), (x',θ')) = d_X(x,x') + d_S1(θ,θ')
+  base,           ;; Base component: X
+  fiber           ;; Fiber component: S¹
+}
+
+;; Base dynamics: F : X → X
+def base_dynamics {
+  F,              ;; Continuous map F : X → X
+  domain_X,       ;; Domain: X
+  codomain_X      ;; Codomain: X
+}
+
+;; Fiber dynamics: R : S¹ → S¹
+def fiber_dynamics {
+  R,              ;; Continuous circle map R : S¹ → S¹
+  domain_S1,      ;; Domain: S¹
+  codomain_S1     ;; Codomain: S¹
+}
+
+;; Lift: R̂ : ℝ → ℝ
+def lift {
+  R_hat,          ;; Lift R̂ : ℝ → ℝ
+  periodicity,    ;; R̂(θ + 2π) = R̂(θ) + 2π
+  continuous       ;; Continuous
+}
+
+;; Bundle map: F̃ : X̃ → X̃
+def bundle_map {
+  tilde_F,        ;; Bundle map (x,θ) ↦ (F(x), R(θ))
+  base_component, ;; F component
+  fiber_component ;; R component
+}
+
+;; Rotation number: ρ(R) = lim_{n→∞} (R^n(0) - 0) / (2πn)
+def rotation_number {
+  rho,            ;; Rotation number ρ : S¹ → ℝ
+  limit_exists,   ;; Limit exists under standard hypotheses
+  independent_of_initial ;; Independent of initial point
+}
+
+;; Parameterized family: R_x : S¹ → S¹, x ∈ X
+def parameterized_family {
+  R_x,            ;; Family R_x : S¹ → S¹
+  parameter_x,    ;; Parameter x ∈ X
+  lift_R_x_hat,   ;; Lift R̂_x : ℝ → ℝ
+  continuous_in_x  ;; (x,θ) ↦ R̂_x(θ) continuous
+}
+
+;; Rotation field: ρ : X → ℝ
+def rotation_field {
+  rho_field,      ;; Rotation field ρ : X → ℝ
+  base_X,         ;; Base space X
+  rotation_values ;; ρ(x) = ρ(R_x)
+}
+
+;; Curvature field: K(x) = dρ(x)/dx
+def curvature_field {
+  K,              ;; Curvature field K : X → ℝ
+  derivative,     ;; K(x) = dρ(x)/dx
+  sensitivity     ;; Measures sensitivity of phase advance to base point
+}
+
+;; Lipschitz constant
+def lipschitz_constant {
+  L,              ;; L > 0
+  uniform_bound   ;; |R̂_x(θ) - R̂_{x'}(θ)| ≤ L|x - x'|
+}
+
+;; ============================================================================
+;; CONSTRUCTIONS
+;; ============================================================================
+
+;; Construct bundle from base and fiber
+voice bundle.construct / {
+  base_space + circle ->
+  product_space ->
+  bundle
+}
+
+;; Construct product metric
+voice metric.product / {
+  base_space + circle ->
+  d_X + d_S1 ->
+  d_product((x,θ), (x',θ')) = d_X(x,x') + d_S1(θ,θ')
+}
+
+;; Construct bundle map from base and fiber dynamics
+voice bundle_map.construct / {
+  base_dynamics + fiber_dynamics ->
+  tilde_F((x,θ)) = (F(x), R(θ)) ->
+  bundle_map
+}
+
+;; Construct lift from circle map
+voice lift.construct / {
+  fiber_dynamics ->
+  R_hat : ℝ → ℝ ->
+  R_hat(theta + 2*pi) = R_hat(theta) + 2*pi ->
+  lift
+}
+
+;; Compute rotation number
+voice rotation_number.compute / {
+  lift ->
+  rho(R) = lim_{n→∞} (R^n(0) - 0) / (2*pi*n) ->
+  rotation_number
+}
+
+;; Construct parameterized family
+voice parameterized_family.construct / {
+  base_space + circle ->
+  R_x : S1 → S1 for each x in X ->
+  R_x_hat : ℝ → ℝ continuous in (x,θ) ->
+  parameterized_family
+}
+
+;; Construct rotation field from parameterized family
+voice rotation_field.construct / {
+  parameterized_family ->
+  rho(x) = rho(R_x) for each x in X ->
+  rotation_field
+}
+
+;; Construct curvature field from rotation field
+voice curvature_field.construct / {
+  rotation_field + base_space ->
+  K(x) = d rho(x) / d x ->
+  curvature_field
+}
+
+;; ============================================================================
+;; ASSUMPTIONS FOR CURVATURE BOUND
+;; ============================================================================
+
+;; Assumption 1: X ⊆ ℝ is closed interval
+def assumption_1 {
+  X_subset_R,    ;; X ⊆ ℝ
+  closed_interval ;; Closed interval with usual metric
+}
+
+;; Assumption 2: Each R_x has lift R̂_x
+def assumption_2 {
+  each_R_x_has_lift,  ;; For each x ∈ X, R̂_x : ℝ → ℝ exists
+  orientation_preserving ;; R_x is orientation-preserving
+}
+
+;; Assumption 3: Uniform Lipschitz condition
+def assumption_3 {
+  lipschitz_constant ->
+  for_all_x_xprime_theta ->
+  |R̂_x(θ) - R̂_{x'}(θ)| ≤ L|x - x'|
+}
+
+;; ============================================================================
+;; PROPOSITIONS AND PROOFS
+;; ============================================================================
+
+;; Proposition: Rotation field is Lipschitz
+def proposition_lipschitz {
+  statement,      ;; ρ : X → ℝ is Lipschitz with constant ≤ L/(2π)
+  bound,          ;; |ρ(x) - ρ(x')| ≤ (L/(2π))|x - x'|
+  proof           ;; Proof via n-th iterate bound
+}
+
+;; Proof step: n-th iterate bound
+voice proof.nth_iterate_bound / {
+  lipschitz_constant + parameterized_family ->
+  |R^n_x(θ) - R^n_{x'}(θ)| ≤ nL|x - x'| ->
+  bound_for_all_theta
+}
+
+;; Proof step: rotation number difference
+voice proof.rotation_number_difference / {
+  bound_for_all_theta + theta_equals_zero ->
+  |R^n_x(0) - R^n_{x'}(0)| ≤ nL|x - x'| ->
+  |rho(x) - rho(x')| = lim_{n→∞} |R^n_x(0) - R^n_{x'}(0)| / (2πn) ->
+  |rho(x) - rho(x')| ≤ (L/(2π))|x - x'|
+}
+
+;; Corollary: Curvature bound
+def corollary_curvature_bound {
+  statement,      ;; If ρ differentiable at x, then |K(x)| ≤ L/(2π)
+  bound,          ;; |K(x)| = |ρ'(x)| ≤ L/(2π)
+  proof           ;; Since ρ is Lipschitz, derivative bounded
+}
+
+;; ============================================================================
+;; EXTENSIONS
+;; ============================================================================
+
+;; Extension 1: Higher-dimensional base
+def extension_higher_dim {
+  X_manifold,     ;; X is smooth manifold
+  gradient_K,      ;; K interpreted as gradient ∇ρ
+  higher_dimensional
+}
+
+;; Extension 2: Coupled dynamics
+def extension_coupled {
+  coupled_map,    ;; (x,θ) ↦ (F(x), R_x(θ)) with interaction
+  nontrivial_interaction,
+  base_fiber_coupling
+}
+
+;; Extension 3: Geometric curvature
+def extension_geometric {
+  connection,     ;; Additional structure: connection
+  curvature_tensor, ;; Curvature tensor
+  geometric_K     ;; K as genuine geometric curvature
+}
+
+;; ============================================================================
+;; TYPST OUTPUT GENERATION
+;; ============================================================================
+
+;; Generate Typst document
+voice typst.generate / {
+  bundle_dynamics_curvature ->
+  typst.header ->
+  typst.section_1 ->
+  typst.section_2 ->
+  typst.section_3 ->
+  typst.section_4 ->
+  typst.document
+}
+
+;; Typst header
+voice typst.header / {
+  page_width_16cm + page_height_24cm ->
+  font_latin_modern_roman + font_size_11pt ->
+  math_equation_numbering ->
+  header
+}
+
+;; Section 1: The bundle and its dynamics
+voice typst.section_1 / {
+  bundle_definition +
+  base_fiber_dynamics +
+  bundle_map_definition ->
+  section_1_content
+}
+
+;; Section 2: Rotation numbers and curvature field
+voice typst.section_2 / {
+  rotation_number_definition +
+  parameterization_by_base +
+  curvature_field_definition ->
+  section_2_content
+}
+
+;; Section 3: Curvature bound under Lipschitz
+voice typst.section_3 / {
+  lipschitz_assumptions +
+  proposition_lipschitz +
+  proof_lipschitz +
+  corollary_curvature_bound ->
+  section_3_content
+}
+
+;; Section 4: Remarks and extensions
+voice typst.section_4 / {
+  extension_higher_dim +
+  extension_coupled +
+  extension_geometric ->
+  section_4_content
+}
+
+;; Format mathematical notation
+voice typst.format_math / {
+  notation ->
+  escape_underscores ->
+  format_subscripts ->
+  format_superscripts ->
+  formatted_math
+}
+
+;; Format bundle notation: X̃ = X × S¹
+voice typst.format_bundle / {
+  tilde_X = "X̃" ->
+  X_times_S1 = "X × S¹" ->
+  formatted_bundle
+}
+
+;; Format rotation number: ρ(R)
+voice typst.format_rotation / {
+  rho_R = "ρ(R)" ->
+  limit_expression ->
+  formatted_rotation
+}
+
+;; Format curvature: K(x) = dρ(x)/dx
+voice typst.format_curvature / {
+  K_x = "K(x)" ->
+  derivative_expression ->
+  formatted_curvature
+}
+
+;; Format Lipschitz bound: |ρ(x) - ρ(x')| ≤ (L/(2π))|x - x'|
+voice typst.format_lipschitz_bound / {
+  absolute_difference ->
+  less_equal ->
+  constant_times_distance ->
+  formatted_bound
+}
+
+target bundle_dynamics_curvature / "bundle_dynamics_curvature_typst"
+voice main / {
+  bundle.construct +
+  bundle_map.construct +
+  rotation_field.construct +
+  curvature_field.construct +
+  proposition_lipschitz +
+  corollary_curvature_bound +
+  typst.generate ->
+  bundle_dynamics_curvature
+}
+

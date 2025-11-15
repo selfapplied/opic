@@ -1,0 +1,55 @@
+;;; organize_by_hubs.ops — Organize .ops files around network hubs
+
+include core/bootstrap.ops
+
+;; Hub identification
+voice identify.hub / {
+  file_path -> 
+  analyze.includes -> 
+  find.primary.hub -> 
+  hub_name
+}
+
+voice analyze.includes / {file_path -> extract.includes -> includes_list}
+voice find.primary.hub / {
+  includes_list -> 
+  check.bootstrap -> if_bootstrap_hub,
+  check.flow3d -> if_flow_hub,
+  check.certificate -> if_cert_hub,
+  check.field -> if_field_hub,
+  check.witness -> if_witness_hub,
+  default -> bootstrap_hub -> 
+  primary_hub
+}
+
+;; Hub categories
+voice check.bootstrap / {includes -> contains "bootstrap" -> is_bootstrap}
+voice check.flow3d / {includes -> contains "flow3d_core" -> is_flow}
+voice check.certificate / {includes -> contains "certificate" -> is_cert}
+voice check.field / {includes -> contains "opic_field_0.7\|field.*0.7" -> is_field}
+voice check.witness / {includes -> contains "witness" -> is_witness}
+
+;; Organization structure
+voice create.hub.structure / {
+  "00_core" -> create.dir,
+  "01_bootstrap_dependents" -> create.dir,
+  "02_flow_hub" -> create.dir,
+  "03_certificate_hub" -> create.dir,
+  "04_field_hub" -> create.dir,
+  "05_witness_hub" -> create.dir,
+  "06_applications" -> create.dir -> 
+  structure_created
+}
+
+;; Classify files by hub
+voice classify.by.hub / {
+  all_files -> 
+  for_each_file -> 
+  identify.hub -> 
+  assign.to.hub.directory -> 
+  files_classified
+}
+
+target organize_by_hubs / "hub_based_organization"
+voice main / {create.hub.structure -> classify.by.hub -> organize_by_hubs}
+

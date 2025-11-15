@@ -1,0 +1,155 @@
+;;; test_bloom_svg.ops — Test radiant bloom SVG generation
+
+include systems/visualization/bloom_svg.ops
+
+;; Test definitions
+def test_result { name, passed, message }
+
+;; Test 1: Load traces
+voice test.load_traces / {
+  trace_file -> 
+  bloom.load_traces -> 
+  test.check_traces_loaded -> 
+  test_result
+}
+
+voice test.check_traces_loaded / {
+  traces -> 
+  if_empty "No traces loaded" -> 
+  if_found "Traces loaded successfully" -> 
+  test_result
+}
+
+;; Test 2: Filter traces by boundary
+voice test.filter_traces / {
+  traces + threshold -> 
+  bloom.filter_traces -> 
+  test.check_filtered -> 
+  test_result
+}
+
+voice test.check_filtered / {
+  filtered -> 
+  if_empty "No traces after filtering" -> 
+  if_found "Traces filtered successfully" -> 
+  test_result
+}
+
+;; Test 3: Compute field values
+voice test.compute_field_values / {
+  traces -> 
+  bloom.compute_field_values -> 
+  test.check_field_values -> 
+  test_result
+}
+
+voice test.check_field_values / {
+  field_values -> 
+  test.has_lines -> 
+  test.has_entropy -> 
+  test.has_curvature -> 
+  test.has_boundary -> 
+  test.has_phi_kappa -> 
+  all_computed
+}
+
+voice test.has_lines / {
+  field_values -> 
+  field_values.has_key "lines" -> 
+  exists
+}
+
+voice test.has_entropy / {
+  field_values -> 
+  field_values.has_key "entropy" -> 
+  exists
+}
+
+voice test.has_curvature / {
+  field_values -> 
+  field_values.has_key "curvature" -> 
+  exists
+}
+
+voice test.has_boundary / {
+  field_values -> 
+  field_values.has_key "boundary" -> 
+  exists
+}
+
+voice test.has_phi_kappa / {
+  field_values -> 
+  field_values.has_key "phi_kappa" -> 
+  exists
+}
+
+;; Test 4: Generate petals
+voice test.generate_petals / {
+  traces + field_values -> 
+  bloom.generate_petals -> 
+  test.check_petals -> 
+  test_result
+}
+
+voice test.check_petals / {
+  petals -> 
+  if_empty "No petals generated" -> 
+  if_found "Petals generated successfully" -> 
+  test_result
+}
+
+;; Test 5: Render SVG
+voice test.render_svg / {
+  petals -> 
+  bloom.render_svg -> 
+  test.check_svg -> 
+  test_result
+}
+
+voice test.check_svg / {
+  svg_content -> 
+  test.has_svg_header -> 
+  test.has_svg_elements -> 
+  test.has_svg_footer -> 
+  valid_svg
+}
+
+voice test.has_svg_header / {
+  svg_content -> 
+  svg_content.contains "<svg" -> 
+  exists
+}
+
+voice test.has_svg_elements / {
+  svg_content -> 
+  svg_content.contains "<path" -> 
+  exists
+}
+
+voice test.has_svg_footer / {
+  svg_content -> 
+  svg_content.contains "</svg>" -> 
+  exists
+}
+
+;; Test suite: run all tests
+voice test.suite / {
+  test.load_traces -> 
+  test.filter_traces -> 
+  test.compute_field_values -> 
+  test.generate_petals -> 
+  test.render_svg -> 
+  test.results
+}
+
+voice test.results / {
+  results -> 
+  test.collect_passed -> 
+  test.collect_failed -> 
+  test.report -> 
+  test_summary
+}
+
+target test_bloom_svg / "bloom_svg_tests"
+voice main / {test.suite -> test.results -> test_bloom_svg}
+

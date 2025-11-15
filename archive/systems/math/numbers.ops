@@ -1,0 +1,25 @@
+;;; numbers.ops — Number theory operations
+
+;; Greatest Common Divisor
+voice number.gcd / {a + b -> {$math.gcd$} -> gcd_value}
+
+;; Least Common Multiple
+voice number.lcm / {a + b -> number.compute_lcm -> lcm_value}
+voice number.compute_lcm / {a + b + gcd -> multiply -> divide -> lcm}
+
+;; Modular arithmetic
+voice number.mod / {a + n -> {$operator.mod$} -> remainder}
+voice number.modular_inverse / {a + n -> number.compute_modular_inverse -> a_inv}
+
+;; Chinese Remainder Theorem
+voice number.chinese_remainder / {remainders + moduli -> number.solve_crt -> solution}
+
+;; Euler's totient function
+voice number.euler_totient / {n -> number.compute_totient -> phi_n}
+
+;; Power modulo
+voice number.pow_mod / {base + exponent + modulus -> number.compute_pow_mod -> result}
+
+target numbers / "number_theory_operations"
+voice main / {number.gcd -> numbers}
+

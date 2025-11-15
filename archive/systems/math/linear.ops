@@ -1,0 +1,23 @@
+;;; linear.ops — Linear algebra operations
+
+;; Matrix operations
+voice linear.matrix_multiply / {A + B -> {$numpy.matmul$} -> C}
+voice linear.matrix_transpose / {A -> {$numpy.transpose$} -> A_T}
+voice linear.matrix_inverse / {A -> {$numpy.linalg.inv$} -> A_inv}
+
+;; Vector operations
+voice linear.dot / {a + b -> {$numpy.dot$} -> dot_product}
+voice linear.cross / {a + b -> {$numpy.cross$} -> cross_product}
+voice linear.norm / {v -> {$numpy.linalg.norm$} -> magnitude}
+
+;; Eigenvalues and eigenvectors
+voice linear.eigenvalues / {A -> {$numpy.linalg.eigvals$} -> eigenvalues}
+voice linear.eigenvectors / {A -> {$numpy.linalg.eig$} -> eigenvectors}
+
+;; Matrix decomposition
+voice linear.svd / {A -> {$numpy.linalg.svd$} -> U + S + V}
+voice linear.qr / {A -> {$numpy.linalg.qr$} -> Q + R}
+
+target linear / "linear_algebra_operations"
+voice main / {linear.dot -> linear}
+

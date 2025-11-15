@@ -1,0 +1,78 @@
+;;; opic_primorial_lab.ops — Self-steering lab: router + guards + features + decode + eval + archive
+
+include systems/opic_route_primorial.ops
+include action/tests/benchmarks/guard.ops
+include systems/ops/ops_features_v1_v3.ops
+include systems/ops/ops_decode_stack.ops
+include action/tests/benchmarks/mi.ops
+include systems/ops/ops_report_batch.ops
+include systems/flow3d_core.ops
+include systems/flow3d_mask.ops
+include systems/caba/caba_spec.ops
+
+;; Source: emits fields/spectra (A/B/C/D configs)
+voice source.flow / {
+  config + initial_condition + seeds -> 
+  initialize.grid -> 
+  initialize.k.grid -> 
+  initialize.flow.field -> 
+  simulate.step -> 
+  compute.diagnostics -> 
+  flow_output
+}
+
+;; Filter: applies mask (p#_4, p#_5, p#_6)
+voice filter.primorial / {
+  U + primorial_value + scheme -> 
+  mask_arith -> 
+  U_masked
+}
+
+;; Observe: extracts features (power, slopes, cross-shells, anisotropy, phase-increments, bispectrum)
+voice observe.features / {
+  U + feature_version + config -> 
+  extract.features.v1 -> 
+  extract.features.v2 -> 
+  extract.features.v3 -> 
+  route.features -> 
+  features
+}
+
+;; Archive: Mode A for fields, Mode B for spectra/features
+voice archive.caba / {
+  fields + spectra + features + run_id -> 
+  encode.caba.mode.a -> 
+  encode.caba.mode.b -> 
+  write.archive -> 
+  verify.hash -> 
+  caba_archive
+}
+
+;; Baselines & controls: must-run quotas per batch
+voice enforce.control.quota / {
+  batch_size + control_quota -> 
+  allocate.baseline.slots -> 
+  allocate.random.mask.slots -> 
+  allocate.linearized.slots -> 
+  control_allocation
+}
+
+;; Router-aware main loop
+voice run.primorial.lab / {
+  budget + seeds + targets + health_constraints -> 
+  policy.router -> 
+  enforce.control.quota -> 
+  source.flow -> 
+  filter.primorial -> 
+  observe.features -> 
+  decode.stack -> 
+  guard.hygiene -> 
+  compute.mi.infonce -> 
+  archive.caba -> 
+  generate.batch.dashboard -> 
+  lab_results
+}
+
+target opic_primorial_lab / "primorial_lab"
+voice main / { run.primorial.lab -> opic_primorial_lab }
+
