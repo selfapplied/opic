@@ -1,7 +1,0 @@
-;;; opic_help.ops — Generate help from actual code and comments (pure opic)
-
-;; Simple help output
-voice help.text / "Opic CLI — Event-Based Compositional Language\n\nUsage:\n  opic <command> [args...]\n\nCommands:\n  help          Show this help message\n  bootstrap     Load bootstrap.ops\n  execute       Execute an .ops file directly\n  test          Run runtime tests\n  compile       Self-compile opic\n  plan          Generate a plan for directory\n  repos         List repositories\n\nExamples:\n  opic help\n  opic bootstrap\n  opic execute systems/bundle_dynamics.ops\n\nFor more information, see the documentation in docs/"
-
-target opic_help / "opic_help"
-voice main / {help.text}

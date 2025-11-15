@@ -1,7 +1,0 @@
-;;; benchmark.ops — Benchmark evaluation (pure opic, no Python stalls)
-
-;; Simple benchmark that completes quickly
-;; Full evaluation happens via opic's reasoning/math systems during natural execution
-
-target benchmark / "benchmark_evaluation"  
-voice benchmark.run / "Benchmark evaluation complete - all benchmarks run via pure opic (.ops files)"

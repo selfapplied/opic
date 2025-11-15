@@ -1,9 +1,0 @@
-;;; semantic_discovery.ops — Semantic voice discovery in OPIC
-
-;; Discover relevant voices based on context (simplified - uses string matching)
-voice semantic.discover_voices / {context + voices -> semantic.find_matching_voices -> discovered}
-voice semantic.find_matching_voices / {context + voices -> semantic.check_each_voice -> matching_voices}
-voice semantic.check_each_voice / {context + voice_name -> semantic.simple_match -> if_match_add -> matches}
-voice semantic.simple_match / {context + voice_name -> string.contains -> matches}
-voice semantic.if_match_add / {matches + voice_name -> if_true_add -> voice_list}
-
