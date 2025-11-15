@@ -1,14 +1,14 @@
-;;; program_solver_snap.ops — Program Solver & Snap-to-Runtime
-;;; Case Study: Solve semantically, then snap to target runtime
+;;; project.ops — Project OPIC to target runtime
+;;; Case Study: Solve semantically, then project to runtime
 
 include systems/solve/solve_simple.ops
 
 ;; ============================================================================
-;; PROGRAM SOLVER & SNAP-TO-RUNTIME
+;; PROJECT TO RUNTIME
 ;; ============================================================================
 ;; Core Philosophy:
 ;;   1. OPIC solves semantically through its implicit system
-;;   2. Then "snaps" that meaning to a target runtime
+;;   2. Then projects that meaning to a target runtime
 ;;   3. No complex constraint graphs - just projection
 ;;
 ;; This is the "solve → project" pattern crystallized.
@@ -65,7 +65,7 @@ voice target_runtime / {
 ;; ============================================================================
 
 voice solve_for_python / {
-  "program_solver_snap.ops" + "python.cp311" ->
+  "project.ops" + "python.cp311" ->
   solve ->
   python_code + report
 }
@@ -76,14 +76,14 @@ voice solve_for_python / {
 
 ;; Solve for Rust (static types, compile-time checks)
 voice solve_for_rust / {
-  "program_solver_snap.ops" + "rust" ->
+  "project.ops" + "rust" ->
   solve ->
   rust_code + report
 }
 
 ;; Solve for WASM (sandboxed, deterministic)
 voice solve_for_wasm / {
-  "program_solver_snap.ops" + "wasm" ->
+  "project.ops" + "wasm" ->
   solve ->
   wasm_code + report
 }
@@ -96,10 +96,10 @@ voice solve_for_wasm / {
 ;; No complex constraint graphs. No distortion analysis.
 ;; Just: "here's your OPIC, here's your runtime, go."
 
-target program_solver_snap / "program_solver_snap_to_runtime"
+target project / "project_to_runtime"
 voice main / {
-  "program_solver_snap.ops" + "python.cp311" ->
+  "project.ops" + "python.cp311" ->
   solve ->
-  program_solver_snap
+  project
 }
 

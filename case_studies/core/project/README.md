@@ -1,18 +1,18 @@
-# Program Solver & Snap-to-Runtime
+# Project to Runtime
 
-**Solve semantically, then snap to target runtime.**
+**Solve semantically, then project to target runtime.**
 
 ## What It Demonstrates
 
 This case study crystallizes the "solve → project" pattern:
 
 1. **OPIC solves semantically** through its implicit system
-2. **Then snaps** that meaning to a target runtime
+2. **Then projects** that meaning to a target runtime
 3. **No complex constraint graphs** - just projection
 
 ## Key Files
 
-- `program_solver_snap.ops` — Example showing semantic solve + runtime projection
+- `project.ops` — Example showing semantic solve + runtime projection
 
 ## Philosophy
 
@@ -37,7 +37,7 @@ OPIC's semantic gravity already resolves meaning. The solver just formats that m
 ```ops
 ;; Solve for Python
 voice solve_for_python / {
-  "program_solver_snap.ops" + "python.cp311" ->
+  "project.ops" + "python.cp311" ->
   solve ->
   python_code + report
 }

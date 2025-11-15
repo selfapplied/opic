@@ -1,4 +1,4 @@
-;;; archive_query.ops — Query archived material from git history
+;;; archive.ops — Query archived material from git history
 ;;; All archived files are preserved in git - use this to surface them
 
 ;; ============================================================================
@@ -88,6 +88,6 @@ voice archive.help / {
   "archive_query_help"
 }
 
-target archive_query / "archive_query_system"
-voice main / {archive.query -> archive_query}
+target archive / "archive_query_system"
+voice main / {archive.query -> archive}
 
