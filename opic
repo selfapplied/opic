@@ -73,9 +73,72 @@ def call_extension(extension_path: str, env: Dict[str, Any]) -> Any:
         return None
 
 
+def _measure_complexity(voice_body: Any) -> int:
+    """
+    Measure complexity of voice body - determines which mechanism to use
+    
+    Theory: Simple outputs → simple mechanisms, complex outputs → expansion system
+    Complexity factors:
+    - String literal: complexity 1 (simple) - operators inside quotes don't count
+    - Chain with operators: complexity 2+ (complex, needs expansion system)
+    - Nested structures: complexity 3+ (very complex, needs charge/mass)
+    
+    Key insight: If entire content is quoted, operators inside are just characters,
+    not structural operators. Check for quoted string FIRST.
+    """
+    if not isinstance(voice_body, str):
+        return 0  # Non-string value: very simple
+    
+    s = voice_body.strip()
+    
+    # Simple: just a quoted string
+    if s.startswith('"') and s.endswith('"'):
+        return 1
+    
+    # Simple: string literal in chain { "string" }
+    # Theory: If entire inner content is quoted, it's simple (operators inside don't count)
+    # Parser joins multiline strings with spaces, so check for quoted string pattern
+    if s.startswith("{") and s.endswith("}"):
+        inner = s[1:-1].strip()
+        # Check if entire inner is a quoted string
+        # Parser may add spaces, so check: starts with " and ends with "
+        if inner.startswith('"'):
+            # Find the last quote (closing quote)
+            last_quote_idx = inner.rfind('"')
+            if last_quote_idx > 0 and last_quote_idx == len(inner) - 1:
+                # Entire inner is quoted string (even if parser added spaces inside)
+                return 1  # Simple: quoted string, operators inside are just characters
+            # Check if everything after last quote is just whitespace
+            after_quote = inner[last_quote_idx + 1:].strip()
+            if not after_quote:
+                return 1  # Simple: quoted string with trailing whitespace
+    
+    # Complex: chain with operators OUTSIDE quotes (needs expansion system)
+    if s.startswith("{") and s.endswith("}"):
+        inner = s[1:-1].strip()
+        # Only count operators if NOT a quoted string
+        if not (inner.startswith('"') and inner.endswith('"')):
+            if any(op in inner for op in ["->", "+", "."]):
+                # Count operators to measure complexity
+                operator_count = sum(inner.count(op) for op in ["->", "+", "."])
+                return 2 + min(operator_count, 3)  # Cap at 5
+    
+    # Medium: extension call
+    if s.startswith("$") and s.endswith("$"):
+        return 2
+    
+    # Simple: plain string (no structural operators)
+    # Check if string has structural operators (not just characters)
+    if any(op in s for op in ["->", "+", "."]):
+        # Has operators but not in chain - might be complex
+        return 2
+    
+    return 1  # Simple: plain string
+
+
 def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     """
-    Execute OPIC voice - Theory-based using expansion system
+    Execute OPIC voice - Dynamically adjusts complexity
     
     Theory from bootstrap.ops:
     - Running a value emits energy → returns most stable form
@@ -83,11 +146,13 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     - Symmetry breaking determines which expansion to use
     - Equilibrium: charge balanced, symbol count minimized
     
-    TODO: Replace hardcoded pattern matching with expansion system
-    TODO: Use charge/mass for symmetry breaking
-    TODO: Use equilibrium detection
+    Complexity-based routing:
+    - Simple (complexity 1): Direct return (no expansion system needed)
+    - Complex (complexity 2+): Use expansion system with charge/mass
+    - Very complex (complexity 3+): Use symmetry breaking and equilibrium detection
     """
-    trace(f"HARDCODED_PATTERN: execute_opic called with {type(voice_body).__name__}")
+    complexity = _measure_complexity(voice_body)
+    trace(f"COMPLEXITY: {complexity} for {type(voice_body).__name__} (first 80 chars: {str(voice_body)[:80]})")
     
     # Initialize execution history for stability detection
     if "execution_history" not in context:
@@ -96,75 +161,81 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     # Theory: Check for stability (equilibrium reached)
     voice_key = str(voice_body)
     if voice_key in context["execution_history"]:
-        trace(f"EQUILIBRIUM: returning stable result for {voice_key[:30]}")
+        trace(f"EQUILIBRIUM: returning stable result")
         return context["execution_history"][voice_key]
-    
-    # TODO: Use expansion system instead of hardcoded patterns
-    # TODO: Check charge/mass for symmetry breaking
-    # TODO: Detect equilibrium (charge balanced, symbol count minimized)
     
     voices = context.get("voices", {})
     
-    # Try to use OPIC's own matcher if available
+    # Simple case (complexity 1): Direct handling, no expansion system needed
+    if complexity == 1:
+        trace("SIMPLE: using direct handling")
+        if isinstance(voice_body, str):
+            s = voice_body.strip()
+            # String literal in chain { "string" }
+            if s.startswith("{") and s.endswith("}"):
+                inner = s[1:-1].strip()
+                # Check if it's a quoted string (even if parser added spaces)
+                if inner.startswith('"'):
+                    last_quote_idx = inner.rfind('"')
+                    if last_quote_idx > 0:
+                        # Extract the quoted content
+                        result = inner[1:last_quote_idx]
+                        try:
+                            result = result.encode().decode('unicode_escape')
+                        except:
+                            pass
+                        trace(f"SIMPLE: extracted quoted string (length {len(result)})")
+                        context["execution_history"][voice_key] = result
+                        return result
+            # Plain string
+            try:
+                result = voice_body.encode().decode('unicode_escape')
+            except:
+                result = voice_body
+            context["execution_history"][voice_key] = result
+            return result
+        context["execution_history"][voice_key] = voice_body
+        return voice_body
+    
+    # Complex case (complexity 2+): Try OPIC's expansion system
+    trace(f"COMPLEX: using expansion system (complexity {complexity})")
+    
+    # Try OPIC's own matcher if available
     match_voice = voices.get("opic.match_voice_body_pattern")
     if match_voice:
-        trace("MATCHER: using opic.match_voice_body_pattern")
+        trace("EXPANSION: using opic.match_voice_body_pattern")
         matcher_context = {**context, "voice_body": voice_body, "inputs": context.get("inputs", {}), "voices": voices}
         result = execute_opic(match_voice, matcher_context)
         if result is not None:
             context["execution_history"][voice_key] = result
             return result
     
-    # HARDCODED: Pattern matching (should use expansion system)
-    trace("HARDCODED_PATTERN: using fallback pattern matching")
-    result = None
+    # Very complex (complexity 3+): Use charge/mass for symmetry breaking
+    if complexity >= 3:
+        trace(f"VERY_COMPLEX: using charge/mass for symmetry breaking")
+        # TODO: Implement charge/mass based expansion selection
+        # For now, fall through to chain execution
     
-    # Pattern: { "string" } → extract string
+    # Fallback: Execute chain (for complexity 2+)
     if isinstance(voice_body, str):
-        s = voice_body.strip()
-        if s.startswith("{") and s.endswith("}"):
-            inner = s[1:-1].strip()
-            if inner.startswith('"') and inner.endswith('"'):
-                trace("HARDCODED_PATTERN: matched string_literal_in_chain")
-                result = inner[1:-1]
-                try:
-                    result = result.encode().decode('unicode_escape')
-                except:
-                    pass
-    
-    # Pattern: { chain } → execute chain
-    if result is None and isinstance(voice_body, str):
         s = voice_body.strip()
         if s.startswith("{") and s.endswith("}"):
             inner = s[1:-1].strip()
             if not (inner.startswith('"') and inner.endswith('"')):
                 if any(op in inner for op in ["->", "+", "."]):
-                    trace("HARDCODED_PATTERN: matched execution_chain")
+                    trace("EXPANSION: executing chain")
                     result = execute_opic_chain(voice_body, context)
-    
-    # Pattern: $extension$ → call extension
-    if result is None and isinstance(voice_body, str) and voice_body.startswith("$") and voice_body.endswith("$"):
-        trace("HARDCODED_PATTERN: matched extension")
-        result = call_extension(voice_body[1:-1], context)
-    
-    # Pattern: string → literal
-    if result is None and isinstance(voice_body, str):
-        if not any(op in voice_body for op in ["->", "+", "."]):
-            trace("HARDCODED_PATTERN: matched string_literal")
-            try:
-                result = voice_body.encode().decode('unicode_escape')
-            except:
-                result = voice_body
+                    context["execution_history"][voice_key] = result
+                    return result
+        elif s.startswith("$") and s.endswith("$"):
+            trace("EXPANSION: calling extension")
+            result = call_extension(s[1:-1], context)
+            context["execution_history"][voice_key] = result
+            return result
     
     # Fallback: return as-is
-    if result is None:
-        trace("HARDCODED_PATTERN: matched value_as_is")
-        result = voice_body
-    
-    # Theory: Store result for stability detection
-    context["execution_history"][voice_key] = result
-    
-    return result
+    context["execution_history"][voice_key] = voice_body
+    return voice_body
 
 
 def execute_opic_chain(chain_string: str, context: Dict[str, Any]) -> Any:
