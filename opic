@@ -468,7 +468,7 @@ def main():
     # Load file resolution system for distance calculation
     file_resolution_path = project_root / "systems" / "file_resolution.ops"
     if file_resolution_path.exists():
-        _load_ops_file(file_resolution_path, voices, defs, voice_sources, def_sources, project_root)
+        _load_ops_file(file_resolution_path, voices, defs, voice_sources, def_sources, project_root, target_file=None)
     
     # Load OPIC executor implementation (circular: OPIC executes itself)
     executor_impl = project_root / "systems" / "opic_executor_impl.ops"
