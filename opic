@@ -115,7 +115,25 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
         # This is the natural termination condition from OPIC theory
         return previous_result
     
-    # Pattern matching (declarative routing)
+    # Pattern matching (declarative routing) - Use OPIC's expansion system
+    voices_dict = context.get("voices", {})
+    
+    # Try OPIC's own matcher first (from opic_executor_impl.ops or bootstrap.ops)
+    match_voice = voices_dict.get("opic.match_voice_body_pattern")
+    if match_voice:
+        # Use OPIC's expansion system
+        matcher_context = {
+            **context,
+            "voice_body": voice_body,
+            "inputs": context.get("inputs", {}),
+            "voices": voices_dict
+        }
+        result = execute_opic(match_voice, matcher_context)
+        if result is not None:
+            context["execution_history"][voice_key] = result
+            return result
+    
+    # Fallback: Simple pattern matching
     result = None
     
     # Pattern 1: Mapping definition → extract string (circular: preserve structure)
@@ -132,7 +150,9 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
             context["execution_history"][voice_key] = result
             return result
     
-    # Pattern 2: Execution chain → execute chain (circular: phase flows through S¹)
+    # Pattern 2: Execution chain → execute chain
+    # Theory: Use Python bootstrap for now (opic.execute_chain would recurse)
+    # TODO: Once expansion system is fully self-hosting, use opic.execute_chain
     if result is None and is_chain:
         result = execute_opic_chain(voice_body, context)
     
@@ -274,7 +294,7 @@ def _chain_to_dict(chain_str: str) -> Dict[str, Any]:
     return result
 
 
-def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dict = None, def_sources: Dict = None, base_dir: Path = None, target_file: Path = None):
+def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dict = None, def_sources: Dict = None, base_dir: Path = None, target_file: Path = None, loaded_files: set = None):
     """
     Load .ops file - Circular: Python provides file I/O
     Lossless: All information preserved (no transformation, just reading)
@@ -284,6 +304,7 @@ def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dic
     
     Args:
         target_file: The file being executed (target) - its voices always override includes
+        loaded_files: Set of file paths already loaded (prevents cycles)
     """
     if voice_sources is None:
         voice_sources = {}
@@ -291,13 +312,26 @@ def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dic
         def_sources = {}
     if base_dir is None:
         base_dir = file_path.parent
+    if loaded_files is None:
+        loaded_files = set()
     
-    # Lambda expansion: if file already loaded (voice/def exists), don't expand again
+    # Resolve path once and convert to string for tracking
+    try:
+        resolved_path = file_path.resolve()
+        file_key = str(resolved_path)
+    except (OSError, ValueError) as e:
+        # If resolve fails, use absolute path as fallback
+        file_key = str(file_path.absolute())
+        resolved_path = file_path
+    
+    # Lambda expansion: if file already loaded, don't expand again (prevents cycles)
     # BUT: Always reload target file to ensure it wins conflicts
-    file_key = str(file_path.resolve())
-    is_target = (target_file and file_path.resolve() == target_file.resolve())
-    if not is_target and (file_key in voice_sources.values() or file_key in def_sources.values()):
+    is_target = (target_file and target_file.resolve() == resolved_path) if target_file else False
+    if not is_target and file_key in loaded_files:
         return  # Already expanded (but target file always reloads to win conflicts)
+    
+    # Mark as loaded BEFORE processing includes (prevents cycles)
+    loaded_files.add(file_key)
     
     content = file_path.read_text()
     inc_defs, inc_voices, inc_includes, boundary_matrix, symbol_list = parse_ops(content, file_path)
@@ -440,8 +474,8 @@ def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dic
                     break
                 search_dir = search_dir.parent
         if include_path.exists():
-            # Pass target_file so includes know they're NOT the target
-            _load_ops_file(include_path, voices, defs, voice_sources, def_sources, base_dir, target_file)
+            # Pass target_file and loaded_files to prevent cycles
+            _load_ops_file(include_path, voices, defs, voice_sources, def_sources, base_dir, target_file, loaded_files)
 
 
 def main():
@@ -465,17 +499,17 @@ def main():
     voice_sources = {}
     def_sources = {}
     # Bootstrap is NOT the target file (it's infrastructure)
-    _load_ops_file(bootstrap_path, voices, defs, voice_sources, def_sources, project_root, target_file=None)
+    _load_ops_file(bootstrap_path, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=set())
     
     # Load file resolution system for distance calculation
     file_resolution_path = project_root / "systems" / "file_resolution.ops"
     if file_resolution_path.exists():
-        _load_ops_file(file_resolution_path, voices, defs, voice_sources, def_sources, project_root, target_file=None)
+        _load_ops_file(file_resolution_path, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=set())
     
     # Load OPIC executor implementation (circular: OPIC executes itself)
     executor_impl = project_root / "systems" / "opic_executor_impl.ops"
     if executor_impl.exists():
-        _load_ops_file(executor_impl, voices, defs, voice_sources, def_sources, project_root, target_file=None)
+        _load_ops_file(executor_impl, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=set())
     
     # Get command (empty command -> "help") - Circular: self-routing
     command_line_args = sys.argv[1:] if len(sys.argv) > 1 else []
@@ -538,7 +572,8 @@ def main():
     
     # Load target file - THIS is what we're executing, so it's the target
     # Theory: Target file voices always override included files
-    _load_ops_file(ops_path, voices, defs, voice_sources, def_sources, project_root, target_file=ops_path)
+    # Use same loaded_files set from bootstrap to prevent cycles
+    _load_ops_file(ops_path, voices, defs, voice_sources, def_sources, project_root, target_file=ops_path, loaded_files=set())
     main_voice = voices.get("main")
     
     if "--debug" in sys.argv:
