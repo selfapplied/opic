@@ -473,7 +473,7 @@ def main():
     # Load OPIC executor implementation (circular: OPIC executes itself)
     executor_impl = project_root / "systems" / "opic_executor_impl.ops"
     if executor_impl.exists():
-        _load_ops_file(executor_impl, voices, defs, voice_sources, def_sources, project_root)
+        _load_ops_file(executor_impl, voices, defs, voice_sources, def_sources, project_root, target_file=None)
     
     # Get command (empty command -> "help") - Circular: self-routing
     command_line_args = sys.argv[1:] if len(sys.argv) > 1 else []
