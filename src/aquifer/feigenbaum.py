@@ -16,10 +16,10 @@ Applications:
 """
 
 # Feigenbaum's constant (first Feigenbaum constant)
-FEIGENBAUM_DELTA = 4.669201609102990671853203820466...  # Universal scaling ratio
+FEIGENBAUM_DELTA = 4.669201609102990671853203820466  # Universal scaling ratio
 
 # Second Feigenbaum constant (scaling of parameter space)
-FEIGENBAUM_ALPHA = 2.502907875095892822283902873218...
+FEIGENBAUM_ALPHA = 2.502907875095892822283902873218
 
 
 def feigenbaum_constrain(parameter_space, target_behavior, tolerance=1e-6):

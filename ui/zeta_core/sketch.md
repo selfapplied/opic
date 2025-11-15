@@ -119,7 +119,7 @@ ZetaCore is an interactive visualization tool for exploring the topological and 
 // Initialize ZetaCore with OPIC geometry
 const zeta = new ZetaCore({
     container: '#zeta-map',
-    geometry: opicGeometry,  // From initialize_field_geometry
+    geometry: opicGeometry,  // From src.opic.parser.initialize_field_geometry
     options: {
         topology: 'euclidean',
         dimension: 2,

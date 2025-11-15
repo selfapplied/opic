@@ -217,5 +217,5 @@ def check_convergence(state1, state2, threshold=1e-6, metric='l2'):
         - TODO: Handle different state representations (dict, array, custom)
         - TODO: Return both boolean convergence flag and actual distance
     """
-    # Placeholder
-    return (False, float('inf'))
+    # TODO: Implement convergence checking with various metrics
+    raise NotImplementedError("check_convergence is not yet implemented")

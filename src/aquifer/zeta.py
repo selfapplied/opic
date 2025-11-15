@@ -107,9 +107,9 @@ def compute_zeta(s, num_terms=1000):
         - TODO: Handle special cases (poles, zeros)
         - TODO: Optimize using advanced summation techniques (Euler-Maclaurin)
     """
-    # Placeholder - returns 0 for now
+    # TODO: Implement actual zeta function computation
     # Full implementation should compute Σ n⁻ˢ with appropriate convergence
-    return complex(0, 0)
+    raise NotImplementedError("compute_zeta is not yet implemented")
 
 
 def find_zeta_zeros(t_min, t_max, resolution=0.1):

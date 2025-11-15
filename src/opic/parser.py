@@ -203,7 +203,8 @@ def _construct_invariant_functionals(invariants: List[str]) -> Dict[str, callabl
     functionals = {}
     for inv in invariants:
         # Each should be a callable: state -> float
-        functionals[inv] = lambda state: 0.0  # Placeholder
+        # Use closure to capture current value of inv
+        functionals[inv] = (lambda i: lambda state: 0.0)(inv)  # Placeholder
     return functionals
 
 
