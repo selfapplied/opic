@@ -89,7 +89,7 @@
 ;;   extracted_data ->
 ;;   grammar.extract_first_quoted_string ->
 ;;   grammar.extract_config_block ->
-;;   grammar.parse_config_block ->
+;;   grammar.parse_config_block -> 
 ;;   grammar.get_field "intervals" ->
 ;;   grammar.get_field "description" ->
 ;;   grammar.format_scale_register ->
@@ -97,7 +97,7 @@
 ;; }
 ;;
 ;; voice grammar.format_scale_register / {
-;;   scale_name + intervals + description ->
+;;   scale_name + intervals + description -> 
 ;;   "scale.register scale_registry \"" + scale_name + "\" \"" + intervals + "\" \"" + description + "\"" ->
 ;;   register_call
 ;; }

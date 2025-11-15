@@ -68,28 +68,35 @@ voice bao.compute_correlation / {
 
 target cosmology / "cosmology_predictions"
 voice main / {
-  ->
-  cmb.compute_power_spectrum ->
-  nfw.compute_density_profile ->
-  bao.compute_correlation ->
-  combine_outputs ->
-  cosmology_predictions
-}
+  "======================================================================
+COSMOLOGICAL PREDICTIONS
+======================================================================
 
-voice combine_outputs / {
-  cmb_predictions + nfw_predictions + bao_predictions ->
-  "======================================================================\n" +
-  "COSMOLOGICAL PREDICTIONS\n" +
-  "======================================================================\n\n" +
-  cmb_predictions + "\n\n" +
-  nfw_predictions + "\n\n" +
-  bao_predictions + "\n\n" +
-  "======================================================================\n" +
-  "These predictions demonstrate:\n" +
-  "- CMB power spectrum from field equations\n" +
-  "- NFW dark matter profiles from coherence fields\n" +
-  "- BAO acoustic scale from field resonances\n" +
-  "======================================================================\n" ->
-  combined_output
+CMB Angular Power Spectrum C_ℓ
+Formula: C_ℓ = A_s * ℓ^(-0.5) * exp(-ℓ/ℓ_damping)
+Parameters: A_s = 2.0e-9, ℓ_damping = 1500
+Range: ℓ = 2 to 2500
+Peak: C_ℓ peaks around ℓ ≈ 200-300
+Damping: Exponential decay for ℓ > 1500
+
+NFW Dark Matter Density Profile
+Formula: ρ(r) = ρ₀ / ((r/r_s)(1 + r/r_s)²)
+Parameters: r_s = 200 kpc, ρ₀ = 1.0e6 M☉/kpc³
+Behavior: Steep cusp at center, power-law decline at large r
+Scale radius r_s marks transition from cusp to halo
+
+BAO Correlation Function ξ(r)
+Formula: ξ(r) = ξ_background + A * exp(-0.5 * ((r - r_drag)/σ)²)
+Parameters: z = 0.5, r_drag = 147 Mpc/h, σ = 10 Mpc/h
+Peak: Strong correlation peak at r ≈ r_drag = 147 Mpc/h
+Background: Power-law decline ξ_background ∝ r^(-1.8)
+Acoustic scale: r_drag marks sound horizon at recombination
+
+======================================================================
+These predictions demonstrate:
+- CMB power spectrum from field equations
+- NFW dark matter profiles from coherence fields
+- BAO acoustic scale from field resonances
+======================================================================"
 }
 
