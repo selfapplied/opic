@@ -242,9 +242,8 @@ case-studies: cosmology reasoning tests compression emergent solve
 cosmology: check-opic
 	@echo "Running cosmology case study..."
 	@mkdir -p $(CASE_STUDIES_OUT)/core/cosmology
-	@$(OPIC_BINARY) execute case_studies/core/cosmology/zeta_cosmological_correspondence.ops > $(CASE_STUDIES_OUT)/core/cosmology/cmb_predictions.out 2>&1 || true
-	@$(OPIC_BINARY) execute case_studies/core/cosmology/cosmological_extended.ops > $(CASE_STUDIES_OUT)/core/cosmology/extended_predictions.out 2>&1 || true
-	@echo "✓ Cosmology output: $(CASE_STUDIES_OUT)/core/cosmology/"
+	@$(OPIC_BINARY) execute case_studies/core/cosmology/main.ops > $(CASE_STUDIES_OUT)/core/cosmology/predictions.out 2>&1 || true
+	@echo "✓ Cosmology output: $(CASE_STUDIES_OUT)/core/cosmology/predictions.out"
 
 # Reasoning: Generate explanations
 reasoning: check-opic

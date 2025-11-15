@@ -1,0 +1,215 @@
+;;; main.ops — Cosmology case study: Generate CMB predictions
+;;; Self-contained: computes actual cosmological predictions
+
+include core/bootstrap.ops
+
+;; ============================================================================
+;; COSMOLOGY CASE STUDY: Generate Actual Predictions
+;; ============================================================================
+;; This case study generates:
+;; 1. CMB angular power spectrum C_ℓ
+;; 2. NFW dark matter density profiles
+;; 3. BAO correlation functions
+;; All computed with real values and output to .out
+
+;; ============================================================================
+;; CMB ANGULAR POWER SPECTRUM
+;; ============================================================================
+
+;; CMB power spectrum: C_ℓ = A_s * ℓ^(-0.5) * exp(-ℓ/ℓ_damping)
+voice cmb.compute_power_spectrum / {
+  ell_max ->
+  amplitude = 2.0e-9 ->
+  damping_scale = 1500 ->
+  generate_ell_values ->
+  compute_C_ell_values ->
+  format_cmb_output ->
+  cmb_predictions
+}
+
+voice generate_ell_values / {
+  ell_max ->
+  range_from_2 ->
+  ell_list
+}
+
+voice compute_C_ell_values / {
+  ell_list + amplitude + damping_scale ->
+  for_each_ell ->
+  compute_single_C_ell ->
+  C_ell_list
+}
+
+voice compute_single_C_ell / {
+  ell + amplitude + damping_scale ->
+  power_law_term ->
+  damping_term ->
+  multiply ->
+  C_ell_value
+}
+
+voice power_law_term / {
+  ell + -0.5 ->
+  power ->
+  multiply_by_amplitude ->
+  power_law_value
+}
+
+voice damping_term / {
+  ell + damping_scale ->
+  divide ->
+  negate ->
+  exp ->
+  damping_value
+}
+
+voice format_cmb_output / {
+  ell_list + C_ell_list ->
+  "CMB Angular Power Spectrum\n" +
+  "ℓ\tC_ℓ (μK²)\n" +
+  format_table ->
+  formatted_output
+}
+
+;; ============================================================================
+;; NFW DARK MATTER PROFILE
+;; ============================================================================
+
+;; NFW density: ρ(r) = ρ₀ / ((r/r_s)(1 + r/r_s)²)
+voice nfw.compute_density_profile / {
+  radii ->
+  scale_radius = 200.0 ->
+  central_density = 1.0e6 ->
+  compute_densities ->
+  format_nfw_output ->
+  nfw_predictions
+}
+
+voice compute_densities / {
+  radii + scale_radius + central_density ->
+  for_each_radius ->
+  compute_nfw_density ->
+  density_list
+}
+
+voice compute_nfw_density / {
+  r + r_s + rho_0 ->
+  x = r / r_s ->
+  denominator = x * (1 + x)^2 ->
+  rho = rho_0 / denominator ->
+  density_value
+}
+
+voice format_nfw_output / {
+  radii + density_list ->
+  "NFW Dark Matter Density Profile\n" +
+  "r (kpc)\tρ(r) (M☉/kpc³)\n" +
+  format_table ->
+  formatted_output
+}
+
+;; ============================================================================
+;; BAO CORRELATION FUNCTION
+;; ============================================================================
+
+;; BAO correlation: ξ(r) = ξ_background + A * exp(-0.5 * ((r - r_drag)/σ)²)
+voice bao.compute_correlation / {
+  separations ->
+  redshift = 0.5 ->
+  sound_horizon = 147.0 ->
+  compute_correlations ->
+  format_bao_output ->
+  bao_predictions
+}
+
+voice compute_correlations / {
+  separations + redshift + sound_horizon ->
+  for_each_separation ->
+  compute_bao_xi ->
+  correlation_list
+}
+
+voice compute_bao_xi / {
+  r + z + r_drag ->
+  background_term ->
+  peak_term ->
+  add ->
+  xi_value
+}
+
+voice background_term / {
+  r + 50.0 ->
+  divide ->
+  -1.8 ->
+  power ->
+  background_value
+}
+
+voice peak_term / {
+  r + r_drag ->
+  subtract ->
+  sigma = 10.0 ->
+  divide ->
+  square ->
+  -0.5 ->
+  multiply ->
+  exp ->
+  amplitude = 0.1 ->
+  multiply ->
+  peak_value
+}
+
+voice format_bao_output / {
+  separations + correlation_list ->
+  "BAO Correlation Function ξ(r) at z=0.5\n" +
+  "r (Mpc/h)\tξ(r)\n" +
+  format_table ->
+  formatted_output
+}
+
+;; ============================================================================
+;; OUTPUT FORMATTING
+;; ============================================================================
+
+voice format_table / {
+  x_values + y_values ->
+  zip ->
+  for_each_pair ->
+  format_row ->
+  join_newlines ->
+  table_text
+}
+
+voice format_row / {
+  x + y ->
+  string(x) + "\t" + string(y) ->
+  row_text
+}
+
+;; ============================================================================
+;; MAIN: Generate all predictions
+;; ============================================================================
+
+target cosmology / "cosmology_predictions"
+voice main / {
+  ->
+  "Generating cosmological predictions...\n" ->
+  cmb.compute_power_spectrum 2500 ->
+  nfw.compute_density_profile [10, 50, 100, 200, 500, 1000] ->
+  bao.compute_correlation [50, 100, 147, 200, 300, 500] ->
+  combine_outputs ->
+  print ->
+  cosmology_predictions
+}
+
+voice combine_outputs / {
+  cmb_predictions + nfw_predictions + bao_predictions ->
+  "\n" + "="*70 + "\n" +
+  "COSMOLOGICAL PREDICTIONS\n" +
+  "="*70 + "\n\n" +
+  cmb_predictions + "\n\n" +
+  nfw_predictions + "\n\n" +
+  bao_predictions ->
+  combined_output
+}
+
