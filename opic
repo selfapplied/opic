@@ -274,13 +274,16 @@ def _chain_to_dict(chain_str: str) -> Dict[str, Any]:
     return result
 
 
-def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dict = None, def_sources: Dict = None, base_dir: Path = None):
+def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dict = None, def_sources: Dict = None, base_dir: Path = None, target_file: Path = None):
     """
     Load .ops file - Circular: Python provides file I/O
     Lossless: All information preserved (no transformation, just reading)
     Auto-detects namespace usage and includes files automatically
-    Conflict resolution: nearest definition wins (same directory > parent > grandparent)
+    Conflict resolution: target file always wins, then nearest definition wins
     Expansions are idempotent: if already expanded, don't expand again
+    
+    Args:
+        target_file: The file being executed (target) - its voices always override includes
     """
     if voice_sources is None:
         voice_sources = {}
@@ -347,13 +350,25 @@ def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dic
             # Conflict: check which is nearer
             existing_source = voice_sources.get(name)
             if existing_source and existing_source != file_key:
-                # Different file - compare distances
-                # FIX: If this is the target file (base_dir), it always wins
-                is_target_file = (base_dir and file_path.parent == base_dir.parent) or (file_path.name.endswith('.ops') and 'case_studies' in str(file_path))
-                existing_distance = calculate_distance(Path(existing_source)) if existing_source.startswith('/') else 999
-                if is_target_file or current_distance <= existing_distance:
+                # Different file - resolve conflict
+                # Theory: Target file always wins (it's what we're executing)
+                # Then nearest definition wins (same directory > parent > grandparent)
+                is_target_file = (target_file and file_path.resolve() == target_file.resolve())
+                existing_is_target = (target_file and Path(existing_source).resolve() == target_file.resolve())
+                
+                if is_target_file and not existing_is_target:
+                    # This is target file, existing is not - target wins
                     voices[name] = body
                     voice_sources[name] = file_key
+                elif not is_target_file and existing_is_target:
+                    # Existing is target file, this is not - keep existing
+                    pass
+                else:
+                    # Neither or both are target - use distance (nearest wins)
+                    existing_distance = calculate_distance(Path(existing_source)) if existing_source.startswith('/') else 999
+                    if current_distance <= existing_distance:
+                        voices[name] = body
+                        voice_sources[name] = file_key
             else:
                 # Same file or no existing source - always update
                 voices[name] = body
@@ -446,7 +461,8 @@ def main():
     defs = {}
     voice_sources = {}
     def_sources = {}
-    _load_ops_file(bootstrap_path, voices, defs, voice_sources, def_sources, project_root)
+    # Bootstrap is NOT the target file (it's infrastructure)
+    _load_ops_file(bootstrap_path, voices, defs, voice_sources, def_sources, project_root, target_file=None)
     
     # Load file resolution system for distance calculation
     file_resolution_path = project_root / "systems" / "file_resolution.ops"
@@ -517,7 +533,9 @@ def main():
     (ops_path.exists() or (Path.cwd() / ops_file).exists()) or (print(f"Error: File not found: {ops_file}", file=sys.stderr) or sys.exit(1))
     ops_path = ops_path if ops_path.exists() else Path.cwd() / ops_file
     
-    _load_ops_file(ops_path, voices, defs, voice_sources, def_sources, project_root)
+    # Load target file - THIS is what we're executing, so it's the target
+    # Theory: Target file voices always override included files
+    _load_ops_file(ops_path, voices, defs, voice_sources, def_sources, project_root, target_file=ops_path)
     main_voice = voices.get("main")
     
     if "--debug" in sys.argv:
