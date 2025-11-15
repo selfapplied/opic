@@ -1,17 +1,17 @@
-;;; project.ops — Project OPIC to target runtime
-;;; Case Study: Solve semantically, then project to runtime
+;;; emit.ops — Emit OPIC to target runtime
+;;; Case Study: Solve semantically, then emit to runtime
 
 include systems/solve/solve_simple.ops
 
 ;; ============================================================================
-;; PROJECT TO RUNTIME
+;; EMIT TO RUNTIME
 ;; ============================================================================
 ;; Core Philosophy:
 ;;   1. OPIC solves semantically through its implicit system
-;;   2. Then projects that meaning to a target runtime
-;;   3. No complex constraint graphs - just projection
+;;   2. Then emits that meaning to a target runtime
+;;   3. No complex constraint graphs - just emission
 ;;
-;; This is the "solve → project" pattern crystallized.
+;; This is the "solve → emit" pattern crystallized.
 
 ;; ============================================================================
 ;; EXAMPLE: Tiny OPIC Program
@@ -54,7 +54,7 @@ voice target_runtime / {
 ;;   - python.cp311: dynamic types, runtime checks, no static types
 ;;   - Capability match: ✓ Pure functions, ✓ Struct-like objects
 ;;
-;; Step 3: Snap-to-grid (project to runtime)
+;; Step 3: Emit to runtime
 ;;   - point -> Python dataclass with type hints
 ;;   - add_points -> Python function with type annotations
 ;;   - increment -> Python function (uses add_points)
@@ -65,7 +65,7 @@ voice target_runtime / {
 ;; ============================================================================
 
 voice solve_for_python / {
-  "project.ops" + "python.cp311" ->
+  "emit.ops" + "python.cp311" ->
   solve ->
   python_code + report
 }
@@ -76,14 +76,14 @@ voice solve_for_python / {
 
 ;; Solve for Rust (static types, compile-time checks)
 voice solve_for_rust / {
-  "project.ops" + "rust" ->
+  "emit.ops" + "rust" ->
   solve ->
   rust_code + report
 }
 
 ;; Solve for WASM (sandboxed, deterministic)
 voice solve_for_wasm / {
-  "project.ops" + "wasm" ->
+  "emit.ops" + "wasm" ->
   solve ->
   wasm_code + report
 }
@@ -96,10 +96,10 @@ voice solve_for_wasm / {
 ;; No complex constraint graphs. No distortion analysis.
 ;; Just: "here's your OPIC, here's your runtime, go."
 
-target project / "project_to_runtime"
+target emit / "emit_to_runtime"
 voice main / {
-  "project.ops" + "python.cp311" ->
+  "emit.ops" + "python.cp311" ->
   solve ->
-  project
+  emit
 }
 

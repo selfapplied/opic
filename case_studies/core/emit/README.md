@@ -1,18 +1,18 @@
-# Project to Runtime
+# Emit to Runtime
 
-**Solve semantically, then project to target runtime.**
+**Solve semantically, then emit to target runtime.**
 
 ## What It Demonstrates
 
-This case study crystallizes the "solve → project" pattern:
+This case study crystallizes the "solve → emit" pattern:
 
 1. **OPIC solves semantically** through its implicit system
-2. **Then projects** that meaning to a target runtime
-3. **No complex constraint graphs** - just projection
+2. **Then emits** that meaning to a target runtime
+3. **No complex constraint graphs** - just emission
 
 ## Key Files
 
-- `project.ops` — Example showing semantic solve + runtime projection
+- `emit.ops` — Example showing semantic solve + runtime emission
 
 ## Philosophy
 
@@ -37,7 +37,7 @@ OPIC's semantic gravity already resolves meaning. The solver just formats that m
 ```ops
 ;; Solve for Python
 voice solve_for_python / {
-  "project.ops" + "python.cp311" ->
+  "emit.ops" + "python.cp311" ->
   solve ->
   python_code + report
 }
