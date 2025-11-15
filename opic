@@ -60,53 +60,78 @@ def call_extension(extension_path: str, env: Dict[str, Any]) -> Any:
 
 def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     """
-    Execute OPIC voice - Circular execution
-    Symmetry breaking: mapping definitions (data) vs execution chains (code)
-    Lossless: All information flows through circle S¹ (phase preservation)
+    Execute OPIC voice - Theory-based using matchers (hopeful OR)
     
-    Theory-based termination: Stops at equilibrium when result stabilizes.
-    Stable formations equalize charge and minimize symbol count.
+    Theory from implicit.ops: Matchers use + (hopeful OR)
+    pattern1 + pattern2 → try pattern1, if None try pattern2, first non-null wins
+    
+    Uses simple matcher pattern: try patterns in order, first match wins
     """
     # Initialize execution history for stability detection
     if "execution_history" not in context:
         context["execution_history"] = {}
     
-    # Pattern: {chain} → check if it's a mapping definition or execution chain
-    is_chain = isinstance(voice_body, str) and voice_body.startswith("{") and voice_body.endswith("}")
-    
-    # Pattern: $extension$ → call Python (circular boundary)
-    is_extension = isinstance(voice_body, str) and voice_body.startswith("$") and voice_body.endswith("$")
-    
-    # Symmetry breaking: mapping definitions contain "key" -> value patterns
-    # Circular: They preserve structure (lossless diffeomorphism)
-    is_mapping_definition = (is_chain and 
-                              '"' in voice_body and 
-                              voice_body.strip()[1:].strip().startswith('"'))
-    
     # Theory: Check for stability (equilibrium reached)
-    # If we've seen this exact voice_body before with same context, return stable result
     voice_key = str(voice_body)
     if voice_key in context["execution_history"]:
-        previous_result = context["execution_history"][voice_key]
-        # If result is stable (same as before), we've reached equilibrium
-        # This is the natural termination condition from OPIC theory
-        return previous_result
+        return context["execution_history"][voice_key]
     
-    # Pattern matching (declarative routing)
-    result = (
-        # Pattern 1: Mapping definition → return as data (circular: preserve structure)
-        (is_mapping_definition and voice_body) or
-        # Pattern 2: Execution chain → execute chain (circular: phase flows through S¹)
-        (is_chain and execute_opic_chain(voice_body, context)) or
-        # Pattern 3: Extension → call Python (circular boundary)
-        (is_extension and call_extension(voice_body[1:-1], context)) or
-        # Pattern 4: String/value → return as-is (lossless)
-        # Decode escape sequences for string output
-        (isinstance(voice_body, str) and voice_body.encode().decode('unicode_escape')) or voice_body
-    )
+    # Theory-based matchers: pattern1 + pattern2 → first non-null wins
+    # This is the matcher pattern from opic_executor_impl.ops
+    voices = context.get("voices", {})
     
-    # Theory: Store result for stability detection (equilibrium tracking)
-    # Stable formations: result doesn't change = equilibrium reached
+    # Try to use OPIC's own matcher if available
+    match_voice = voices.get("opic.match_voice_body_pattern")
+    if match_voice:
+        # Execute OPIC's matcher voice (uses + for hopeful OR)
+        matcher_context = {**context, "voice_body": voice_body, "inputs": context.get("inputs", {}), "voices": voices}
+        result = execute_opic(match_voice, matcher_context)
+        if result is not None:
+            context["execution_history"][voice_key] = result
+            return result
+    
+    # Fallback: Simple matcher pattern (hopeful OR)
+    # Theory: Try patterns, first non-None wins
+    result = None
+    
+    # Pattern: { "string" } → extract string
+    if isinstance(voice_body, str):
+        s = voice_body.strip()
+        if s.startswith("{") and s.endswith("}"):
+            inner = s[1:-1].strip()
+            if inner.startswith('"') and inner.endswith('"'):
+                result = inner[1:-1]
+                try:
+                    result = result.encode().decode('unicode_escape')
+                except:
+                    pass
+    
+    # Pattern: { chain } → execute chain
+    if result is None and isinstance(voice_body, str):
+        s = voice_body.strip()
+        if s.startswith("{") and s.endswith("}"):
+            inner = s[1:-1].strip()
+            if not (inner.startswith('"') and inner.endswith('"')):
+                if any(op in inner for op in ["->", "+", "."]):
+                    result = execute_opic_chain(voice_body, context)
+    
+    # Pattern: $extension$ → call extension
+    if result is None and isinstance(voice_body, str) and voice_body.startswith("$") and voice_body.endswith("$"):
+        result = call_extension(voice_body[1:-1], context)
+    
+    # Pattern: string → literal
+    if result is None and isinstance(voice_body, str):
+        if not any(op in voice_body for op in ["->", "+", "."]):
+            try:
+                result = voice_body.encode().decode('unicode_escape')
+            except:
+                result = voice_body
+    
+    # Fallback: return as-is
+    if result is None:
+        result = voice_body
+    
+    # Theory: Store result for stability detection
     context["execution_history"][voice_key] = result
     
     return result
