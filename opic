@@ -348,11 +348,16 @@ def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dic
             existing_source = voice_sources.get(name)
             if existing_source and existing_source != file_key:
                 # Different file - compare distances
+                # FIX: If this is the target file (base_dir), it always wins
+                is_target_file = (base_dir and file_path.parent == base_dir.parent) or (file_path.name.endswith('.ops') and 'case_studies' in str(file_path))
                 existing_distance = calculate_distance(Path(existing_source)) if existing_source.startswith('/') else 999
-                if current_distance <= existing_distance:
+                if is_target_file or current_distance <= existing_distance:
                     voices[name] = body
                     voice_sources[name] = file_key
-            # else: same file or no existing, keep current
+            else:
+                # Same file or no existing source - always update
+                voices[name] = body
+                voice_sources[name] = file_key
         else:
             # No conflict, add it (lambda expansion: mark as expanded)
             voices[name] = body
@@ -514,6 +519,10 @@ def main():
     
     _load_ops_file(ops_path, voices, defs, voice_sources, def_sources, project_root)
     main_voice = voices.get("main")
+    
+    if "--debug" in sys.argv:
+        print(f"DEBUG main: Found main voice, type={type(main_voice)}, first 100: {str(main_voice)[:100] if main_voice else 'None'}", file=sys.stderr)
+    
     # Circular: OPIC executes itself, information preserved through circle S¹
     context = {
         "voices": voices,
