@@ -4,12 +4,27 @@ OPIC Bootstrap - Circular Architecture
 Circles as lossless diffeomorphisms: Python ↔ OPIC boundary preserves all information
 Equilibrium: Python provides primitives, OPIC executes itself
 Symmetry: Smooth, invertible transformations
+
+TODO: Remove hardcoded patterns, use expansion system (charge/mass based)
+TODO: Use symmetry breaking and equilibrium detection
+TODO: Better names following OPIC conventions
 """
 
 import sys
 import importlib
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
+
+# Tracing: Identify hardcoded patterns that need to be replaced
+_TRACE_ENABLED = "--trace" in sys.argv
+_TRACE_LOG: List[str] = []
+
+def trace(message: str):
+    """Trace execution to identify hardcoded patterns"""
+    if _TRACE_ENABLED:
+        _TRACE_LOG.append(message)
+        if len(_TRACE_LOG) > 200:
+            _TRACE_LOG.pop(0)
 
 # Minimal parser (circular: could be OPIC self-parser)
 parse_ops = None
@@ -60,13 +75,20 @@ def call_extension(extension_path: str, env: Dict[str, Any]) -> Any:
 
 def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     """
-    Execute OPIC voice - Theory-based using matchers (hopeful OR)
+    Execute OPIC voice - Theory-based using expansion system
     
-    Theory from implicit.ops: Matchers use + (hopeful OR)
-    pattern1 + pattern2 → try pattern1, if None try pattern2, first non-null wins
+    Theory from bootstrap.ops:
+    - Running a value emits energy → returns most stable form
+    - Stable formations equalize charge and minimize symbol count
+    - Symmetry breaking determines which expansion to use
+    - Equilibrium: charge balanced, symbol count minimized
     
-    Uses simple matcher pattern: try patterns in order, first match wins
+    TODO: Replace hardcoded pattern matching with expansion system
+    TODO: Use charge/mass for symmetry breaking
+    TODO: Use equilibrium detection
     """
+    trace(f"HARDCODED_PATTERN: execute_opic called with {type(voice_body).__name__}")
+    
     # Initialize execution history for stability detection
     if "execution_history" not in context:
         context["execution_history"] = {}
@@ -74,24 +96,27 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     # Theory: Check for stability (equilibrium reached)
     voice_key = str(voice_body)
     if voice_key in context["execution_history"]:
+        trace(f"EQUILIBRIUM: returning stable result for {voice_key[:30]}")
         return context["execution_history"][voice_key]
     
-    # Theory-based matchers: pattern1 + pattern2 → first non-null wins
-    # This is the matcher pattern from opic_executor_impl.ops
+    # TODO: Use expansion system instead of hardcoded patterns
+    # TODO: Check charge/mass for symmetry breaking
+    # TODO: Detect equilibrium (charge balanced, symbol count minimized)
+    
     voices = context.get("voices", {})
     
     # Try to use OPIC's own matcher if available
     match_voice = voices.get("opic.match_voice_body_pattern")
     if match_voice:
-        # Execute OPIC's matcher voice (uses + for hopeful OR)
+        trace("MATCHER: using opic.match_voice_body_pattern")
         matcher_context = {**context, "voice_body": voice_body, "inputs": context.get("inputs", {}), "voices": voices}
         result = execute_opic(match_voice, matcher_context)
         if result is not None:
             context["execution_history"][voice_key] = result
             return result
     
-    # Fallback: Simple matcher pattern (hopeful OR)
-    # Theory: Try patterns, first non-None wins
+    # HARDCODED: Pattern matching (should use expansion system)
+    trace("HARDCODED_PATTERN: using fallback pattern matching")
     result = None
     
     # Pattern: { "string" } → extract string
@@ -100,6 +125,7 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
         if s.startswith("{") and s.endswith("}"):
             inner = s[1:-1].strip()
             if inner.startswith('"') and inner.endswith('"'):
+                trace("HARDCODED_PATTERN: matched string_literal_in_chain")
                 result = inner[1:-1]
                 try:
                     result = result.encode().decode('unicode_escape')
@@ -113,15 +139,18 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
             inner = s[1:-1].strip()
             if not (inner.startswith('"') and inner.endswith('"')):
                 if any(op in inner for op in ["->", "+", "."]):
+                    trace("HARDCODED_PATTERN: matched execution_chain")
                     result = execute_opic_chain(voice_body, context)
     
     # Pattern: $extension$ → call extension
     if result is None and isinstance(voice_body, str) and voice_body.startswith("$") and voice_body.endswith("$"):
+        trace("HARDCODED_PATTERN: matched extension")
         result = call_extension(voice_body[1:-1], context)
     
     # Pattern: string → literal
     if result is None and isinstance(voice_body, str):
         if not any(op in voice_body for op in ["->", "+", "."]):
+            trace("HARDCODED_PATTERN: matched string_literal")
             try:
                 result = voice_body.encode().decode('unicode_escape')
             except:
@@ -129,6 +158,7 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     
     # Fallback: return as-is
     if result is None:
+        trace("HARDCODED_PATTERN: matched value_as_is")
         result = voice_body
     
     # Theory: Store result for stability detection
@@ -502,7 +532,16 @@ def main():
         "command": command,
         "command_line_args": command_line_args
     }
-    main_voice and (result := execute_opic(main_voice, context)) and print(result)
+    if main_voice:
+        result = execute_opic(main_voice, context)
+        if result:
+            print(result)
+    
+    # Print trace if requested
+    if "--trace" in sys.argv:
+        print("\n=== TRACE (hardcoded patterns to replace) ===", file=sys.stderr)
+        for msg in _TRACE_LOG:
+            print(msg, file=sys.stderr)
 
 
 if __name__ == "__main__":
