@@ -32,28 +32,20 @@ CORE_PATTERNS = {
         ("action/tests/explanation_plan.ops", "case_studies/core/reasoning/"),
         ("action/tests/self_explanation.ops", "case_studies/core/reasoning/"),
     ],
-    "1.3_implicit": [
-        ("core/implicit.ops", "case_studies/core/implicit/"),
-        ("core/bootstrap.ops", "case_studies/core/implicit/"),
-        ("core/opic_parse.ops", "case_studies/core/implicit/"),
-        ("core/opic_load.ops", "case_studies/core/implicit/"),
-        ("core/opic_execute.ops", "case_studies/core/implicit/"),
-        ("core/opic_executor.py", "case_studies/core/implicit/"),
-    ],
-    "1.4_tests": [
+    "1.3_tests": [
         ("action/tests/scoring.ops", "case_studies/core/tests/"),
         ("action/tests/self.ops", "case_studies/core/tests/"),
         ("action/tests/executor_flow.ops", "case_studies/core/tests/"),
     ],
-    "1.5_compression": [
+    "1.4_compression": [
         ("systems/critical_geometry_codec.ops", "case_studies/core/compression/"),
         ("systems/compression/compression.ops", "case_studies/core/compression/"),
         ("systems/zeta/zeta_compression.ops", "case_studies/core/compression/"),
     ],
-    "1.6_emergent": [
+    "1.5_emergent": [
         ("systems/actor_coupled_modeling.ops", "case_studies/core/emergent/"),
     ],
-    "1.7_learn": [
+    "1.6_learn": [
         ("systems/solve/solve_simple.ops", "case_studies/core/learn/"),
         ("systems/solve/example.ops", "case_studies/core/learn/"),
     ],
@@ -127,11 +119,11 @@ def create_directories():
     case_study_dirs = [
         "case_studies/core/cosmology",
         "case_studies/core/reasoning",
-        "case_studies/core/implicit",
         "case_studies/core/tests",
         "case_studies/core/compression",
         "case_studies/core/emergent",
         "case_studies/core/learn",
+        "case_studies/core/emit",
         "case_studies/domains/biology",
         "case_studies/domains/ml",
         "case_studies/domains/protocols",
@@ -274,7 +266,6 @@ def create_readme_files():
     case_study_dirs = [
         ("case_studies/core/cosmology", "Cosmology - Predictive Models"),
         ("case_studies/core/reasoning", "Reasoning - Natural Language"),
-        ("case_studies/core/implicit", "Implicit System - Core Magic"),
         ("case_studies/core/tests", "Tests as Proofs"),
         ("case_studies/core/compression", "Compression Solver"),
         ("case_studies/core/emergent", "Emergent Behaviors"),
