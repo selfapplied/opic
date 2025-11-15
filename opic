@@ -438,7 +438,8 @@ def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dic
                     break
                 search_dir = search_dir.parent
         if include_path.exists():
-            _load_ops_file(include_path, voices, defs, voice_sources, def_sources, base_dir)
+            # Pass target_file so includes know they're NOT the target
+            _load_ops_file(include_path, voices, defs, voice_sources, def_sources, base_dir, target_file)
 
 
 def main():
