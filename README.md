@@ -4,6 +4,22 @@
 
 *Opic is a self-hosting language for distributed, cryptographically trusted computation, where each function ("voice") composes with others into verifiable chains.*
 
+---
+
+## Core Axiom: Invariant-Generative Worldbuilding
+
+**The Core Axiom states:**
+
+*All generative systems must preserve fundamental invariants under transformation. Worldbuilding is not arbitrary construction, but the disciplined exploration of constraint spaces where physical, mathematical, and narrative invariants remain coherent across scale, composition, and evolution.*
+
+This axiom grounds OPIC's approach to compositional programming:
+- **Voices** are invariant-preserving transformations
+- **Chains** compose these transformations while maintaining coherence
+- **Aquifer primitives** (Feigenbaum, Zeta, RG flows) encode universal scaling laws
+- **Field geometry** ensures topological consistency across program evolution
+
+The Aquifer framework provides primitives that encode deep mathematical structure (chaos theory, spectral analysis, renormalization group flows) as first-class constructs, enabling programs that naturally respect physical and mathematical invariants.
+
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
 [![Zeta Lab](https://img.shields.io/badge/Zeta%20Lab-Research%20Frontier-blue)](docs/riemann_hypothesis_experiment.md)
@@ -145,6 +161,49 @@ You are free to share and adapt this work for any purpose, including commercial 
 - Built with opic, by opic, for opic
 - Inspired by compositional programming and cryptographic trust systems
 - Thanks to all contributors who extend opic's capabilities
+
+---
+
+## Roadmap: Invariant-Axiom Seeding
+
+**Phase 1: Foundation (Current)**
+- [x] Core Axiom documentation
+- [x] Aquifer primitive stubs (Feigenbaum, Zeta, RG flows)
+- [x] Field geometry initialization framework
+- [x] UI sketch for ZetaCore topological visualization
+
+**Phase 2: Implementation**
+- [ ] Implement Feigenbaum bifurcation constraints
+- [ ] Implement Zeta spectral filtering for voice composition
+- [ ] Complete RG flow convergence analysis
+- [ ] Build ZetaCore interactive UI prototype
+
+**Phase 3: Integration**
+- [ ] Connect Aquifer primitives to OPIC voice system
+- [ ] Demonstrate invariant preservation in chain composition
+- [ ] Performance benchmarking and optimization
+- [ ] Documentation and contributor guide expansion
+
+---
+
+## Research Directions
+
+opic's dual structure opens several research frontiers:
+
+- **Spectral Verification**: numerical experiments testing opic's categorical zeta symmetry
+- **Field Coherence Dynamics**: simulate Φ(t) to locate the critical line (balanced oscillation)
+- **Cross-Disciplinary Exploration**: connects category theory, physics, and analytic number theory
+
+**Quick Start Research**:
+```bash
+make phase1                # Phase 1: Identify prime voices (opic-native!)
+make riemann-experiment    # Run baseline simulation (uses Phase 1 results)
+make riemann-visualize     # Generate coherence field heatmap (requires matplotlib)
+```
+
+*The experiment runs in opic itself — demonstrating opic's self-hosting capability. Phase 1 complete: identified 2,656 prime voices from 3,160 total voices. See `examples/phase1_prime_voices.ops` for the opic-native implementation.*
+
+See [`docs/theory.md`](docs/theory.md) for mathematical foundations, [`docs/riemann_whitepaper.md`](docs/riemann_whitepaper.md) for academic framing, and [`docs/riemann_hypothesis_experiment.md`](docs/riemann_hypothesis_experiment.md) for experiment plans.
 
 ---
 
