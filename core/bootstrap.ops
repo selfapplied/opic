@@ -1,10 +1,46 @@
 ;;; bootstrap.ops — opic bootstrap kernel (minimal self-hosting seed)
-
 ;; This file is part of opic's kernel ops.
-;; The opic repository (/Users/joelstover/opic/) contains the kernel.
 ;; Other repositories extend opic by adding their own .ops files.
 
-;; Core types (from core.ops)
+;; Core types
+
+;; Every particle is a list of fields combined via operations assigned to a symbol.
+;; "<symbol> [parts] (measure) {fields...}"
+;; A run is a solver that finds the lowest energetic configuration of a particle.
+;;    <symbol> is a symmetry break, a binding
+;;    [parts] defines how a symbol expands
+;;    (measure) is a number expression defining the binding energy for the expansion
+;;    {fields} defines an inner expression
+;;
+;; Implicit behavior defines how each line in a file is interpreted, using a context
+;; frame to fit the line into meaning. A cir
+
+
+;; The operator order is determined by the first fiel
+;; Every field either defines an expansion or is made up of particles
+;; "(field): (number expression 
+;; 
+;; A line that starts with "def" is structure with a given name and mass
+;; Otherwise the line declare a rule, by default "<name> <expansion>"
+
+;; Input is run through the program, where rules transform input and structure
+;; defines which parts of the input to expand.
+
+;; Running a value emits energy and returns the most stable form of the value.
+;; Binding values combines them and finds the lowest energetic representation.
+;; Each line is: a symbol and its expansion, split by a separator default " "
+;; An expansion is a permutation where a symbol and separator are swapped.
+;; The final expanded form is the output, and each expansion is an event.
+;; Stable formations try to equalize the charge and minimize symbol count.
+@ self
+
+self @
+
+"field" name "mass:" 
+
+"def" type "{" fields "}"
+"voice" name "/ {" fields "}"
+
 def type { name, fields, mass }
 def voice { input, output, charge, ratio }
 def target { name, head }
@@ -59,7 +95,7 @@ voice if_repo_load / {ops_files -> repo.load_extension -> extended_voices}
 voice opic.check_loaded / {file_path + loaded_set -> contains -> is_loaded}
 voice opic.load_if_new / {file_path + is_loaded -> if_not_loaded -> opic.load_file}
 voice opic.load_file / {file_path -> opic.check_file_permission -> opic.read_file -> opic.parse_ops -> defs + voices + includes}
-voice opic.check_file_permission / {file_path + agent_realm + ca -> cert.check_file_read -> if_permitted -> if_denied_reject}
+voice opic.check_file_permission / {file_path + agent_realm + ca -> metric.check_file_permission -> if_permitted -> if_denied_reject}
 voice opic.read_file / {file_path -> file_read -> text}
 voice opic.load_with_verification / {file_path + agent_realm + ca -> opic.check_signed -> if_signed_verify -> if_unsigned_load_normal}
 voice opic.check_signed / {file_path -> file.read -> check_has_header -> is_signed}
@@ -87,15 +123,38 @@ voice opic.merge_voices / {existing_voices + new_voices -> update_dict -> merged
 voice opic.merge_defs / {existing_defs + new_defs -> update_dict -> merged_defs}
 
 ;; Minimal executor (implements opic.execute_chain) - with certificate verification
+;; Uses circle diffeomorphism model: smooth flow, no quote walls
 voice opic.execute_chain / {chain_string + voices + agent_realm + ca -> parse_chain -> resolve_steps -> execute_steps -> result}
 voice opic.parse_chain / {chain -> remove_braces -> split_arrows -> steps}
 voice opic.remove_braces / {chain -> strip "{ }" -> inner}
 voice opic.split_arrows / {inner -> split "->" -> trim_each -> steps}
-voice opic.resolve_steps / {steps + voices + agent_realm + ca -> for_each_step -> opic.check_voice_permission -> find_voice -> resolve_body}
-voice opic.check_voice_permission / {voice_name + agent_realm + ca -> cert.check_voice_execute -> if_permitted -> if_denied_reject}
+;; Resolve steps using circle diffeomorphism: smooth flow toward attractor
+;; Uses parse.smooth_flow from core/parse.ops (auto-discovered via attention)
+voice opic.resolve_steps / {steps + voices + agent_realm + ca -> for_each_step -> parse.smooth_flow -> resolved_steps}
+voice opic.check_voice_permission / {voice_name + agent_realm + ca -> metric.check_voice_permission -> if_permitted -> if_denied_reject}
 voice opic.find_voice / {step_name + voices -> lookup -> voice_body}
 voice opic.resolve_body / {voice_body -> if_chain_recurse -> if_string_return}
 voice opic.execute_steps / {resolved_steps + agent_realm + ca -> for_each -> execute_step -> collect_results}
+
+;; CLI command routing (all commands defined here)
+voice opic.cli.find_command / {command -> opic.cli.command_map -> lookup -> ops_file}
+voice opic.cli.command_map / {
+  "execute" -> opic.cli.get_execute_arg
+  "eval" -> opic.cli.get_eval_arg
+  "bootstrap" -> "core/bootstrap.ops"
+  "help" -> "systems/help/opic_help.ops"
+  "explain" -> "systems/explain.ops"
+  "docs" -> "systems/docs.ops"
+  "test" -> "action/tests/core_tests/runtime.ops"
+  "compile" -> "systems/opic_compile.ops"
+  "plan" -> "systems/planning/plan.ops"
+  "repos" -> "systems/repo/repos.ops"
+  "benchmark" -> "action/tests/benchmarks/benchmark.ops"
+  default -> opic.cli.default_command_file
+}
+voice opic.cli.get_execute_arg / {command_line_args -> get_arg_1 -> ops_file}
+voice opic.cli.get_eval_arg / {command_line_args -> get_arg_1 -> ops_file}
+voice opic.cli.default_command_file / {command -> append ".ops" -> ops_file}
 
 ;; Bootstrap runtime interface (all runtimes implement this) - with certificate support
 voice opic.bootstrap / {main_file + agent_realm + ca -> opic.load_bootstrap -> opic.find_main -> opic.execute_main -> opic.create_witness -> output}

@@ -1,0 +1,18 @@
+;;; gann.ops — GANN system orchestration
+
+def gann { generator, patterns, training_config, render_config }
+def training_config { epochs, batch_size, learning_rate, loss_type }
+def render_config { format, width, height, output_path }
+
+voice train.gann / {gann + patterns -> trained}
+voice generate.art / {trained + noise -> art}
+voice export.image / {art + format -> file}
+
+voice setup.generator / {config -> generator}
+voice load.patterns / {sources -> patterns}
+voice train.loop / {generator + patterns + config -> trained}
+voice render.output / {tensor + config -> file}
+
+target art.output / "generated.artwork"
+voice main / {config + patterns -> art.output}
+

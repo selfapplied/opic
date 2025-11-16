@@ -1,0 +1,135 @@
+;;; self.ops — Grammar extension system understanding
+
+;; ============================================================================
+;; PURPOSE
+;; ============================================================================
+;; This directory extends OPIC's root grammar (defined in core/bootstrap.ops)
+;; with domain-specific syntax patterns.
+;;
+;; Root grammar handles: def, voice, target (include is deprecated)
+;; Grammar extensions add: register status, register filter, register translation, etc.
+;;
+;; Extension system:
+;; 1. Root grammar (core/bootstrap.ops) parses base syntax
+;; 2. Grammar extensions register patterns → transform voices
+;; 3. Parser (parser.ops) tries extensions before falling back to root
+;; 4. Unified transform voice (syntax.ops) uses context to differentiate behavior
+
+;; ============================================================================
+;; ARCHITECTURE
+;; ============================================================================
+
+;; Root grammar (core/bootstrap.ops)
+;; • def <name> { <fields> } — Type definition
+;; • voice <name> / { <chain> } — Voice definition
+;; • target <name> / "<description>" — Named entry point (creates implicit entry point)
+;; • include <path> — DEPRECATED: Use attention-based discovery instead
+
+;; Grammar extension flow:
+;; 1. grammar.parse_line receives line + grammar_registry
+;; 2. Tries all registered extension rules (pattern matching)
+;; 3. If match → calls transform_voice → transformed line
+;; 4. If no match → falls back to opic.parse_line (root grammar)
+
+;; Extension registration:
+;; • syntax.ops contains grammar registry system, all registrations, and unified transformation logic
+;; • Context-aware detection: number of quoted strings determines transformation type
+;; • syntax.ops registers all patterns and initializes the registry
+
+;; ============================================================================
+;; FILES
+;; ============================================================================
+
+;; root.ops — Root grammar reference (points to core/bootstrap.ops)
+;; parser.ops — Grammar extension parser (tries extensions → falls back to root)
+;; syntax.ops — Unified grammar rule registry and context-aware transformation system
+;; extend.ops — Guide for extending the grammar
+
+;; ============================================================================
+;; EXTENDING THE GRAMMAR
+;; ============================================================================
+
+;; To add a new grammar extension:
+;; 1. Add transformation logic to syntax.ops:
+;;    • Add grammar.transform_<domain> voice (extracts data from extracted_data)
+;;    • Add grammar.format_<domain>_register voice (formats register call)
+;; 2. Register pattern in syntax.ops:
+;;    • Add register_<domain>_syntax voice
+;;    • Call it in init voice
+;; 3. Context detection: Update grammar.detect_register_type if needed
+
+;; Example extension pattern:
+;; Input:  register status "active" with { display: "Active" }
+;; Output: status.register status_registry "active" "Active" [] [] {} "Active status" ...
+
+;; ============================================================================
+;; FLAT FLOW DEFINITIONS
+;; ============================================================================
+;; OPIC defines flow operations using <word> <op> syntax, all defined flatly.
+
+;; Pattern: Each operation is a <word> <op> pair, defined at the same level
+;; Example:
+;;   voice opic.split_lines / {text -> split_by_newline -> lines}
+;;   voice opic.filter_lines / {lines -> remove_comments -> remove_empty -> valid_lines}
+;;   voice opic.parse_each / {valid_lines -> for_each -> parse_line -> def_or_voice}
+;;
+;; Operations compose using -> arrows, but each operation is defined flatly.
+;; No nesting required - just define each <word> <op> pair at the top level.
+
+;; Benefits:
+;; • Declarative: Each operation is atomic and self-contained
+;; • Composable: Operations chain naturally via ->
+;; • Discoverable: All operations visible at file level
+;; • Flat structure: No deep nesting, easy to scan
+
+;; Example from core/bootstrap.ops:
+;;   voice opic.parse_ops / {ops_text -> split_lines -> filter_lines -> parse_each -> parse_includes -> collect_defs_voices_includes -> defs + voices + includes}
+;;   voice opic.split_lines / {text -> split_by_newline -> lines}
+;;   voice opic.filter_lines / {lines -> remove_comments -> remove_empty -> valid_lines}
+;;   voice opic.parse_each / {valid_lines -> for_each -> parse_line -> def_or_voice}
+;;   voice opic.parse_line / {line -> check_type -> if_def_parse_def -> if_voice_parse_voice}
+;;   voice opic.check_type / {line -> starts_with "def " -> is_def}
+;;   voice opic.check_type / {line -> starts_with "voice " -> is_voice}
+;;
+;; Each operation is defined flatly, then composed into chains.
+
+;; ============================================================================
+;; UNDERSTANDING
+;; ============================================================================
+
+voice grammar.understand / {
+  "What is the grammar extension system?" ->
+  "OPIC's root grammar (core/bootstrap.ops) handles base syntax: def, voice, target (include deprecated)." ->
+  "Grammar extensions add domain-specific syntax patterns via registry." ->
+  "Parser tries extensions first, then falls back to root grammar." ->
+  "Unified transform voice uses context to differentiate behavior." ->
+  "Extensions are composable: multiple patterns can match, highest priority wins." ->
+  understanding
+}
+
+voice grammar.flow.understand / {
+  "How are flow operations defined?" ->
+  "OPIC defines flow using <word> <op> syntax, all defined flatly." ->
+  "Each operation is a <word> <op> pair at the top level (e.g., split_lines, filter_lines)." ->
+  "Operations compose using -> arrows, but each is defined independently." ->
+  "No nesting required - just define each operation flatly, then compose into chains." ->
+  "This makes operations atomic, composable, discoverable, and easy to scan." ->
+  understanding
+}
+
+voice grammar.discover / {
+  query ->
+  grammar.list_extensions ->
+  grammar.filter_by_query ->
+  matching_extensions
+}
+
+voice grammar.list_extensions / {
+  syntax_registry ->
+  registry.list ->
+  all_extensions
+}
+
+target grammar / "grammar_extension_system"
+voice main / {grammar.understand -> grammar}
+

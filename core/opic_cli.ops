@@ -1,0 +1,75 @@
+;;; opic_cli.ops — OPIC CLI implementation (all in OPIC)
+
+;; This is the full CLI implementation - Python just provides minimal bootstrap
+;; The executor is passed in, so we can call its methods
+
+;; Get command from command line args (first arg)
+voice cli.get_command / {command_line_args -> get_first -> command}
+voice cli.get_remaining_args / {command_line_args -> skip_first -> remaining_args}
+
+;; Command routing - map command to ops file
+voice cli.find_ops_file / {
+  command ->
+  if_command_is "execute" -> get_execute_arg ->
+  if_command_is "eval" -> get_eval_arg ->
+  if_command_is "bootstrap" -> "core/bootstrap.ops" ->
+  if_command_is "help" -> "systems/help/opic_help.ops" ->
+  if_command_is "test" -> "action/tests/core_tests/runtime.ops" ->
+  if_command_is "compile" -> "systems/opic_compile.ops" ->
+  if_command_is "plan" -> "systems/opic_plan.ops" ->
+  if_command_is "repos" -> "systems/repos.ops" ->
+  default_command_file -> ops_file
+}
+voice cli.if_command_is / {command + target -> equals -> is_match}
+voice cli.get_execute_arg / {is_execute + remaining_args -> get_first -> ops_file}
+voice cli.get_eval_arg / {is_eval + remaining_args -> get_first -> ops_file}
+voice cli.default_command_file / {command -> append ".ops" -> ops_file}
+
+;; Resolve ops file path relative to project root or current directory
+voice cli.resolve_ops_file / {
+  ops_file + project_root ->
+  resolve_relative_path ->
+  ops_path
+}
+voice cli.resolve_relative_path / {file + project_root -> check_absolute -> if_absolute_use -> if_relative_resolve -> resolved}
+voice cli.check_absolute / {path -> starts_with "/" -> is_absolute}
+voice cli.if_absolute_use / {path + is_absolute -> return_path}
+voice cli.if_relative_resolve / {path + project_root -> join_path -> resolved}
+
+;; Load ops file and execute main voice
+voice cli.execute_opic / {
+  ops_file + executor + project_root ->
+  cli.resolve_ops_file ->
+  executor.load_file ->
+  executor.get_main ->
+  executor.execute_main ->
+  result
+}
+
+;; Route command to ops file and execute
+voice cli.route / {
+  command + command_line_args + executor + project_root ->
+  cli.find_ops_file ->
+  cli.execute_opic ->
+  result
+}
+
+;; Main CLI entry point
+voice cli.main / {
+  command_line_args + executor + project_root ->
+  cli.get_command ->
+  cli.get_remaining_args ->
+  cli.route ->
+  output
+}
+
+;; Default: show help if no command
+voice cli.default / {
+  executor + project_root ->
+  cli.execute_opic "systems/help/opic_help.ops" ->
+  output
+}
+
+target opic_cli / "opic_cli"
+voice main / {cli.main -> opic_cli}
+

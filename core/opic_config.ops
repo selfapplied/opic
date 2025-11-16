@@ -1,0 +1,66 @@
+;;; opic_config.ops — OPIC configuration (discoverable, not hardcoded)
+;; All paths, voice names, and operators are defined here and discovered by the bootstrap
+
+;; Core file paths (discoverable) - return string paths
+voice opic.config.bootstrap_path / {
+  "core/bootstrap.ops"
+}
+
+voice opic.config.file_resolution_path / {
+  "systems/file_resolution.ops"
+}
+
+voice opic.config.executor_impl_path / {
+  "systems/opic_executor_impl.ops"
+}
+
+;; Voice names (discoverable) - return string names
+voice opic.config.match_voice_name / {
+  "opic.match_voice_body_pattern"
+}
+
+voice opic.config.execute_chain_voice_name / {
+  "opic.execute_chain"
+}
+
+voice opic.config.find_command_voice_name / {
+  "opic.cli.find_command"
+}
+
+voice opic.config.main_voice_name / {
+  "main"
+}
+
+;; Operators (configurable) - return string operators
+voice opic.config.chain_operator / {
+  "->"
+}
+
+voice opic.config.plus_operator / {
+  "+"
+}
+
+voice opic.config.extension_prefix / {
+  "$"
+}
+
+;; Primitive names (discoverable) - return string names
+voice opic.config.lookup_primitive_name / {
+  "lookup"
+}
+
+voice opic.config.get_primitive_name / {
+  "get"
+}
+
+;; Search directories (discoverable) - return list of directory paths
+;; Note: This is a simple list - Python will handle path construction
+voice opic.config.search_directories / {
+  "action/examples"
+}
+
+;; Recursion guard flag name (discoverable) - return string flag name
+voice opic.config.skip_execute_chain_flag / {
+  "_skip_execute_chain_voice"
+}
+

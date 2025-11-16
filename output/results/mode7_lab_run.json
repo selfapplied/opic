@@ -1,0 +1,260 @@
+{
+  "runs": [
+    {
+      "run": 1,
+      "router_decision": {
+        "config": "linearized",
+        "features": "v2",
+        "decoder": "lasso",
+        "primorial": 210,
+        "eta": 0.02,
+        "exploration_rate": 0.3
+      },
+      "health": {
+        "divL2": 1e-11,
+        "divL2_ok": true,
+        "parseval": 1e-13,
+        "parseval_ok": true,
+        "health_ok": true
+      },
+      "metrics": {
+        "parity_accuracy": 0.5362899065156936,
+        "delta_mi": 0.05599965819304448
+      },
+      "fusion": false
+    },
+    {
+      "run": 2,
+      "router_decision": {
+        "config": "primorial",
+        "features": "v2",
+        "decoder": "lasso",
+        "primorial": 2310,
+        "eta": 0.02,
+        "exploration_rate": 0.3
+      },
+      "health": {
+        "divL2": 9.447093303065983e-12,
+        "divL2_ok": true,
+        "parseval": 9.447430530235078e-14,
+        "parseval_ok": true,
+        "health_ok": true
+      },
+      "metrics": {
+        "parity_accuracy": 0.6742987483265535,
+        "delta_mi": 0.21244344839304832
+      },
+      "fusion": false
+    },
+    {
+      "run": 3,
+      "router_decision": {
+        "config": "primorial",
+        "features": "v2",
+        "decoder": "lasso",
+        "primorial": 2310,
+        "eta": 0.02,
+        "exploration_rate": 0.3
+      },
+      "health": {
+        "divL2": 9.999076680311287e-12,
+        "divL2_ok": true,
+        "parseval": 1.023600641839125e-13,
+        "parseval_ok": true,
+        "health_ok": true
+      },
+      "metrics": {
+        "parity_accuracy": 0.8857916797580914,
+        "delta_mi": 0.21775453836082756
+      },
+      "fusion": true
+    },
+    {
+      "run": 4,
+      "router_decision": {
+        "config": "primorial",
+        "features": "v2",
+        "decoder": "lasso",
+        "primorial": 2310,
+        "eta": 0.02,
+        "exploration_rate": 0.3
+      },
+      "health": {
+        "divL2": 1.0048824200869113e-11,
+        "divL2_ok": true,
+        "parseval": 9.302753288377367e-14,
+        "parseval_ok": true,
+        "health_ok": true
+      },
+      "metrics": {
+        "parity_accuracy": 0.5977041569855314,
+        "delta_mi": 0.27959073420657166
+      },
+      "fusion": false
+    },
+    {
+      "run": 5,
+      "router_decision": {
+        "config": "primorial",
+        "features": "v2",
+        "decoder": "lasso",
+        "primorial": 2310,
+        "eta": 0.02,
+        "exploration_rate": 0.3
+      },
+      "health": {
+        "divL2": 9.717707359869838e-12,
+        "divL2_ok": true,
+        "parseval": 8.859517199502031e-14,
+        "parseval_ok": true,
+        "health_ok": true
+      },
+      "metrics": {
+        "parity_accuracy": 0.7658133310147509,
+        "delta_mi": -0.08213514654453502
+      },
+      "fusion": false
+    },
+    {
+      "run": 6,
+      "router_decision": {
+        "config": "primorial",
+        "features": "v2",
+        "decoder": "lasso",
+        "primorial": 2310,
+        "eta": 0.02,
+        "exploration_rate": 0.3
+      },
+      "health": {
+        "divL2": 9.507952044856287e-12,
+        "divL2_ok": true,
+        "parseval": 8.149747787153745e-14,
+        "parseval_ok": true,
+        "health_ok": true
+      },
+      "metrics": {
+        "parity_accuracy": 0.8353532094305308,
+        "delta_mi": -0.030239771225021042
+      },
+      "fusion": false
+    },
+    {
+      "run": 7,
+      "router_decision": {
+        "config": "primorial",
+        "features": "v2",
+        "decoder": "lasso",
+        "primorial": 2310,
+        "eta": 0.02,
+        "exploration_rate": 0.3
+      },
+      "health": {
+        "divL2": 8.776324805578975e-12,
+        "divL2_ok": true,
+        "parseval": 8.5847848253236e-14,
+        "parseval_ok": true,
+        "health_ok": true
+      },
+      "metrics": {
+        "parity_accuracy": 0.8590717508201744,
+        "delta_mi": 0.18331076434566443
+      },
+      "fusion": true
+    },
+    {
+      "run": 8,
+      "router_decision": {
+        "config": "random",
+        "features": "v2",
+        "decoder": "lasso",
+        "primorial": 210,
+        "eta": 0.05,
+        "exploration_rate": 0.3
+      },
+      "health": {
+        "divL2": 7.901966327325555e-12,
+        "divL2_ok": true,
+        "parseval": 7.86397482102347e-14,
+        "parseval_ok": true,
+        "health_ok": true
+      },
+      "metrics": {
+        "parity_accuracy": 0.46966387686176675,
+        "delta_mi": -0.12847488833260448
+      },
+      "fusion": false
+    },
+    {
+      "run": 9,
+      "router_decision": {
+        "config": "primorial",
+        "features": "v2",
+        "decoder": "lasso",
+        "primorial": 2310,
+        "eta": 0.02,
+        "exploration_rate": 0.3
+      },
+      "health": {
+        "divL2": 7.461933521990033e-12,
+        "divL2_ok": true,
+        "parseval": 8.103896806880822e-14,
+        "parseval_ok": true,
+        "health_ok": true
+      },
+      "metrics": {
+        "parity_accuracy": 0.9095973893341005,
+        "delta_mi": 0.2506666420674123
+      },
+      "fusion": true
+    },
+    {
+      "run": 10,
+      "router_decision": {
+        "config": "primorial",
+        "features": "v2",
+        "decoder": "lasso",
+        "primorial": 2310,
+        "eta": 0.02,
+        "exploration_rate": 0.1
+      },
+      "health": {
+        "divL2": 8.062181746030947e-12,
+        "divL2_ok": true,
+        "parseval": 8.761992891684471e-14,
+        "parseval_ok": true,
+        "health_ok": true
+      },
+      "metrics": {
+        "parity_accuracy": 0.9268448832816958,
+        "delta_mi": -0.0595585775828337
+      },
+      "fusion": false
+    }
+  ],
+  "fusion_moments": [
+    {
+      "run": 3,
+      "config": "primorial",
+      "parity_accuracy": 0.8857916797580914,
+      "delta_mi": 0.21775453836082756
+    },
+    {
+      "run": 7,
+      "config": "primorial",
+      "parity_accuracy": 0.8590717508201744,
+      "delta_mi": 0.18331076434566443
+    },
+    {
+      "run": 9,
+      "config": "primorial",
+      "parity_accuracy": 0.9095973893341005,
+      "delta_mi": 0.2506666420674123
+    }
+  ],
+  "summary": {
+    "total_runs": 10,
+    "fusion_count": 3,
+    "avg_parity": 0.7460428932328889,
+    "avg_delta_mi": 0.08993574018815745
+  }
+}

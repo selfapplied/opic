@@ -1,0 +1,54 @@
+{
+  "spectral_toy": {
+    "zeros_count": 0,
+    "spacing_variance": 0.0,
+    "spectral_entropy": 2.566850952930972
+  },
+  "complexity_toy": {
+    "n_vars": 10,
+    "n_clauses": 20,
+    "runs": [
+      {
+        "found": true,
+        "steps": 15,
+        "search_entropy": 2.7080501996022104,
+        "verification_cost": 20
+      },
+      {
+        "found": true,
+        "steps": 1,
+        "search_entropy": -1.000000082690371e-10,
+        "verification_cost": 20
+      },
+      {
+        "found": true,
+        "steps": 8,
+        "search_entropy": 2.0794415408798357,
+        "verification_cost": 20
+      },
+      {
+        "found": true,
+        "steps": 35,
+        "search_entropy": 3.5157396477717024,
+        "verification_cost": 20
+      },
+      {
+        "found": true,
+        "steps": 1,
+        "search_entropy": -1.000000082690371e-10,
+        "verification_cost": 20
+      }
+    ],
+    "found_count": 5,
+    "avg_steps": 12.0,
+    "avg_search_entropy": 1.6606462776107498
+  },
+  "comparison": {
+    "spacing_variance": 0.0,
+    "search_time_variance": 159.2,
+    "spectral_smoothness": 10000000000.0,
+    "verification_ease": 0.006281407035171935,
+    "correlation_question": "Do smoother spectra correlate with easier verification?",
+    "note": "Pure analogy, not proof"
+  }
+}

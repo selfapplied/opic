@@ -1,0 +1,168 @@
+;;; translation.ops — Extensible translation rule registry
+
+include base.ops
+
+;; ============================================================================
+;; DEFINITIONS
+;; ============================================================================
+
+def translation_rule {
+  rule_name,
+  source_pattern,
+  target_template,
+  source_lang,
+  target_lang,
+  metadata,
+  priority
+}
+
+def translation_registry {
+  registry,
+  rules,
+  languages,
+  default_language
+}
+
+;; ============================================================================
+;; OPERATIONS
+;; ============================================================================
+
+voice register / {
+  translation_registry + rule_name + source_pattern + target_template + source_lang + target_lang + metadata + priority + description + usage + examples + related_entries -> 
+  create_entry -> 
+  register -> 
+  updated_registry
+}
+
+voice create_entry / {
+  rule_name + source_pattern + target_template + source_lang + target_lang + metadata + priority + description + usage + examples + related_entries -> 
+  build_translation_config -> 
+  create_entry -> 
+  translation_entry
+}
+
+voice build_translation_config / {
+  rule_name + source_pattern + target_template + source_lang + target_lang + metadata + priority -> 
+  combine_fields -> 
+  config
+}
+
+voice translate / {
+  translation_registry + source_code + source_lang + target_lang -> 
+  find_matching_rules -> 
+  apply_rules -> 
+  translated_code
+}
+
+voice find_matching_rules / {
+  translation_registry + source_code + source_lang + target_lang -> 
+  filter_rules_by_languages -> 
+  match_patterns -> 
+  matching_rules
+}
+
+voice filter_rules_by_languages / {
+  translation_registry + source_lang + target_lang -> 
+  query -> 
+  filter_by_languages -> 
+  filtered_rules
+}
+
+voice filter_by_languages / {
+  rules + source_lang + target_lang -> 
+  for_each -> check_languages -> 
+  filter_matching -> 
+  matching
+}
+
+voice check_languages / {
+  rule + source_lang + target_lang -> 
+  extract_languages -> 
+  if_match -> true -> 
+  if_not_match -> false -> 
+  matches
+}
+
+voice match_patterns / {
+  rules + source_code -> 
+  for_each -> match_pattern -> 
+  filter_matched -> 
+  matched
+}
+
+voice match_pattern / {
+  rule + source_code -> 
+  extract_pattern -> 
+  apply_pattern -> 
+  if_matches -> true -> 
+  if_not_matches -> false -> 
+  matches
+}
+
+voice apply_rules / {
+  matching_rules + source_code -> 
+  sort_by_priority -> 
+  apply_in_order -> 
+  translated_code
+}
+
+voice sort_by_priority / {
+  rules -> 
+  extract_priority -> 
+  sort_descending -> 
+  sorted
+}
+
+voice apply_in_order / {
+  rules + source_code -> 
+  for_each -> apply_rule -> 
+  accumulated_translation -> 
+  translated
+}
+
+voice apply_rule / {
+  rule + source_code -> 
+  extract_template -> 
+  substitute_pattern -> 
+  translated_fragment
+}
+
+voice substitute_pattern / {
+  template + source_code + pattern -> 
+  find_matches -> 
+  replace_matches -> 
+  substituted
+}
+
+voice help / {
+  translation_registry -> 
+  help -> 
+  translation_help
+}
+
+voice list_languages / {
+  translation_registry -> 
+  extract_languages -> 
+  unique_languages -> 
+  languages_list
+}
+
+voice list_rules / {
+  translation_registry + source_lang + target_lang -> 
+  filter_rules_by_languages -> 
+  extract_rule_names -> 
+  rules_list
+}
+
+voice discover / {
+  translation_registry + query -> 
+  discover -> 
+  matching_rules
+}
+
+target translation_registry / "translation_system"
+voice main / {
+  translation_registry + rule_name -> 
+  get -> 
+  translation_registry
+}

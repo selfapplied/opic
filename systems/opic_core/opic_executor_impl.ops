@@ -1,0 +1,456 @@
+;;; opic_executor_impl.ops — OPIC Self-Hosted Executor (Declarative)
+;;; Python provides ABI via $extension$ syntax, OPIC executes itself
+
+include systems/primitives.ops
+include systems/semantic_discovery.ops
+
+;; ============================================================================
+;; EXECUTOR: Declarative Chain Execution
+;; ============================================================================
+
+;; Main executor: parse -> resolve -> execute
+voice opic.execute_chain / {
+  chain_string + voices + agent_realm + ca ->
+  opic.parse_chain ->
+  opic.resolve_steps ->
+  opic.execute_steps ->
+  result
+}
+
+;; ============================================================================
+;; PARSE: Extract Steps from Chain
+;; ============================================================================
+
+voice opic.parse_chain / {
+  chain ->
+  opic.normalize_chain ->
+  opic.split_by_arrows ->
+  opic.trim_steps ->
+  steps
+}
+
+;; Normalize chain (remove braces if present)
+voice opic.normalize_chain / {
+  chain ->
+  string.strip ->
+  opic.remove_braces ->
+  normalized
+}
+
+;; Remove braces (pattern: starts with {, ends with })
+voice opic.remove_braces / {
+  text ->
+  python.slice_from_1 ->
+  python.slice_to_minus_1 ->
+  string.strip ->
+  inner
+}
+
+;; Split by arrows
+voice opic.split_by_arrows / {
+  normalized ->
+  string.split "->" ->
+  parts
+}
+
+;; Trim each step
+voice opic.trim_steps / {
+  parts ->
+  python.for_each string.strip ->
+  steps
+}
+
+;; ============================================================================
+;; RESOLVE: Map Steps to Voice Bodies (Pattern-Based)
+;; ============================================================================
+
+voice opic.resolve_steps / {
+  steps + voices + agent_realm + ca ->
+  opic.map_resolve_step ->
+  resolved_steps
+}
+
+;; Map each step through resolution
+voice opic.map_resolve_step / {
+  steps + voices + agent_realm + ca ->
+  python.for_each_step ->
+  opic.resolve_step ->
+  resolved_steps
+}
+
+;; Resolve a single step (pattern matching)
+voice opic.resolve_step / {
+  step + voices + agent_realm + ca ->
+  opic.check_permission ->
+  opic.match_step_pattern ->
+  resolved
+}
+
+;; Check permission (from bootstrap.ops)
+voice opic.check_permission / {
+  step + agent_realm + ca ->
+  metric.check_voice_permission ->
+  permitted
+}
+
+;; Match step pattern (declarative pattern matching)
+voice opic.match_step_pattern / {
+  step + voices ->
+  opic.pattern_extension ->
+  opic.pattern_voice ->
+  opic.pattern_input ->
+  opic.pattern_literal ->
+  step_value
+}
+
+;; Pattern: $module.function$ → extension call
+voice opic.pattern_extension / {
+  step ->
+  opic.extract_extension_path ->
+  extension_path
+}
+
+;; Extract extension path (pattern: $...$)
+voice opic.extract_extension_path / {
+  step ->
+  opic.match_dollar_pattern ->
+  python.slice_from_1 ->
+  python.slice_to_minus_1 ->
+  extension_path
+}
+
+;; Match dollar pattern (starts and ends with $)
+voice opic.match_dollar_pattern / {
+  step ->
+  opic.pattern_starts_dollar ->
+  opic.pattern_ends_dollar ->
+  matched
+}
+
+;; Pattern: starts with $
+voice opic.pattern_starts_dollar / {
+  step ->
+  python.slice_from_0 ->
+  python.slice_to_1 ->
+  "$"
+}
+
+;; Pattern: ends with $
+voice opic.pattern_ends_dollar / {
+  step ->
+  python.slice_from_minus_1 ->
+  "$"
+}
+
+;; Pattern: voice_name → voice lookup
+voice opic.pattern_voice / {
+  step + voices ->
+  dict.lookup ->
+  voice_body
+}
+
+;; Pattern: input variable → env lookup
+voice opic.pattern_input / {
+  step + inputs ->
+  dict.lookup ->
+  input_value
+}
+
+;; Pattern: literal → return as-is
+voice opic.pattern_literal / {
+  step ->
+  step_value
+}
+
+;; Resolve body (chain, string, or value)
+voice opic.resolve_body / {
+  step_value ->
+  opic.match_body_pattern ->
+  resolved
+}
+
+;; Match body pattern
+voice opic.match_body_pattern / {
+  step_value ->
+  opic.pattern_chain_body ->
+  opic.pattern_string_body ->
+  opic.pattern_value_body ->
+  resolved
+}
+
+;; Pattern: {chain} → chain body
+voice opic.pattern_chain_body / {
+  step_value ->
+  opic.match_brace_pattern ->
+  chain_body
+}
+
+;; Match brace pattern (starts with {, ends with })
+voice opic.match_brace_pattern / {
+  step_value ->
+  opic.pattern_starts_brace ->
+  opic.pattern_ends_brace ->
+  matched
+}
+
+;; Pattern: string → return as-is
+voice opic.pattern_string_body / {
+  step_value ->
+  string_body
+}
+
+;; Pattern: value → return as-is
+voice opic.pattern_value_body / {
+  step_value ->
+  value_body
+}
+
+;; ============================================================================
+;; EXECUTE: Run Steps Sequentially (Pattern-Based)
+;; ============================================================================
+
+voice opic.execute_steps / {
+  resolved_steps + agent_realm + ca ->
+  opic.create_env ->
+  opic.fold_execute ->
+  result
+}
+
+;; Create environment from inputs
+voice opic.create_env / {
+  inputs ->
+  opic.pattern_dict_inputs ->
+  env
+}
+
+;; Pattern: inputs is dict → return as-is
+voice opic.pattern_dict_inputs / {
+  inputs ->
+  type.is_dict ->
+  env
+}
+
+;; Fold over steps, executing each
+voice opic.fold_execute / {
+  resolved_steps + env ->
+  opic.execute_each_step ->
+  opic.take_last ->
+  result
+}
+
+;; Execute each step (accumulate results)
+voice opic.execute_each_step / {
+  steps + env ->
+  python.for_each_step_execute ->
+  opic.execute_step_with_env ->
+  results
+}
+
+;; Execute step with environment (pattern matching)
+voice opic.execute_step_with_env / {
+  step_body + env + last_result ->
+  opic.match_execution_pattern ->
+  result
+}
+
+;; Match execution pattern (declarative routing)
+voice opic.match_execution_pattern / {
+  step_body + env + last_result ->
+  opic.pattern_execute_extension ->
+  opic.pattern_execute_chain ->
+  opic.pattern_execute_string ->
+  opic.pattern_execute_value ->
+  result
+}
+
+;; Pattern: $extension$ → call Python extension
+voice opic.pattern_execute_extension / {
+  step_body + env + last_result ->
+  opic.extract_extension_path ->
+  opic.update_env_with_result ->
+  python.call_extension ->
+  result
+}
+
+;; Pattern: {chain} → recursive chain execution
+voice opic.pattern_execute_chain / {
+  step_body + env + last_result ->
+  opic.match_brace_pattern ->
+  opic.update_env_with_result ->
+  opic.execute_chain ->
+  result
+}
+
+;; Pattern: string → evaluate token
+voice opic.pattern_execute_string / {
+  step_body + env + last_result ->
+  opic.evaluate_token ->
+  result
+}
+
+;; Pattern: value → return as-is
+voice opic.pattern_execute_value / {
+  step_body ->
+  result
+}
+
+;; Update environment with last result
+voice opic.update_env_with_result / {
+  env + last_result ->
+  dict.update "input" last_result ->
+  updated_env
+}
+
+;; Evaluate token (variable, literal, or expression)
+voice opic.evaluate_token / {
+  token + env + last_result ->
+  opic.pattern_variable ->
+  opic.pattern_literal_token ->
+  opic.pattern_expression ->
+  result
+}
+
+;; Pattern: variable → env lookup
+voice opic.pattern_variable / {
+  token + env ->
+  dict.lookup ->
+  variable_value
+}
+
+;; Pattern: literal → remove quotes
+voice opic.pattern_literal_token / {
+  token ->
+  python.strip_quotes ->
+  literal_value
+}
+
+;; Pattern: expression → split by + and combine
+voice opic.pattern_expression / {
+  token + env + last_result ->
+  string.split " + " ->
+  opic.evaluate_parts ->
+  string.join "" ->
+  result
+}
+
+;; Evaluate each part of expression
+voice opic.evaluate_parts / {
+  parts + env + last_result ->
+  python.for_each ->
+  opic.evaluate_token ->
+  evaluated_parts
+}
+
+;; Take last item from list
+voice opic.take_last / {
+  results ->
+  opic.pattern_list_results ->
+  opic.extract_last ->
+  result
+}
+
+;; Pattern: results is list → extract last
+voice opic.pattern_list_results / {
+  results ->
+  type.is_list ->
+  list_results
+}
+
+;; Extract last item
+voice opic.extract_last / {
+  list_results ->
+  python.slice_from_minus_1 ->
+  result
+}
+
+;; ============================================================================
+;; VOICE EXECUTION: Entry Point (Pattern-Based)
+;; ============================================================================
+
+voice opic.execute_voice / {
+  voice_name + inputs + voices ->
+  opic.find_voice ->
+  opic.resolve_voice_body ->
+  opic.match_voice_body_pattern ->
+  result
+}
+
+;; Find voice (with semantic discovery fallback)
+voice opic.find_voice / {
+  voice_name + voices ->
+  opic.pattern_voice_exists ->
+  opic.pattern_semantic_discovery ->
+  voice_name_found
+}
+
+;; Pattern: voice exists → lookup
+voice opic.pattern_voice_exists / {
+  voice_name + voices ->
+  dict.lookup ->
+  voice_name_found
+}
+
+;; Pattern: semantic discovery → find similar
+voice opic.pattern_semantic_discovery / {
+  voice_name + voices ->
+  semantic.discover_voices ->
+  python.get_first ->
+  voice_name_found
+}
+
+;; Resolve voice body
+voice opic.resolve_voice_body / {
+  voice_name_found + voices ->
+  dict.lookup ->
+  voice_body
+}
+
+;; Match voice body pattern (declarative routing)
+voice opic.match_voice_body_pattern / {
+  voice_body + inputs + voices ->
+  opic.pattern_chain_body_execute ->
+  opic.pattern_extension_body_execute ->
+  opic.pattern_voice_reference_execute ->
+  opic.pattern_string_body_execute ->
+  opic.pattern_value_body_execute ->
+  result
+}
+
+;; Pattern: {chain} → execute chain
+voice opic.pattern_chain_body_execute / {
+  chain_string + inputs + voices ->
+  opic.match_brace_pattern ->
+  opic.execute_chain ->
+  result
+}
+
+;; Pattern: $extension$ → call extension
+voice opic.pattern_extension_body_execute / {
+  extension_string + inputs ->
+  opic.extract_extension_path ->
+  python.call_extension ->
+  result
+}
+
+;; Pattern: voice_reference → recursive execution
+voice opic.pattern_voice_reference_execute / {
+  voice_name + inputs + voices ->
+  opic.pattern_voice_exists ->
+  opic.execute_voice ->
+  result
+}
+
+;; Pattern: string → return as-is
+voice opic.pattern_string_body_execute / {
+  voice_body ->
+  string_result
+}
+
+;; Pattern: value → return as-is
+voice opic.pattern_value_body_execute / {
+  voice_body ->
+  value_result
+}
+
+;; Python extension calls: OPIC calls Python via $extension$ syntax
+voice python.call_extension / {extension_path + env -> call_extension -> result}

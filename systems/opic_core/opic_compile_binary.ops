@@ -1,0 +1,11 @@
+;;; opic_compile_binary.ops — Compile all .ops files into a single self-contained binary
+;;; Pure opic - uses compile_binary primitive (which uses file_read, file_write, etc.)
+;;; This is opic compiling itself - the LOGIC is in .ops, implementation uses primitives!
+
+voice compile.binary / {
+  "." -> compile_binary -> 
+  binary.created
+}
+
+target opic_binary / "opic_standalone"
+voice main / {compile.binary -> opic_binary}

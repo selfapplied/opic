@@ -1,0 +1,72 @@
+;;; root.ops — Root grammar reference
+
+;; ============================================================================
+;; ROOT GRAMMAR (defined in core/bootstrap.ops)
+;; ============================================================================
+;; OPIC's root grammar handles base syntax patterns.
+;; Grammar extensions (in this directory) add domain-specific patterns.
+
+;; Root grammar rules:
+;; • def <name> { <fields> } — Type definition
+;; • voice <name> / { <chain> } — Voice definition
+;; • include <path> — DEPRECATED: File inclusion (use attention-based discovery instead)
+;; • target <name> / "<description>" — Named entry point (creates implicit entry point)
+
+;; Root parser: opic.parse_ops (core/bootstrap.ops)
+;; • Splits text into lines
+;; • Filters comments and empty lines
+;; • Parses each line as def, voice, target (include is deprecated)
+;; • Collects defs, voices, and targets
+
+;; Grammar extensions extend root grammar by:
+;; 1. Registering pattern → transform_voice pairs
+;; 2. Parser tries extensions before root grammar
+;; 3. If extension matches → transforms line → parses transformed line
+;; 4. If no extension matches → uses root grammar
+
+;; ============================================================================
+;; ROOT GRAMMAR REFERENCE
+;; ============================================================================
+
+;; Root grammar is defined in: core/bootstrap.ops
+;; Key voices:
+;; • opic.parse_ops — Main parser entry point
+;; • opic.parse_line — Parse single line (checks type → routes to parser)
+;; • opic.parse_def — Parse definition line
+;; • opic.parse_voice — Parse voice line
+;; • opic.parse_target — Parse target line (creates named entry point)
+;; • opic.parse_includes — DEPRECATED: Parse include lines
+
+;; Root grammar patterns:
+voice grammar.root.def_pattern / {"def " -> pattern}
+voice grammar.root.voice_pattern / {"voice " -> pattern}
+voice grammar.root.target_pattern / {"target " -> pattern}
+voice grammar.root.include_pattern / {"include " -> pattern}  ;; DEPRECATED
+
+;; ============================================================================
+;; TARGET EXPLANATION
+;; ============================================================================
+;; target <name> / "<description>" creates a named entry point
+;; 
+;; Unlike 'main' (which is the default entry point), 'target' allows multiple
+;; named entry points per file. Targets resolve implicitly - you can reference
+;; them by name and OPIC will find and execute them.
+;;
+;; Example:
+;;   target hello / "Hello world entry point"
+;;   voice hello.main / { "Hello" -> print }
+;;
+;; Usage: opic file.ops hello  (executes the hello target)
+;;        opic file.ops        (executes main by default)
+;;
+;; Targets enable multiple entry points per file, useful for:
+;; • Documentation targets (like this file's "root" target)
+;; • Test targets
+;; • Different execution modes
+;; • Modular organization within a single file
+
+;; Root grammar is extended by grammar extensions (see parser.ops)
+
+target root / "root_grammar_reference"
+voice main / {grammar.root.def_pattern -> root}
+

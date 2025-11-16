@@ -1,0 +1,309 @@
+;;; organize.ops — Organize project into coherent case studies
+;;; Moves everything to archive, then extracts coherent demonstrations
+
+include core/bootstrap.ops
+
+;; ============================================================================
+;; ORGANIZATION PLAN
+;; ============================================================================
+
+;; Step 1: Create archive structure
+voice organize.create_archive / {
+  ->
+  file.create_directory "archive" ->
+  file.create_directory "archive/systems" ->
+  file.create_directory "archive/action" ->
+  file.create_directory "archive/docs" ->
+  file.create_directory "archive/build" ->
+  file.create_directory "archive/resources" ->
+  archive_created
+}
+
+;; Step 2: Create case study structure
+voice organize.create_case_studies / {
+  ->
+  file.create_directory "case_studies" ->
+  file.create_directory "case_studies/cosmology" ->
+  file.create_directory "case_studies/reasoning" ->
+  file.create_directory "case_studies/core" ->
+  file.create_directory "case_studies/tests" ->
+  file.create_directory "case_studies/compression" ->
+  file.create_directory "case_studies/emergent" ->
+  file.create_directory "case_studies/learn" ->
+  file.create_directory "case_studies/biology" ->
+  file.create_directory "case_studies/ml" ->
+  file.create_directory "case_studies/protocols" ->
+  file.create_directory "case_studies/medicine" ->
+  case_studies_created
+}
+
+;; Step 3: Identify coherent files to keep
+voice organize.identify_coherent / {
+  ->
+  organize.cosmology_files ->
+  organize.reasoning_files ->
+  organize.core_files ->
+  organize.test_files ->
+  organize.compression_files ->
+  organize.emergent_files ->
+  organize.learn_files ->
+  organize.biology_files ->
+  organize.ml_files ->
+  organize.protocol_files ->
+  organize.medicine_files ->
+  coherent_files
+}
+
+;; Cosmology files (CMB predictions)
+voice organize.cosmology_files / {
+  ->
+  "systems/zeta/zeta_cosmological_correspondence.ops" +
+  "systems/cosmology/cosmological_extended.ops" +
+  "docs/cosmological_validation.md" ->
+  cosmology_files
+}
+
+;; Reasoning files
+voice organize.reasoning_files / {
+  ->
+  "systems/reasoning.ops" +
+  "systems/explain.ops" +
+  "action/tests/explanation_plan.ops" +
+  "action/tests/self_explanation.ops" ->
+  reasoning_files
+}
+
+;; Core files (implicit system)
+voice organize.core_files / {
+  ->
+  "core/bootstrap.ops" +
+  "core/implicit.ops" +
+  "core/opic_parse.ops" +
+  "core/opic_load.ops" +
+  "core/opic_execute.ops" +
+  "core/opic_executor.py" ->
+  core_files
+}
+
+;; Test files (tests as proofs)
+voice organize.test_files / {
+  ->
+  "action/tests/scoring.ops" +
+  "action/tests/self.ops" +
+  "action/tests/executor_flow.ops" ->
+  test_files
+}
+
+;; Compression files
+voice organize.compression_files / {
+  ->
+  "systems/critical_geometry_codec.ops" +
+  "systems/compression/compression.ops" +
+  "systems/zeta/zeta_compression.ops" ->
+  compression_files
+}
+
+;; Emergent behavior files
+voice organize.emergent_files / {
+  ->
+  "systems/actor_coupled_modeling.ops" ->
+  emergent_files
+}
+
+;; Learning files (fun examples)
+voice organize.learn_files / {
+  ->
+  "systems/solve/solve_simple.ops" +
+  "systems/solve/example.ops" ->
+  learn_files
+}
+
+;; Biology files
+voice organize.biology_files / {
+  ->
+  "systems/fields/biology_field.ops" +
+  "docs/biology_field_equations.md" ->
+  biology_files
+}
+
+;; Machine learning files
+voice organize.ml_files / {
+  ->
+  "action/ml/ml.ops" +
+  "action/ml/gann.ops" +
+  "action/ml/generate.ops" +
+  "action/ml/train.ops" +
+  "action/ml/attention.ops" ->
+  ml_files
+}
+
+;; Protocol files
+voice organize.protocol_files / {
+  ->
+  "systems/protocol/peer.ops" +
+  "systems/protocol/certificate.ops" +
+  "systems/protocol/consensus.ops" +
+  "systems/protocol/governance.ops" ->
+  protocol_files
+}
+
+;; Medicine files (extend biology_field.ops)
+voice organize.medicine_files / {
+  ->
+  "systems/fields/biology_field.ops" ->
+  medicine_files
+}
+
+;; Step 4: Copy coherent files to case studies
+voice organize.copy_coherent / {
+  coherent_files ->
+  organize.copy_cosmology ->
+  organize.copy_reasoning ->
+  organize.copy_core ->
+  organize.copy_tests ->
+  organize.copy_compression ->
+  organize.copy_emergent ->
+  organize.copy_learn ->
+  organize.copy_biology ->
+  organize.copy_ml ->
+  organize.copy_protocols ->
+  organize.copy_medicine ->
+  copied
+}
+
+;; Copy cosmology files
+voice organize.copy_cosmology / {
+  cosmology_files ->
+  file.copy_to "case_studies/cosmology/" ->
+  cosmology_copied
+}
+
+;; Copy reasoning files
+voice organize.copy_reasoning / {
+  reasoning_files ->
+  file.copy_to "case_studies/reasoning/" ->
+  reasoning_copied
+}
+
+;; Copy core files
+voice organize.copy_core / {
+  core_files ->
+  file.copy_to "case_studies/core/" ->
+  core_copied
+}
+
+;; Copy test files
+voice organize.copy_tests / {
+  test_files ->
+  file.copy_to "case_studies/tests/" ->
+  tests_copied
+}
+
+;; Copy compression files
+voice organize.copy_compression / {
+  compression_files ->
+  file.copy_to "case_studies/compression/" ->
+  compression_copied
+}
+
+;; Copy emergent files
+voice organize.copy_emergent / {
+  emergent_files ->
+  file.copy_to "case_studies/emergent/" ->
+  emergent_copied
+}
+
+;; Copy learn files
+voice organize.copy_learn / {
+  learn_files ->
+  file.copy_to "case_studies/learn/" ->
+  learn_copied
+}
+
+;; Copy biology files
+voice organize.copy_biology / {
+  biology_files ->
+  file.copy_to "case_studies/biology/" ->
+  biology_copied
+}
+
+;; Copy ML files
+voice organize.copy_ml / {
+  ml_files ->
+  file.copy_to "case_studies/ml/" ->
+  ml_copied
+}
+
+;; Copy protocol files
+voice organize.copy_protocols / {
+  protocol_files ->
+  file.copy_to "case_studies/protocols/" ->
+  protocols_copied
+}
+
+;; Copy medicine files
+voice organize.copy_medicine / {
+  medicine_files ->
+  file.copy_to "case_studies/medicine/" ->
+  medicine_copied
+}
+
+;; Step 5: Move everything else to archive
+voice organize.archive_rest / {
+  ->
+  file.move "systems" "archive/systems" ->
+  file.move "action" "archive/action" ->
+  file.move "docs" "archive/docs" ->
+  file.move "build" "archive/build" ->
+  file.move "resources" "archive/resources" ->
+  archived
+}
+
+;; Step 6: Create minimal active structure
+voice organize.create_active / {
+  ->
+  file.create_directory "core" ->
+  file.create_directory "systems" ->
+  organize.copy_core_to_active ->
+  organize.create_minimal_systems ->
+  active_created
+}
+
+;; Copy core to active
+voice organize.copy_core_to_active / {
+  case_studies_core ->
+  file.copy_to "core/" ->
+  core_active
+}
+
+;; Create minimal systems
+voice organize.create_minimal_systems / {
+  ->
+  file.create_directory "systems/solve" ->
+  file.copy "case_studies/learn/solve_simple.ops" "systems/solve/" ->
+  systems_active
+}
+
+;; ============================================================================
+;; MAIN ORGANIZATION VOICE
+;; ============================================================================
+
+;; Full organization process
+voice organize.all / {
+  ->
+  organize.create_archive ->
+  organize.create_case_studies ->
+  organize.identify_coherent ->
+  organize.copy_coherent ->
+  organize.archive_rest ->
+  organize.create_active ->
+  organized
+}
+
+target organize / "project_organizer"
+voice main / {
+  ->
+  organize.all ->
+  organize
+}
+

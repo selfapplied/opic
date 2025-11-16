@@ -1,0 +1,260 @@
+{
+  "benchmark": {
+    "results": [
+      {
+        "n": 20,
+        "alpha": 3.5,
+        "n_clauses": 70,
+        "success_rate": 0.3,
+        "median_steps": 2693,
+        "variance_steps": 44357.333333333336,
+        "mean_verification_cost": 70,
+        "mean_search_entropy": 0.6930714852399102,
+        "n_seeds": 10
+      },
+      {
+        "n": 20,
+        "alpha": 4.0,
+        "n_clauses": 80,
+        "success_rate": 0.1,
+        "median_steps": 9621,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 80,
+        "mean_search_entropy": 0.693132007138842,
+        "n_seeds": 10
+      },
+      {
+        "n": 20,
+        "alpha": 4.2,
+        "n_clauses": 84,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 20,
+        "alpha": 4.5,
+        "n_clauses": 90,
+        "success_rate": 0.1,
+        "median_steps": 3670,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 90,
+        "mean_search_entropy": 0.6931091665804938,
+        "n_seeds": 10
+      },
+      {
+        "n": 20,
+        "alpha": 5.0,
+        "n_clauses": 100,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 24,
+        "alpha": 3.5,
+        "n_clauses": 84,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 24,
+        "alpha": 4.0,
+        "n_clauses": 96,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 24,
+        "alpha": 4.2,
+        "n_clauses": 100,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 24,
+        "alpha": 4.5,
+        "n_clauses": 108,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 24,
+        "alpha": 5.0,
+        "n_clauses": 120,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 28,
+        "alpha": 3.5,
+        "n_clauses": 98,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 28,
+        "alpha": 4.0,
+        "n_clauses": 112,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 28,
+        "alpha": 4.2,
+        "n_clauses": 117,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 28,
+        "alpha": 4.5,
+        "n_clauses": 126,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 28,
+        "alpha": 5.0,
+        "n_clauses": 140,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 32,
+        "alpha": 3.5,
+        "n_clauses": 112,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 32,
+        "alpha": 4.0,
+        "n_clauses": 128,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 32,
+        "alpha": 4.2,
+        "n_clauses": 134,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 32,
+        "alpha": 4.5,
+        "n_clauses": 144,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      },
+      {
+        "n": 32,
+        "alpha": 5.0,
+        "n_clauses": 160,
+        "success_rate": 0.0,
+        "median_steps": 0,
+        "variance_steps": 0.0,
+        "mean_verification_cost": 0,
+        "mean_search_entropy": 0.0,
+        "n_seeds": 10
+      }
+    ]
+  },
+  "learning_curve": {
+    "learning_curve": [
+      {
+        "n_observables": 1,
+        "mean_accuracy": 0.525,
+        "std_accuracy": 0.0
+      },
+      {
+        "n_observables": 2,
+        "mean_accuracy": 0.55,
+        "std_accuracy": 0.0
+      },
+      {
+        "n_observables": 4,
+        "mean_accuracy": 0.6,
+        "std_accuracy": 0.0
+      },
+      {
+        "n_observables": 8,
+        "mean_accuracy": 0.7,
+        "std_accuracy": 0.0
+      },
+      {
+        "n_observables": 16,
+        "mean_accuracy": 0.9,
+        "std_accuracy": 0.0
+      },
+      {
+        "n_observables": 20,
+        "mean_accuracy": 1.0,
+        "std_accuracy": 0.0
+      }
+    ]
+  }
+}

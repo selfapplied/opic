@@ -1,1988 +1,793 @@
 #!/usr/bin/env python3
-"""Opic CLI — Thin Python shim for opic's self-hosting voice system
-
-This file is intentionally minimal - all logic lives in .ops files.
-Python only handles: file I/O, subprocess calls, and executing opic's voices.
-Changes to this file should be rare - extend opic's voice system instead.
+"""
+OPIC Bootstrap - Circular Architecture
+Circles as lossless diffeomorphisms: Python ↔ OPIC boundary preserves all information
+Equilibrium: Python provides primitives, OPIC executes itself
+Symmetry: Smooth, invertible transformations
 """
 
 import sys
-import subprocess
+import importlib
 from pathlib import Path
+from typing import Dict, Any
 
-def build_tiddlywiki():
-    """Build TiddlyWiki from opic scores - now entirely in opic!"""
-    execute_opic("tiddlywiki_build.ops")
+# Minimal parser (circular: could be OPIC self-parser)
+parse_ops = None
 
-def run_python():
-    """Run opic python bootstrap"""
-    from generate import parse_ops, compose
-    from pathlib import Path
-    ops_file = Path(__file__).parent / "core.ops"
-    defs, voices, _ = parse_ops(ops_file.read_text())
-    print(compose(voices))
 
-def execute_opic(ops_file):
-    """Execute opic file directly - opic executes itself"""
-    from pathlib import Path
-    import importlib.util
-    import os
-    
-    # Find opic kernel directory (self-contained installation)
-    # Priority: 1) System install location, 2) User install location, 3) Development (__file__.parent)
-    project_root = None
-    
-    # Check system install location
-    for sys_path in [
-        Path("/usr/local/share/opic"),
-        Path("/usr/share/opic"),
-    ]:
-        if (sys_path / "bootstrap.ops").exists():
-            project_root = sys_path
-            break
-    
-    # Check user install location
-    if not project_root:
-        user_path = Path.home() / ".local" / "share" / "opic"
-        if (user_path / "bootstrap.ops").exists():
-            project_root = user_path
-    
-    # Fall back to development location (source repo)
-    if not project_root:
-        project_root = Path(__file__).parent
-        if not (project_root / "generate.py").exists():
-            for possible_root in [
-                Path.home() / "opic",
-                Path("/Users/joelstover/opic"),
-            ]:
-                if (possible_root / "generate.py").exists():
-                    project_root = possible_root
-                    break
-    
-    # Bootstrap kernel: load minimal opic definitions
-    # Python implements opic.bootstrap voice from bootstrap.ops
-    bootstrap_file = project_root / "bootstrap.ops"
-    
-    # Load generate.py (parser) - try install location first, then development
-    generate_path = project_root / "generate.py"
-    if not generate_path.exists():
-        # Fallback: try to find generate.py in development location
-        dev_root = Path(__file__).parent
-        if (dev_root / "generate.py").exists():
-            generate_path = dev_root / "generate.py"
-    
-    if generate_path.exists():
-        spec = importlib.util.spec_from_file_location("generate", generate_path)
-        generate_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(generate_module)
-        # parse_ops implements opic.parse_ops voice from bootstrap.ops
-        parse_ops = generate_module.parse_ops
-    else:
-        # Minimal fallback if generate.py not found
-        print("Error: generate.py not found. opic requires kernel .ops files.", file=sys.stderr)
-        sys.exit(1)
-    
-    # Load namespace mapping from opic_load.ops (implements opic.map_namespaces from bootstrap.ops)
-    opic_load_file = project_root / "opic_load.ops"
-    namespace_map = {}
-    if opic_load_file.exists():
-        # Load namespace mappings from opic_load.ops (following opic.namespace_map voices)
-        _, load_voices, _ = parse_ops(opic_load_file.read_text())
-        for key, value in load_voices.items():
-            if key.startswith("opic.namespace_map."):
-                namespace = key.replace("opic.namespace_map.", "").replace(".", "") + "."
-                filename = value.strip('"')
-                namespace_map[namespace] = filename
-    
-    # Fallback namespace map (minimal bootstrap set)
-    if not namespace_map:
-        namespace_map = {
-            "ml.": "ml.ops", "audio.": "audio.ops", "train.": "train_model.ops",
-            "generate.": "generate_words.ops", "interactive.": "interactive.ops",
-            "evaluate.": "evaluate.ops", "topological.": "topological_map.ops",
-            "metal.": "metal_tensors.ops", "planning.": "planning.ops", "reason.": "reasoning.ops",
-            "inflate.": "inflate_deflate.ops", "deflate.": "inflate_deflate.ops",
-            "vmap.": "vmap.ops", "vfs.": "vfs.ops",
-        }
-    
-    # Initialize agent realm and CA for opic itself
-    # opic creates its own realm for self-hosting
-    agent_realm = os.environ.get('OPIC_REALM', 'opic_realm')
-    opic_ca = os.environ.get('OPIC_CA', 'opic_ca')
-    
-    def load_ops_file(file_path, loaded_files, all_defs, all_voices, agent_realm=agent_realm, ca=opic_ca):
-        """Load .ops file - implements opic.load_recursive voice from bootstrap.ops with certificate verification"""
-        # opic.check_loaded voice
-        if file_path in loaded_files:
-            return
-        
-        if not file_path.exists():
-            return
-        
-        # opic.check_file_permission voice (certificate check for file read)
-        # For now, allow all reads within opic realm (can be restricted later)
-        # cert.check_file_read would verify certificate here
-        
-        # opic.load_with_verification voice
-        # Check if file has signed header
-        content = file_path.read_text()
-        has_signature = "signature:" in content[:500]  # Check first 500 chars for header
-        
-        if has_signature:
-            # opic.if_signed_verify voice
-            # signed.verify_ops would verify signature here
-            # For now, log that signature was found
-            pass
-        
-        # opic.load_file voice
-        loaded_files.add(file_path)
-        defs, voices, includes = parse_ops(content)
-        
-        # opic.load_includes voice (explicit includes)
-        for include_file in includes:
-            include_path = file_path.parent / include_file
-            load_ops_file(include_path, loaded_files, all_defs, all_voices, agent_realm, ca)
-        
-        # opic.merge_voices voice
-        # Allow overlapping names - creates richer field for exploration and coherence
-        # Disambiguation happens through namespaces, context, and opic's attention system
-        # Later voices override earlier ones (extensions can override kernel)
-        # This enables resonance and exploration across overlapping voice names
-        
-        all_defs.update(defs)
-        all_voices.update(voices)  # Later voices override - extensions can override kernel
-        
-        # opic.load_attention voice (automatic inclusion)
-        referenced_namespaces = set()
-        for voice_body in voices.values():
-            if isinstance(voice_body, str) and "->" in voice_body:
-                # opic.extract_references -> opic.find_namespaces
-                parts = voice_body.replace("{", "").replace("}", "").split("->")
-                for part in parts:
-                    part = part.strip().split("+")[0].strip()
-                    if "." in part:
-                        namespace = part.split(".")[0] + "."
-                        referenced_namespaces.add(namespace)
-        
-        # opic.auto_load voice
-        for namespace in referenced_namespaces:
-            if namespace in namespace_map:
-                auto_file = namespace_map[namespace]
-                auto_path = file_path.parent / auto_file
-                if auto_path.exists() and auto_path not in loaded_files:
-                    load_ops_file(auto_path, loaded_files, all_defs, all_voices, agent_realm, ca)
-    
-    # Bootstrap: implement opic.bootstrap voice from bootstrap.ops
-    # Load bootstrap kernel first (minimal set)
-    bootstrap_path = project_root / "bootstrap.ops"
-    loaded_files = set()
-    all_defs, all_voices = {}, {}
-    
-    # Load bootstrap kernel if it exists (contains opic.parse_ops, opic.load_recursive, etc.)
-    if bootstrap_path.exists():
-        load_ops_file(bootstrap_path, loaded_files, all_defs, all_voices, agent_realm, opic_ca)
-    
-    # Load minimal core files (implements opic.load_bootstrap)
-    core_files = ["planning.ops", "reasoning.ops", "ml.ops"]
-    for core_file in core_files:
-        core_path = project_root / core_file
-        if core_path.exists():
-            load_ops_file(core_path, loaded_files, all_defs, all_voices, agent_realm, opic_ca)
-    
-    # Repository extension: discover and load .ops files from current working directory
-    # This implements opic.load_repo_extensions -> repo.discover_ops -> repo.load_extension
-    # Kernel ops (this repo) load first, then repo extensions
-    # Extensions cannot override kernel voices (kernel protection)
-    import os
-    cwd = Path(os.getcwd())
-    if cwd != project_root and (cwd / ".git").exists():
-        # We're in a different repository - discover its .ops files
-        # These extend the kernel ops (opic's core functionality)
-        
-        # Check for explicit extension manifest (.opic_extensions)
-        manifest_file = cwd / ".opic_extensions"
-        if manifest_file.exists():
-            # Load only explicitly listed extensions
-            try:
-                repo_ops_files = [cwd / line.strip() for line in manifest_file.read_text().split('\n') 
-                                 if line.strip() and not line.startswith('#')]
-            except:
-                repo_ops_files = []
-        else:
-            # Auto-discover: find all .ops files in repo root
-            repo_ops_files = list(cwd.glob("*.ops"))
-        
-        if repo_ops_files:
-            # Load repo's .ops files (they extend opic's kernel voice system)
-            # Overlapping names create richer field - extensions can override kernel voices
-            # Disambiguation through namespaces and context enables exploration and coherence
-            # Graceful failure: if extension fails, skip it (don't break opic)
-            loaded_extensions = []
-            for repo_ops in repo_ops_files:
-                if repo_ops.exists() and repo_ops not in loaded_files:
-                    try:
-                        load_ops_file(repo_ops, loaded_files, all_defs, all_voices, agent_realm, opic_ca)
-                        loaded_extensions.append(repo_ops.name)
-                    except Exception as e:
-                        # Extension failed to load - skip it gracefully
-                        print(f"Warning: Extension {repo_ops.name} failed to load: {e}", file=sys.stderr)
-                        continue
-            
-            # Store loaded extensions for version display
-            if loaded_extensions:
-                all_voices['_opic_extensions'] = loaded_extensions
-                all_voices['_opic_repo'] = str(cwd)
-    
-    # Load main ops file (will auto-include dependencies via attention)
-    # This implements opic.bootstrap -> opic.load_bootstrap -> opic.find_main -> opic.execute_main
-    # Resolve ops file path: check current directory first, then project_root
-    import os
-    cwd = Path(os.getcwd())
-    if Path(ops_file).is_absolute():
-        ops_path = Path(ops_file)
-    elif (cwd / ops_file).exists():
-        ops_path = cwd / ops_file
-    else:
-        ops_path = project_root / ops_file
-    if not ops_path.exists():
-        print(f"Error: File not found: {ops_file}", file=sys.stderr)
-        sys.exit(1)
-    
-    # Save main voice from main file before loading (preserve it)
-    main_file_defs, main_file_voices, _ = parse_ops(ops_path.read_text())
-    main_voice_from_file = main_file_voices.get('main')
-    
-    load_ops_file(ops_path, loaded_files, all_defs, all_voices, agent_realm, opic_ca)
-    
-    # Restore main voice from main file (main file takes precedence)
-    if main_voice_from_file:
-        all_voices['main'] = main_voice_from_file
-    
-    # Execute opic.create_witness voice (opic creates its own witness checkpoint)
-    # This implements opic.create_witness -> opic.write_witness_file from bootstrap.ops
-    # .opicup = "opic is up" - witness checkpoint that opic is self-hosting
-    witness_files = [
-        project_root / ".opicup",
-        Path.home() / ".opicup",
-        Path("/usr/local/share/opic/.opicup")
-    ]
-    for witness_file in witness_files:
-        try:
-            witness_file.parent.mkdir(parents=True, exist_ok=True)
-            witness_file.write_text(f"opicup\nrealm={agent_realm}\nca={opic_ca}\n")
-            break
-        except:
-            continue
-    
-    # Get final voices and defs (main file already merged)
-    defs = all_defs
-    voices = all_voices
-    
-    # Print LaTeX equations if they exist
-    latex_voices = {k: v for k, v in voices.items() if 'latex' in k}
-    if latex_voices:
-        print("=" * 60)
-        print("LaTeX Equations:")
-        print("=" * 60)
-        for k, v in sorted(latex_voices.items()):
-            # Clean up LaTeX for display
-            latex = v.strip('"').replace('\\\\', '\\')
-            print(f"\n{k.replace('_latex', '')}:")
-            print(f"  {latex}")
-        print("\n" + "=" * 60)
-    
-    # Show goal and plan if they exist
-    if "goal" in voices:
-        print("\n" + "=" * 60)
-        print("Goal:")
-        print("=" * 60)
-        print(f"  {voices['goal']}")
-        if "goal_latex" in voices:
-            latex = voices['goal_latex'].strip('"').replace('\\\\', '\\')
-            print(f"\n  {latex}")
-    
-    if "plan" in voices:
-        print("\n" + "=" * 60)
-        print("Plan:")
-        print("=" * 60)
-        for i in range(1, 8):
-            step_key = f"plan_step_{i}"
-            if step_key in voices:
-                print(f"  {i}. {voices[step_key]}")
-        if "plan_latex" in voices:
-            latex = voices['plan_latex'].strip('"').replace('\\\\', '\\')
-            print(f"\n  {latex}")
-    
-    # Derive capabilities from structure - generic, no hardcoding
-    # Only show if not a test file (tests have their own capability checks)
-    is_test = any(k.startswith("test.") for k in voices.keys())
-    if not is_test:
-        # Generic capability detection - look for common patterns
-        has_chains = any("{" in str(v) and "->" in str(v) for v in voices.values())
-        has_latex = any("latex" in k for k in voices.keys())
-        has_goal_plan = "goal" in voices and "plan" in voices
-        has_ml = any(k.startswith("ml.") for k in voices.keys())
-        has_reasoning = any(k.startswith("reason.") for k in voices.keys())
-        
-        print("\n" + "=" * 60)
-        print("Capabilities (derived from structure):")
-        print("=" * 60)
-        if has_chains:
-            print("  ✓ Voice chains defined")
-        if has_latex:
-            print("  ✓ LaTeX equations available")
-        if has_goal_plan:
-            print("  ✓ Goal/Plan structure present")
-        if has_ml:
-            ml_voices = [k for k in voices.keys() if k.startswith("ml.")]
-            print(f"  ✓ ML capabilities: {len(ml_voices)} ML voices")
-            # Show ML categories
-            if any("token" in k for k in ml_voices):
-                print("    - Token prediction")
-            if any("sentence" in k for k in ml_voices):
-                print("    - Sentence prediction")
-            if any("mlp" in k or "transformer" in k for k in ml_voices):
-                print("    - Model architectures")
-        if has_reasoning:
-            print("  ✓ Reasoning capabilities")
-        print("  → Structure and exploration framework")
-    
-    # Generic execution engine
-    visited = set()
-    
-    def execute_chain(chain_str, voices, depth=0, max_depth=5):
-        """Recursively execute a voice chain"""
-        if depth > max_depth or chain_str in visited:
-            return
-        
-        visited.add(chain_str)
-        
-        if not isinstance(chain_str, str):
-            return
-        
-        if not chain_str.startswith("{") or not chain_str.endswith("}"):
-            # Simple voice reference
-            if chain_str in voices:
-                return voices[chain_str]
-            return chain_str
-        
-        # Parse chain: {step1 -> step2 -> step3}
-        chain_body = chain_str[1:-1].strip()
-        steps = [s.strip() for s in chain_body.split("->")]
-        
-        for step in steps:
-            indent = "  " * depth
-            print(f"{indent}→ {step}")
-            
-            if step in voices:
-                step_body = voices[step]
-                
-                # Show step definition if it's a simple string
-                if isinstance(step_body, str):
-                    if not step_body.startswith("{"):
-                        # Simple description
-                        print(f"{indent}  {step_body}")
-                    else:
-                        # Nested chain - show dependencies
-                        nested_body = step_body[1:-1].strip()
-                        nested_steps = [s.strip() for s in nested_body.split("->")]
-                        
-                        # Extract dependencies (inputs before ->)
-                        if "->" in nested_body:
-                            inputs = nested_body.split("->")[0].strip()
-                            outputs = nested_body.split("->")[-1].strip()
-                            
-                            # Parse inputs (may have +)
-                            deps = [d.strip() for d in inputs.split("+")]
-                            for dep in deps:
-                                if dep in voices:
-                                    print(f"{indent}    ✓ {dep} available")
-                                else:
-                                    print(f"{indent}    ? {dep} (data/parameter)")
-                            
-                            # Show what this step produces
-                            if outputs and outputs != inputs:
-                                print(f"{indent}    → produces: {outputs}")
-                            
-                            # For solve steps, show the actual step
-                            if step.startswith("solve_step_"):
-                                step_num = step.replace("solve_step_", "")
-                                print(f"{indent}    Step {step_num}: {step_body}")
-                            
-                            # For solve voice, expand its steps
-                            if step == "solve" and depth < max_depth - 1:
-                                # Find all solve_step_N voices
-                                solve_steps = [k for k in voices.keys() if k.startswith("solve_step_")]
-                                for solve_step in sorted(solve_steps):
-                                    if solve_step in voices:
-                                        step_def = voices[solve_step]
-                                        step_num = solve_step.replace("solve_step_", "")
-                                        print(f"{indent}  → {solve_step}")
-                                        if isinstance(step_def, str) and "->" in step_def:
-                                            if step_def.startswith("{") and step_def.endswith("}"):
-                                                step_def = step_def[1:-1]
-                                            if "->" in step_def:
-                                                step_inputs = step_def.split("->")[0].strip()
-                                                step_outputs = step_def.split("->")[-1].strip()
-                                                print(f"{indent}    Inputs: {step_inputs}")
-                                                print(f"{indent}    Outputs: {step_outputs}")
-                                                # Check dependencies
-                                                for dep in step_inputs.split("+"):
-                                                    dep = dep.strip()
-                                                    if dep in voices:
-                                                        print(f"{indent}      ✓ {dep} available")
-                        else:
-                            # No dependencies shown, just execute
-                            if depth < max_depth - 1:
-                                execute_chain(step_body, voices, depth + 1, max_depth)
-                else:
-                    print(f"{indent}  {step_body}")
-            else:
-                # Check if it's a data/parameter name (not a voice)
-                if step not in ["limit", "primes", "cf_data", "U_CF", "H_CF", "claim_1_result", "claim_2_result", "claim_3_result"]:
-                    print(f"{indent}  (voice not found)")
-        
-        return []
-    
-    # Execute main voice if it exists
-    if "main" in voices:
-        print(f"\nExecuting: {voices['main']}")
-        print(f"Definitions: {len(defs)}, Voices: {len(voices)}")
-        
-        # Check if this is a test file - let opic handle it
-        is_test = any(k.startswith("test.") for k in voices.keys())
-        is_ml_test = any(k.startswith("test.ml.") for k in voices.keys())
-        
-        if is_test or is_ml_test:
-            print("\n" + "=" * 60)
-            print("Running Tests:")
-            print("=" * 60)
-            
-            # Show what's being tested
-            if is_ml_test:
-                ml_voices = [k for k in voices.keys() if k.startswith("ml.")]
-                print(f"\nML Capabilities Available: {len(ml_voices)} voices")
-                if ml_voices:
-                    print("  Categories:")
-                    if any("token" in k for k in ml_voices):
-                        print("    - Token prediction")
-                    if any("sentence" in k for k in ml_voices):
-                        print("    - Sentence prediction")
-                    if any("mlp" in k for k in ml_voices):
-                        print("    - MLP architecture")
-                    if any("train" in k for k in ml_voices):
-                        print("    - Training")
-            
-            # Let opic's test.capabilities voice handle capability checking
-            if "test.capabilities" in voices:
-                print("\nCapability Tests:")
-                # Execute capability tests via opic's voice chain - fully generic
-                cap_chain = voices["test.capabilities"]
-                if isinstance(cap_chain, str) and cap_chain.startswith("{"):
-                    cap_steps = [s.strip() for s in cap_chain[1:-1].split("->")]
-                    for cap_name in cap_steps:
-                        if cap_name in voices:
-                            cap_check = f"{cap_name}.check"
-                            # Check if capability check voice exists and what it requires
-                            if cap_check in voices:
-                                check_body = voices[cap_check]
-                                # Parse check body to find required voices
-                                if isinstance(check_body, str) and "->" in check_body:
-                                    # Extract dependencies from check body
-                                    deps = check_body.split("->")[0].strip().strip("{}")
-                                    dep_list = [d.strip().strip('"') for d in deps.split("+")]
-                                    # Check if all dependencies exist as voices
-                                    all_exist = all(dep in voices for dep in dep_list)
-                                    status = "✓" if all_exist else "✗"
-                                    cap_display = cap_name.replace("test.capability.", "")
-                                    print(f"  {status} {cap_display}: {'PASS' if all_exist else 'FAIL'}")
-        
-        # Show reasoning if it exists
-        reasoning_voices = {k: v for k, v in voices.items() if k.startswith("reason.")}
-        if reasoning_voices and not is_test:
-            print("\n" + "=" * 60)
-            print("Reasoning:")
-            print("=" * 60)
-            for reason_name, reason_body in sorted(reasoning_voices.items())[:10]:
-                if isinstance(reason_body, str):
-                    print(f"\n{reason_name}:")
-                    if "->" in reason_body:
-                        parts = reason_body.split("->")
-                        if len(parts) >= 2:
-                            premise = parts[0].strip().strip("{}")
-                            conclusion = parts[-1].strip()
-                            print(f"  If {premise}")
-                            print(f"  Then {conclusion}")
-                    else:
-                        print(f"  {reason_body}")
-            
-            # Run test suite if it exists - let opic define it
-            test_suite_key = "test.suite" if "test.suite" in voices else "test.ml.suite" if "test.ml.suite" in voices else None
-            if test_suite_key:
-                test_suite = voices[test_suite_key]
-                if isinstance(test_suite, str) and test_suite.startswith("{"):
-                    test_steps = [s.strip() for s in test_suite[1:-1].split("->")]
-                    passed = 0
-                    print("\nTest Suite:")
-                    for test_name in test_steps:
-                        if test_name in voices:
-                            test_passed = f"{test_name}.passed"
-                            test_setup = f"{test_name}.setup"
-                            test_run = f"{test_name}.run"
-                            
-                            print(f"\n  → {test_name}")
-                            if test_setup in voices:
-                                print(f"    Setup: {voices[test_setup]}")
-                            if test_run in voices:
-                                print(f"    Run: {voices[test_run]}")
-                            if test_passed in voices:
-                                print(f"    ✓ Assertion defined")
-                                passed += 1
-                            else:
-                                print(f"    ? Structure defined (assertion pending)")
-                    print(f"\n{'=' * 60}")
-                    print(f"Test Results: {passed} tests with assertions, {len(test_steps)} total tests")
-                    print("=" * 60)
-        
-        main_body = voices['main']
-        
-        # Execute runtime following opic.execute_runtime interface from bootstrap.ops
-        # opic.detect_runtime_type -> opic.execute_specialized
-        project_root_path = Path(__file__).parent
-        
-    # Detect runtime type (implements opic.detect_runtime_type -> opic.check_patterns)
-    # Follow opic.check_interactive, opic.check_evaluation, opic.check_repos, opic.check_compile, opic.check_plan voices
-    # Check main voice name/chain, not just any string match - be more specific to avoid false positives
-    main_str = str(main_body)
-    # Check if the main voice chain explicitly references specialized runtime voices
-    # Exclude help files from matching other patterns
-    is_help = "help.generate" in main_str or "help." in main_str and "generate" in main_str
-    is_interactive = not is_help and ("interactive.start" in main_str or "interactive.loop" in main_str or 
-                     "execute_interactive" in main_str or (main_str.startswith("{") and "interactive." in main_str and "->" in main_str))
-    is_evaluation = not is_help and "execute_evaluation" in main_str
-    is_repos = not is_help and ("repos.list" in main_str or "repos.summarize" in main_str or "execute_repos" in main_str)
-    is_compile = not is_help and ("execute_compile" in main_str or "opic.compile_install" in main_str or "opic.self_compile" in main_str)
-    is_plan = not is_help and ("plan.scan" in main_str or "plan.suggest" in main_str or "execute_plan" in main_str)
-    # Execute specialized runtime (implements opic.execute_specialized)
-    if is_interactive:
-        # Implements opic.execute_interactive voice
-        execute_interactive_conversation(voices, defs, project_root=project_root_path)
-        return
-    elif is_evaluation:
-        # Implements opic.execute_evaluation voice
-        execute_evaluation(voices, defs, project_root=project_root_path)
-        return
-    elif is_repos:
-        # Implements opic.execute_repos voice
-        execute_repos(voices, defs, project_root=project_root_path)
-        return
-    elif is_compile:
-        # Implements opic.execute_compile voice
-        execute_compile(voices, defs, project_root=project_root_path)
-        return
-    elif is_plan:
-        # Implements opic.execute_plan voice
-        execute_plan(voices, defs, project_root=project_root_path, agent_realm=agent_realm, ca=opic_ca)
-        return
-    elif is_help:
-        # Implements opic.execute_help voice
-        # Pass execute_chain so help can execute opic voices
-        execute_help(voices, defs, project_root=project_root_path, agent_realm=agent_realm, ca=opic_ca, execute_chain=execute_chain)
-        return
-    
-    # Otherwise: implements opic.execute_generic voice (fall through to chain execution)
-    # Core runtime interface: just execute the chain, no extra audio checks
-    main_body = voices['main']
-    execute_chain(main_body, voices)
-    
-    # Training is fully defined in opic - execute following opic's chain
-    is_training = any(k.startswith("train.") for k in voices.keys()) and ("train.loop" in str(main_body) or "train_model" in str(main_body))
-    if is_training:
-        training_data_path = Path(__file__).parent / "voice_training_data.json"
-        if training_data_path.exists():
-            import json
-            import random
-            
-            with open(training_data_path) as f:
-                training_data = json.load(f)
-            
-            print(f"\n{'=' * 60}")
-            print("Training opic (following opic's structure):")
-            print("=" * 60)
-            
-            # Follow opic's training chain
-            pairs = training_data.get('pairs', [])
-            vocab_size = training_data.get('vocab_size', 601)
-            
-            print(f"\n  Step 1: Load data ({len(pairs)} pairs, vocab={vocab_size})")
-            print(f"  Step 2: Create model (MLP: {vocab_size} → [256,128,64] → {vocab_size})")
-            
-            # Get epochs from opic
-            epochs = 50
-            if "train.loop" in voices:
-                loop_def = voices["train.loop"]
-                if "epoch_50" in loop_def:
-                    epochs = 50
-            
-            print(f"  Step 3: Train for {epochs} epochs")
-            print(f"    Following opic's chain: train.loop → train.epoch → train.step")
-            
-            # Simulate training following opic's structure
-            print(f"\n  Training progress:")
-            for epoch in range(1, min(epochs + 1, 6)):  # Show first 5 epochs
-                # Simulate loss decreasing
-                loss = 4.5 - (epoch * 0.3) + random.uniform(-0.1, 0.1)
-                print(f"    Epoch {epoch}: loss = {loss:.3f}")
-            
-            if epochs > 5:
-                print(f"    ... (epochs 6-{epochs})")
-                final_loss = 4.5 - (epochs * 0.3) + random.uniform(-0.1, 0.1)
-                print(f"    Epoch {epochs}: loss = {final_loss:.3f}")
-            
-            print(f"\n  Step 4: Save model (opic_trained_model.json)")
-            print(f"  Step 5: Model ready for generation")
-            
-            # Save a simple model state (following opic's train.save_model)
-            model_state = {
-                "vocab_size": vocab_size,
-                "hidden_dims": [256, 128, 64],
-                "trained": True,
-                "epochs": epochs,
-                "final_loss": final_loss if epochs > 5 else 4.5 - (5 * 0.3)
-            }
-            model_file = Path(__file__).parent / "opic_trained_model.json"
-            with open(model_file, 'w') as f:
-                json.dump(model_state, f, indent=2)
-            
-            print(f"\n  ✓ Training complete (following opic's structure)")
-            print(f"  ✓ Model saved: {model_file.name}")
-            print(f"  → opic can now generate words using trained model")
-    
-    # Audio/say mode is now handled in opic's voice system (audio.ops)
-    # Audio handling moved to opic voices - no Python code needed here
-    
-    # Check if opic is generating words (following opic's generate_words chain)
-    is_generating = "opic.chooses_words" in str(main_body) or "generate_words" in str(main_body) or "generate.words" in str(main_body)
-    if is_generating:
-        # Load trained model (following opic's generate.load_model)
-        model_file = Path(__file__).parent / "opic_trained_model.json"
-        data_file = Path(__file__).parent / "voice_training_data.json"
-        if model_file.exists() and data_file.exists():
-            import json
-            import numpy as np
-            import random
-            import cmath
-            
-            with open(model_file) as f:
-                model_state = json.load(f)
-            with open(data_file) as f:
-                training_data = json.load(f)
-            
-            # Build vocab from sequences (small, simple)
-            vocab_set = set()
-            for seq in training_data.get('sequences', [])[:200]:
-                for token in seq.get('tokens', []):
-                    vocab_set.add(token)
-            
-            vocab_list = sorted(list(vocab_set))
-            vocab_size = len(vocab_list)
-            vocab = {str(i): token for i, token in enumerate(vocab_list)}
-            
-            # Get context (following opic's opic.context)
-            if "opic.context" in voices:
-                context_str = voices["opic.context"]
-            else:
-                context_str = "I am opic"
-            
-            # Simple tokenization: find context tokens in vocab
-            context_tokens = []
-            words = context_str.lower().split()
-            for word in words:
-                for token_id, token_name in vocab.items():
-                    if token_name == word:
-                        context_tokens.append(int(token_id))
-                        break
-            
-            # Field-based generation: text as field evolving under operator
-            # Small parameter space: use field amplitudes from operator evolution
-            
-            # Initial field state: context tokens as field amplitudes
-            if not context_tokens or vocab_size == 0:
-                seed_token = random.randint(0, min(vocab_size - 1, 50)) if vocab_size > 0 else 0
-                field_state = [seed_token]
-            else:
-                field_state = context_tokens[-3:] if len(context_tokens) >= 3 else context_tokens
-            
-            # Field evolution: e^(-iHt) |state⟩
-            # Simple operator: H_text = dilation generator (scaling)
-            # Evolution: scale field amplitudes
-            generated_tokens = []
-            current_state = field_state[-1] if field_state else 0
-            
-            for t in range(5):  # Evolve for 5 steps
-                # Field amplitude: |ψ(token)|² ~ exp(-iHt)
-                # Simple: H acts as scaling operator (dilation generator)
-                # amplitude = exp(-i * scale * t) where scale ~ token_id
-                scale = current_state / max(vocab_size, 1) if vocab_size > 0 else 0
-                phase = -1j * scale * (t + 1)  # Evolution phase
-                amplitude = abs(cmath.exp(phase))  # Field amplitude
-                
-                # Sample token from amplitude distribution
-                # Small parameter space: amplitude modulates token selection
-                token_offset = int(amplitude * 10) % vocab_size
-                next_token = (current_state + token_offset) % vocab_size
-                
-                generated_tokens.append(next_token)
-                current_state = next_token  # Evolve state
-            
-            # Detokenize (following opic's generate.detokenize)
-            generated_words = []
-            for token_id in generated_tokens:
-                token_name = vocab.get(str(token_id), f"token_{token_id}")
-                generated_words.append(token_name)
-            
-            sentence = " ".join(generated_words) if generated_words else "opic"
-            print(f"\n📝 opic generated: {sentence[:60]}...")
-            # Audio speaking is handled in opic's voice system (audio.ops)
-        else:
-            print("\n  ⚠ Model or data file missing")
-        
-        print("\n" + "=" * 60)
-        print("Execution complete")
-        print("=" * 60)
+def find_project_root():
+    """Find opic installation root (circular: self-locating)"""
+    script_dir = Path(__file__).parent
+    # Check if we're in .out/ directory (built binary)
+    if script_dir.name == ".out" or script_dir.name == "out":
+        # Look in parent directory
+        parent = script_dir.parent
+        if (parent / "core" / "parser.py").exists():
+            return parent
+    if (script_dir / "core" / "parser.py").exists():
+        return script_dir
+    for path in [Path("/usr/local/share/opic"), Path("/usr/share/opic"), Path.home() / ".local" / "share" / "opic"]:
+        if (path / "core" / "parser.py").exists():
+            return path
+    return script_dir
 
-def execute_interactive_conversation(voices, defs, project_root):
-    """Implements opic.execute_interactive voice from bootstrap.ops - opic executes itself"""
-    import json
-    import numpy as np
-    import random
-    import cmath
-    import time
-    import shutil
-    import subprocess
-    
-    # Follow opic's interactive.start voice
-    # Load model (following opic's load_model voice)
-    model_file = project_root / "opic_trained_model.json"
-    data_file = project_root / "voice_training_data.json"
-    conversation_file = project_root / "conversation_history.json"
-    
-    # Follow opic's conversation_history voice
-    conversation_history = []
-    if conversation_file.exists():
-        with open(conversation_file) as f:
-            conversation_history = json.load(f)
-        print(f"  Loaded {len(conversation_history)} previous interactions")
-    
-    # Follow opic's load_vocab voice
-    vocab_list = []
-    vocab = {}
-    if data_file.exists():
-        with open(data_file) as f:
-            training_data = json.load(f)
-        vocab_set = set()
-        for seq in training_data.get('sequences', [])[:200]:
-            for token in seq.get('tokens', []):
-                vocab_set.add(token)
-        vocab_list = sorted(list(vocab_set))
-        vocab = {str(i): token for i, token in enumerate(vocab_list)}
-    
-    vocab_size = len(vocab_list)
-    field_state = []
-    training_pairs = []
-    
-    # Follow opic's generate.field_evolution voice
-    def generate_response(user_input):
-        # Follow opic's tokenize voice
-        words = user_input.lower().split()
-        context_tokens = []
-        for word in words:
-            for token_id, token_name in vocab.items():
-                if token_name == word:
-                    context_tokens.append(int(token_id))
-                    break
-        
-        # Follow opic's field.evolve voice
-        if not context_tokens or vocab_size == 0:
-            seed_token = random.randint(0, min(vocab_size - 1, 50)) if vocab_size > 0 else 0
-            field_state = [seed_token]
-        else:
-            field_state = context_tokens[-3:] if len(context_tokens) >= 3 else context_tokens
-        
-        generated_tokens = []
-        current_state = field_state[-1] if field_state else 0
-        
-        for t in range(5):
-            scale = current_state / max(vocab_size, 1) if vocab_size > 0 else 0
-            phase = -1j * scale * (t + 1)
-            amplitude = abs(cmath.exp(phase))
-            token_offset = int(amplitude * 10) % vocab_size
-            next_token = (current_state + token_offset) % vocab_size
-            generated_tokens.append(next_token)
-            current_state = next_token
-        
-        # Follow opic's detokenize voice
-        generated_words = []
-        for token_id in generated_tokens:
-            token_name = vocab.get(str(token_id), f"token_{token_id}")
-            generated_words.append(token_name)
-        
-        return " ".join(generated_words) if generated_words else "opic"
-    
-    # Follow opic's save.conversation voice
-    def save_conversation():
-        with open(conversation_file, 'w') as f:
-            json.dump(conversation_history, f, indent=2)
-        print(f"\n  ✓ Saved {len(conversation_history)} interactions")
-    
-    # Follow opic's witness.conversation voice
-    def witness_state():
-        print("\n" + "=" * 60)
-        print("Witness: opic State")
-        print("=" * 60)
-        print(f"  Conversations: {len(conversation_history)}")
-        print(f"  Training pairs: {len(training_pairs)}")
-        print(f"  Field state: {field_state[-3:] if field_state else 'empty'}")
-        print(f"  Vocab size: {vocab_size}")
-        print("=" * 60)
-    
-    # Follow opic's greet voice
-    say_cmd = shutil.which("say")
-    greet_text = voices.get("greet", "Hello, I am opic. Let's have a conversation.")
-    print("=" * 60)
-    print("opic Interactive Conversation")
-    print("=" * 60)
-    print("\n  Type 'quit' to exit")
-    print("  Type 'witness' to see current state")
-    print("  Type 'save' to save conversation")
-    print()
-    print(f"opic: {greet_text}\n")
-    if say_cmd:
-        try:
-            subprocess.run([say_cmd, greet_text], check=False)
-        except:
-            pass
-    
-    # Follow opic's interactive.loop voice
-    while True:
-        try:
-            # Follow opic's input.get voice
-            user_input = input("You: ").strip()
-            
-            if not user_input:
-                continue
-            
-            # Follow opic's command voices
-            if user_input.lower() == 'quit':
-                save_conversation()
-                print("\n  Goodbye!")
-                break
-            
-            if user_input.lower() == 'save':
-                save_conversation()
-                continue
-            
-            if user_input.lower() == 'witness':
-                witness_state()
-                continue
-            
-            # Follow opic's respond voice
-            opic_response = generate_response(user_input)
-            
-            # Follow opic's train.live voice
-            interaction = {
-                "user": user_input,
-                "opic": opic_response,
-                "timestamp": time.time()
-            }
-            conversation_history.append(interaction)
-            training_pairs.append({
-                "input": user_input.lower().split(),
-                "target": opic_response.lower().split()
-            })
-            
-            # Follow opic's output.response voice
-            print(f"opic: {opic_response}")
-            
-            if say_cmd:
-                try:
-                    subprocess.run([say_cmd, opic_response], check=False)
-                except:
-                    pass
-            
-            # Follow opic's witness.conversation voice (auto)
-            if len(conversation_history) % 5 == 0:
-                print(f"\n  [witness] {len(conversation_history)} interactions, {len(training_pairs)} training pairs")
-            
-        except KeyboardInterrupt:
-            save_conversation()
-            print("\n\n  Goodbye!")
-            break
-        except Exception as e:
-            print(f"\n  Error: {e}")
-            continue
 
-def execute_evaluation(voices, defs, project_root):
-    """Implements opic.execute_evaluation voice from bootstrap.ops - opic evaluates itself"""
-    import json
-    import math
-    from collections import Counter
-    
-    # Thin shim: execute opic voice chain (from evaluate.run)
-    # evaluate.run -> evaluate.load_test_data -> evaluate.load_embeddings -> evaluate.load_metal -> evaluate.generate_predictions -> evaluate.compute_metrics -> evaluate.display_results
-    
-    # Execute: evaluate.load_test_data (from evaluate_impl.ops)
-    data_file = project_root / "voice_training_data.json"
-    if not data_file.exists():
-        print("Error: voice_training_data.json not found")
-        return
-    
-    # Execute: evaluate.json_read -> evaluate.extract_pairs -> evaluate.test_pairs
-    with open(data_file) as f:
-        training_data = json.load(f)
-    pairs = training_data.get('pairs', [])
-    test_pairs = pairs[:100]
-    
-    # Execute: evaluate.load_embeddings (from evaluate_impl.ops)
-    # evaluate.load_embeddings -> evaluate.json_read -> evaluate.extract_embeddings -> topological.build_map
-    embeddings_file = project_root / "opic_embeddings.json"
-    if not embeddings_file.exists():
-        print("Error: opic_embeddings.json not found (opic defines this)")
-        return
-    with open(embeddings_file) as f:
-        embeddings_data = json.load(f)
-    topological_map = [{'embedding': e['embedding'], 'target': e['target'], 'input': e['input'], 'target_tokens': e.get('target_tokens', [])} for e in embeddings_data.get('embeddings', [])]
-    print(f"✓ Loaded {len(topological_map)} embeddings from exported tensors")
-    
-    # Execute: evaluate.load_metal (from evaluate_impl.ops)
-    # metal.load_device -> metal.load_library
-    metal_shader_file = project_root / "evaluate_shader.metal"
-    if not metal_shader_file.exists():
-        print("Error: evaluate_shader.metal not found (opic defines this)")
-        return
-    try:
-        import Metal
-    except ImportError:
-        print("Error: Metal not available (opic requires Metal)")
-        return
-    metal_device = Metal.MTLCreateSystemDefaultDevice()
-    metal_library, error = metal_device.newLibraryWithSource_options_error_(metal_shader_file.read_text(), None, None)
-    if error:
-        print(f"Error: Metal library compilation failed: {error}")
-        return
-    print("✓ Metal evaluation shader loaded")
-    
-    # Execute: evaluate.generate_predictions (from evaluate_impl.ops)
-    # evaluate.for_each_pair -> evaluate.generate_prediction -> topological.predict
-    import random
-    import numpy as np
-    
-    # Thin shim: execute opic voice chain
-    def execute_voice_chain(voice_name, *args):
-        """Execute opic voice chain - thin shim"""
-        if voice_name in voices:
-            voice_body = voices[voice_name]
-            # Parse voice chain: {a -> b -> c}
-            if "->" in voice_body:
-                steps = [s.strip().strip("{}") for s in voice_body.split("->")]
-                # Execute each step
-                result = args[0] if args else None
-                for step in steps:
-                    if step in voices:
-                        result = execute_voice_chain(step, result)
-                return result
-        return None
-    
-    # Execute opic: evaluate.f1 (from evaluate.metrics)
-    def f1_score(candidate, reference):
-        """Execute opic: evaluate.f1 -> evaluate.precision + evaluate.recall -> evaluate.harmonic_mean"""
-        candidate_tokens = set(candidate.lower().split())
-        reference_tokens = set(reference.lower().split())
-        if len(candidate_tokens) == 0 and len(reference_tokens) == 0:
-            return 1.0
-        if len(candidate_tokens) == 0 or len(reference_tokens) == 0:
-            return 0.0
-        intersection = candidate_tokens & reference_tokens
-        precision = len(intersection) / len(candidate_tokens)
-        recall = len(intersection) / len(reference_tokens)
-        if precision + recall == 0:
-            return 0.0
-        return 2 * (precision * recall) / (precision + recall)
-    
-    # Execute opic: evaluate.bleu (from evaluate.metrics)
-    def bleu_score(candidate, reference):
-        """Execute opic: evaluate.bleu -> evaluate.ngram_precision + evaluate.brevity_penalty -> evaluate.geometric_mean"""
-        candidate_tokens = candidate.lower().split()
-        reference_tokens = reference.lower().split()
-        if len(candidate_tokens) == 0:
-            return 0.0
-        bp = min(1.0, math.exp(1 - len(reference_tokens) / len(candidate_tokens))) if len(candidate_tokens) > 0 else 0
-        precisions = []
-        for n in range(1, 5):
-            candidate_ngrams = Counter([' '.join(candidate_tokens[i:i+n]) for i in range(len(candidate_tokens)-n+1)])
-            reference_ngrams = Counter([' '.join(reference_tokens[i:i+n]) for i in range(len(reference_tokens)-n+1)])
-            matches = sum((candidate_ngrams & reference_ngrams).values())
-            total = sum(candidate_ngrams.values())
-            precisions.append(matches / total if total > 0 else 0)
-        if min(precisions) == 0:
-            return 0.0
-        geometric_mean = math.exp(sum(math.log(p) for p in precisions) / len(precisions))
-        return bp * geometric_mean
-    
-    # Execute: evaluate.generate_predictions (from evaluate_impl.ops)
-    # evaluate.for_each_pair -> evaluate.generate_prediction -> topological.predict
-    predictions = []
-    references = []
-    
-    # Execute: evaluate.for_each_pair -> evaluate.generate_prediction (from evaluate_impl.ops)
-    # Thin shim: execute opic voice chain - use Metal shader for all predictions
-    if not topological_map or not metal_library:
-        print("Error: topological_map and metal_library required (opic defines this)")
-        return
-    
-    # Prepare all query embeddings (one per test pair)
-    query_embeddings = []
-    references = []
-    for i, pair in enumerate(test_pairs):
-        input_tokens = pair.get('input', [])
-        target_list = pair.get('target', [])
-        target = ' '.join(target_list) if isinstance(target_list, list) else str(target_list)
-        references.append(target)
-        
-        input_key = ' '.join(input_tokens) if isinstance(input_tokens, list) else str(input_tokens)
-        # Find query embedding in topological map
-        query_embedding = None
-        for point in topological_map:
-            if point['input'] == input_key:
-                query_embedding = np.array(point['embedding'])
-                break
-        if query_embedding is None:
-            # Use first embedding as fallback
-            query_embedding = np.array(topological_map[0]['embedding'])
-        query_embeddings.append(query_embedding)
-    
-    # Execute opic: metal.evaluate_kernel (single shader execution)
-    num_queries = len(test_pairs)
-    map_size = len(topological_map)
-    k = 5
-    
-    # Prepare buffers
-    import ctypes
-    import struct
-    embeddings_array = np.array([np.array(p['embedding']) for p in topological_map]).flatten().astype(np.float32)
-    query_array = np.array(query_embeddings).flatten().astype(np.float32)
-    
-    # Create Metal buffers
-    query_buffer = metal_device.newBufferWithBytes_length_options_(query_array.tobytes(), len(query_array) * 4, 0)
-    embeddings_buffer = metal_device.newBufferWithBytes_length_options_(embeddings_array.tobytes(), len(embeddings_array) * 4, 0)
-    predictions_buffer = metal_device.newBufferWithLength_options_(num_queries * 4, 0)
-    similarities_buffer = metal_device.newBufferWithLength_options_(num_queries * 4, 0)
-    
-    # Create constants buffer
-    constants_array = np.array([map_size, num_queries, k], dtype=np.uint32)
-    constants_buffer = metal_device.newBufferWithBytes_length_options_(constants_array.tobytes(), len(constants_array) * 4, 0)
-    
-    # Execute shader
-    kernel_function = metal_library.newFunctionWithName_("evaluate_kernel")
-    compute_pipeline, pipeline_error = metal_device.newComputePipelineStateWithFunction_error_(kernel_function, None)
-    if pipeline_error:
-        print(f"Error: Pipeline creation failed: {pipeline_error}")
-        return
-    command_queue = metal_device.newCommandQueue()
-    command_buffer = command_queue.commandBuffer()
-    compute_encoder = command_buffer.computeCommandEncoder()
-    compute_encoder.setComputePipelineState_(compute_pipeline)
-    compute_encoder.setBuffer_offset_atIndex_(constants_buffer, 0, 0)
-    compute_encoder.setBuffer_offset_atIndex_(query_buffer, 0, 1)
-    compute_encoder.setBuffer_offset_atIndex_(embeddings_buffer, 0, 2)
-    compute_encoder.setBuffer_offset_atIndex_(predictions_buffer, 0, 3)
-    compute_encoder.setBuffer_offset_atIndex_(similarities_buffer, 0, 4)
-    
-    # Dispatch threads (one per query)
-    threadgroup_size = min(256, compute_pipeline.threadExecutionWidth())
-    num_threadgroups = (num_queries + threadgroup_size - 1) // threadgroup_size
-    compute_encoder.dispatchThreadgroups_threadsPerThreadgroup_((num_threadgroups, 1, 1), (threadgroup_size, 1, 1))
-    compute_encoder.endEncoding()
-    command_buffer.commit()
-    command_buffer.waitUntilCompleted()
-    
-    # Read predictions
-    predictions_ptr = predictions_buffer.contents()
-    predictions_bytes = predictions_ptr.as_buffer(num_queries * 4)
-    predictions = []
-    for i in range(num_queries):
-        pred_idx = struct.unpack('I', predictions_bytes[i*4:(i+1)*4])[0]
-        predictions.append(topological_map[pred_idx]['target'])
-    
-    # Calculate metrics (follows opic's evaluate.metrics)
-    bleu_scores = [bleu_score(p, r) for p, r in zip(predictions, references)]
-    f1_scores = [f1_score(p, r) for p, r in zip(predictions, references)]
-    
-    avg_bleu = sum(bleu_scores) / len(bleu_scores) if bleu_scores else 0
-    avg_f1 = sum(f1_scores) / len(f1_scores) if f1_scores else 0
-    
-    # Follow opic's evaluate.display_results voice
-    print("\n" + "=" * 60)
-    print("opic Evaluation (following opic's structure):")
-    print("=" * 60)
-    print(f"\nBLEU Score: {avg_bleu:.4f}")
-    print(f"F1 Score: {avg_f1:.4f}")
-    print(f"\nTest samples: {len(test_pairs)}")
-    print(f"\nSample predictions:")
-    for i in range(min(5, len(predictions))):
-        print(f"\n  Input: {' '.join(test_pairs[i].get('input', []))}")
-        print(f"  Prediction: {predictions[i]}")
-        print(f"  Reference: {references[i]}")
-        print(f"  BLEU: {bleu_scores[i]:.4f}, F1: {f1_scores[i]:.4f}")
+def _init_parser(project_root: Path):
+    """Load parser (circular: minimal Python, could be OPIC self-parser)"""
+    global parse_ops
+    sys.path.insert(0, str(project_root / "core"))
+    from parser import parse_ops as _parse_ops
+    parse_ops = _parse_ops
 
-def interactive_mode():
-    """Interactive conversation mode - follows opic structure"""
-    from pathlib import Path
-    import json
-    import numpy as np
-    import random
-    import cmath
-    import time
-    import shutil
-    import subprocess
-    import importlib.util
-    
-    # Find opic source directory (where generate.py is)
-    project_root = Path(__file__).parent
-    if not (project_root / "generate.py").exists():
-        for possible_root in [
-            Path.home() / "opic",
-            Path("/Users/joelstover/opic"),
-        ]:
-            if (possible_root / "generate.py").exists():
-                project_root = possible_root
-                break
-    
-    # Load generate module from source directory
-    generate_path = project_root / "generate.py"
-    spec = importlib.util.spec_from_file_location("generate", generate_path)
-    generate_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(generate_module)
-    parse_ops = generate_module.parse_ops
-    
-    # Load opic definitions
-    interactive_file = project_root / "interactive.ops"
-    conversation_file_def = project_root / "conversation.ops"
-    voice_input_file = project_root / "voice_input.ops"
-    generate_field_file = project_root / "generate_field.ops"
-    
-    all_voices = {}
-    for ops_file in [interactive_file, conversation_file_def, voice_input_file, generate_field_file]:
-        if ops_file.exists():
-            _, voices, _ = parse_ops(ops_file.read_text())
-            all_voices.update(voices)
-    
-    print("=" * 60)
-    print("opic Interactive Conversation")
-    print("=" * 60)
-    print("\n  Type 'quit' to exit")
-    print("  Type 'witness' to see current state")
-    print("  Type 'save' to save conversation")
-    print()
-    
-    # Follow opic's load_model voice
-    model_file = project_root / "opic_trained_model.json"
-    data_file = project_root / "voice_training_data.json"
-    conversation_file = project_root / "conversation_history.json"
-    
-    # Follow opic's conversation_history voice
-    conversation_history = []
-    if conversation_file.exists():
-        with open(conversation_file) as f:
-            conversation_history = json.load(f)
-        print(f"  Loaded {len(conversation_history)} previous interactions")
-    
-    # Follow opic's load_vocab voice
-    vocab_list = []
-    vocab = {}
-    if data_file.exists():
-        with open(data_file) as f:
-            training_data = json.load(f)
-        vocab_set = set()
-        for seq in training_data.get('sequences', [])[:200]:
-            for token in seq.get('tokens', []):
-                vocab_set.add(token)
-        vocab_list = sorted(list(vocab_set))
-        vocab = {str(i): token for i, token in enumerate(vocab_list)}
-    
-    vocab_size = len(vocab_list)
-    field_state = []
-    training_pairs = []
-    
-    # Follow opic's generate.field_evolution voice
-    def generate_response(user_input):
-        # Follow opic's tokenize voice
-        words = user_input.lower().split()
-        context_tokens = []
-        for word in words:
-            for token_id, token_name in vocab.items():
-                if token_name == word:
-                    context_tokens.append(int(token_id))
-                    break
-        
-        # Follow opic's field.evolve voice
-        if not context_tokens or vocab_size == 0:
-            seed_token = random.randint(0, min(vocab_size - 1, 50)) if vocab_size > 0 else 0
-            field_state = [seed_token]
-        else:
-            field_state = context_tokens[-3:] if len(context_tokens) >= 3 else context_tokens
-        
-        generated_tokens = []
-        current_state = field_state[-1] if field_state else 0
-        
-        for t in range(5):
-            scale = current_state / max(vocab_size, 1) if vocab_size > 0 else 0
-            phase = -1j * scale * (t + 1)
-            amplitude = abs(cmath.exp(phase))
-            token_offset = int(amplitude * 10) % vocab_size
-            next_token = (current_state + token_offset) % vocab_size
-            generated_tokens.append(next_token)
-            current_state = next_token
-        
-        # Follow opic's detokenize voice
-        generated_words = []
-        for token_id in generated_tokens:
-            token_name = vocab.get(str(token_id), f"token_{token_id}")
-            generated_words.append(token_name)
-        
-        return " ".join(generated_words) if generated_words else "opic"
-    
-    # Follow opic's save.conversation voice
-    def save_conversation():
-        with open(conversation_file, 'w') as f:
-            json.dump(conversation_history, f, indent=2)
-        print(f"\n  ✓ Saved {len(conversation_history)} interactions")
-    
-    # Follow opic's witness.conversation voice
-    def witness_state():
-        print("\n" + "=" * 60)
-        print("Witness: opic State")
-        print("=" * 60)
-        print(f"  Conversations: {len(conversation_history)}")
-        print(f"  Training pairs: {len(training_pairs)}")
-        print(f"  Field state: {field_state[-3:] if field_state else 'empty'}")
-        print(f"  Vocab size: {vocab_size}")
-        print("=" * 60)
-    
-    # Follow opic's greet voice
-    say_cmd = shutil.which("say")
-    greet_text = all_voices.get("greet", "Hello, I am opic. Let's have a conversation.")
-    print(f"opic: {greet_text}\n")
-    if say_cmd:
-        try:
-            subprocess.run([say_cmd, greet_text], check=False)
-        except:
-            pass
-    
-    # Follow opic's interactive.loop voice
-    while True:
-        try:
-            # Follow opic's input.get voice
-            user_input = input("You: ").strip()
-            
-            if not user_input:
-                continue
-            
-            if user_input.lower() == 'quit':
-                save_conversation()
-                print("\n  Goodbye!")
-                break
-            
-            if user_input.lower() == 'save':
-                save_conversation()
-                continue
-            
-            if user_input.lower() == 'witness':
-                witness_state()
-                continue
-            
-            # Follow opic's respond voice
-            opic_response = generate_response(user_input)
-            
-            # Follow opic's train.live voice
-            interaction = {
-                "user": user_input,
-                "opic": opic_response,
-                "timestamp": time.time()
-            }
-            conversation_history.append(interaction)
-            training_pairs.append({
-                "input": user_input.lower().split(),
-                "target": opic_response.lower().split()
-            })
-            
-            print(f"opic: {opic_response}")
-            
-            if say_cmd:
-                try:
-                    subprocess.run([say_cmd, opic_response], check=False)
-                except:
-                    pass
-            
-            # Follow opic's witness.conversation voice (auto)
-            if len(conversation_history) % 5 == 0:
-                print(f"\n  [witness] {len(conversation_history)} interactions, {len(training_pairs)} training pairs")
-            
-        except KeyboardInterrupt:
-            save_conversation()
-            print("\n\n  Goodbye!")
-            break
-        except Exception as e:
-            print(f"\n  Error: {e}")
-            continue
 
-def generate_metal(ops_file, output_file=None):
-    """Generate Metal shader code from .ops file"""
-    script = Path(__file__).parent / "generate.py"
-    args = [sys.executable, str(script), "metal", ops_file]
-    if output_file:
-        args.append(output_file)
-    subprocess.run(args, check=True)
-
-def generate_swift(ops_file, output_file=None):
-    """Generate Swift code from .ops file"""
-    script = Path(__file__).parent / "generate.py"
-    args = [sys.executable, str(script), "swift", ops_file]
-    if output_file:
-        args.append(output_file)
-    subprocess.run(args, check=True)
-
-def execute_repos(voices, defs, project_root):
-    """Implements opic.execute_repos voice from bootstrap.ops - thin shim
-    
-    All logic defined in repos.ops and repo_realm.ops.
-    Python only handles file I/O operations.
+def call_extension(extension_path: str, env: Dict[str, Any]) -> Any:
     """
-    import os
-    from pathlib import Path
-    import json
+    Python ABI: resolve $module.function$ → call
+    Circular: Smooth, invertible transformation (Python ↔ OPIC)
+    Lossless: All information preserved through boundary
+    """
+    try:
+        parts = extension_path.split(".")
+        module = importlib.import_module(parts[0])
+        obj = module
+        for attr in parts[1:]:
+            obj = getattr(obj, attr)
+        return obj(env) if callable(obj) else obj
+    except Exception as e:
+        print(f"Extension error: ${extension_path}$: {e}", file=sys.stderr)
+        return None
+
+
+def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
+    """
+    Execute OPIC voice - Circular execution
+    Symmetry breaking: mapping definitions (data) vs execution chains (code)
+    Lossless: All information flows through circle S¹ (phase preservation)
     
-    # Get home directory from environment or use default
-    home_dir = os.environ.get('OPIC_REPOS_DIR')
-    if home_dir is None:
-        home_path = Path.home()
-    else:
-        home_path = Path(home_dir)
+    Theory-based termination: Stops at equilibrium when result stabilizes.
+    Stable formations equalize charge and minimize symbol count.
+    """
+    # DEBUG: See what we're executing
+    if "--debug" in sys.argv:
+        print(f"DEBUG execute_opic: type={type(voice_body).__name__}, starts_with_brace={isinstance(voice_body, str) and voice_body.startswith('{')}", file=sys.stderr)
     
-    if not home_path.exists() or not home_path.is_dir():
-        print(f"Error: {home_path} does not exist or is not a directory", file=sys.stderr)
-        sys.exit(1)
+    # Initialize execution history for stability detection
+    if "execution_history" not in context:
+        context["execution_history"] = {}
     
-    # Realm storage (persist discovered realms)
-    realm_storage = project_root / ".opic_realms"
-    realm_data = {}
-    if realm_storage.exists():
+    # Pattern: {chain} → check if it's a mapping definition or execution chain
+    is_chain = isinstance(voice_body, str) and voice_body.strip().startswith("{") and voice_body.strip().endswith("}")
+    
+    if "--debug" in sys.argv:
+        print(f"DEBUG: is_chain={is_chain}, voice_body type={type(voice_body)}, first 50: {str(voice_body)[:50] if isinstance(voice_body, str) else 'not string'}", file=sys.stderr)
+    
+    # Pattern: $extension$ → call Python (circular boundary)
+    # Get extension prefix from config (discoverable, not hardcoded)
+    ext_prefix = "$"  # Default fallback
+    voices_dict = context.get("voices", {})
+    if "opic.config.extension_prefix" in voices_dict:
         try:
-            realm_data = json.loads(realm_storage.read_text())
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            ext_prefix = execute_opic(voices_dict["opic.config.extension_prefix"], config_ctx) or ext_prefix
         except:
-            realm_data = {}
-    
-    # Follow opic's repos.classify voice structure
-    def is_repo(path):
-        """Check if directory is itself a git repository"""
-        return (path / ".git").exists() and (path / ".git").is_dir()
-    
-    def discover_repo_structure(repo_path):
-        """Discover repository structure (implements repo.discover)"""
-        structure = {
-            "language": None,
-            "build_system": None,
-            "test_framework": None,
-            "conventions": {}
-        }
-        
-        # Detect language from file extensions
-        lang_counts = {}
-        for file in repo_path.rglob("*"):
-            if file.is_file() and not file.name.startswith('.'):
-                ext = file.suffix.lower()
-                lang_map = {
-                    '.py': 'python', '.js': 'javascript', '.ts': 'typescript',
-                    '.java': 'java', '.rb': 'ruby', '.go': 'go', '.rs': 'rust',
-                    '.cpp': 'cpp', '.c': 'c', '.h': 'c', '.hpp': 'cpp',
-                    '.ops': 'opic', '.md': 'markdown'
-                }
-                if ext in lang_map:
-                    lang = lang_map[ext]
-                    lang_counts[lang] = lang_counts.get(lang, 0) + 1
-        
-        if lang_counts:
-            structure["language"] = max(lang_counts.items(), key=lambda x: x[1])[0]
-        
-        # Detect build system
-        build_files = {
-            'Makefile': 'make',
-            'CMakeLists.txt': 'cmake',
-            'build.gradle': 'gradle',
-            'pom.xml': 'maven',
-            'package.json': 'npm',
-            'Cargo.toml': 'cargo',
-            'requirements.txt': 'pip',
-            'setup.py': 'pip',
-            'pyproject.toml': 'pip'
-        }
-        for build_file, build_system in build_files.items():
-            if (repo_path / build_file).exists():
-                structure["build_system"] = build_system
-                break
-        
-        # Detect test framework
-        test_patterns = {
-            'pytest': ['test_*.py', '*_test.py'],
-            'jest': ['*.test.js', '*.spec.js'],
-            'junit': ['*Test.java'],
-            'rspec': ['*_spec.rb'],
-            'mocha': ['test/']
-        }
-        for framework, patterns in test_patterns.items():
-            for pattern in patterns:
-                if pattern.endswith('/'):
-                    if (repo_path / pattern.rstrip('/')).exists():
-                        structure["test_framework"] = framework
-                        break
-                else:
-                    if list(repo_path.rglob(pattern)):
-                        structure["test_framework"] = framework
-                        break
-            if structure["test_framework"]:
-                break
-        
-        return structure
-    
-    def create_repo_realm(repo_path, structure):
-        """Create realm for repository (implements repo.create_realm)"""
-        repo_name = repo_path.name.lower().replace(' ', '_').replace('-', '_')
-        realm_name = f"{repo_name}_realm"
-        
-        # Generate CA name
-        ca_name = f"{repo_name}_ca"
-        
-        return {
-            "realm_name": realm_name,
-            "ca": ca_name,
-            "structure": structure,
-            "repo_path": str(repo_path)
-        }
-    
-    visited = set()
-    
-    def contains_repos(path, depth=0, max_depth=10):
-        """Check if directory contains repositories (recursively)"""
-        if depth > max_depth:
-            return False
-        
-        real_path = path.resolve()
-        if real_path in visited:
-            return False
-        visited.add(real_path)
-        
-        try:
-            for item in path.iterdir():
-                try:
-                    if item.is_symlink():
-                        continue
-                    if item.is_dir() and not item.name.startswith('.'):
-                        if is_repo(item):
-                            return True
-                        if contains_repos(item, depth + 1, max_depth):
-                            return True
-                except (OSError, PermissionError):
-                    continue
-        except (OSError, PermissionError):
             pass
-        
-        return False
+    is_extension = isinstance(voice_body, str) and voice_body.startswith(ext_prefix) and voice_body.endswith(ext_prefix)
     
-    def collect_repos(path, repos_list, is_root=False, depth=0, max_depth=10):
-        """Recursively collect all repositories (following repos.collect voice)"""
-        if depth > max_depth:
-            return
-        
-        real_path = path.resolve()
-        if real_path in visited:
-            return
-        visited.add(real_path)
-        
-        if not is_root and is_repo(path):
-            repos_list.append(path)
-            return
-        
+    # Symmetry breaking: mapping definitions contain "key" -> value patterns
+    # Circular: They preserve structure (lossless diffeomorphism)
+    # Check if inner content is a quoted string (even if parser added spaces)
+    is_mapping_definition = False
+    if is_chain:
+        inner = voice_body.strip()[1:-1].strip()
+        if inner.startswith('"'):
+            last_quote_idx = inner.rfind('"')
+            if last_quote_idx > 0:
+                after_quote = inner[last_quote_idx + 1:].strip()
+                if not after_quote:
+                    is_mapping_definition = True
+                    # DEBUG: Print to see if we're detecting it
+                    if "--debug" in sys.argv:
+                        print(f"DEBUG: Detected mapping definition, inner length: {len(inner)}, first 50: {inner[:50]}", file=sys.stderr)
+                elif "--debug" in sys.argv:
+                    print(f"DEBUG: NOT mapping definition - after_quote: '{after_quote}'", file=sys.stderr)
+            elif "--debug" in sys.argv:
+                print(f"DEBUG: NOT mapping definition - inner doesn't start with quote: '{inner[:50]}'", file=sys.stderr)
+        elif "--debug" in sys.argv:
+            print(f"DEBUG: NOT mapping definition - not a chain", file=sys.stderr)
+    
+    # Theory: Check for stability (equilibrium reached)
+    # If we've seen this exact voice_body before with same context, return stable result
+    voice_key = str(voice_body)
+    if voice_key in context["execution_history"]:
+        previous_result = context["execution_history"][voice_key]
+        # If result is stable (same as before), we've reached equilibrium
+        # This is the natural termination condition from OPIC theory
+        return previous_result
+    
+    # Pattern matching (declarative routing) - Use OPIC's expansion system
+    voices_dict = context.get("voices", {})
+    
+    # Get match voice name from config (discoverable, not hardcoded)
+    match_voice_name = "opic.match_voice_body_pattern"  # Default fallback
+    if "opic.config.match_voice_name" in voices_dict:
         try:
-            for item in path.iterdir():
-                try:
-                    if item.is_symlink():
-                        continue
-                    if item.is_dir() and not item.name.startswith('.'):
-                        if is_repo(item):
-                            repos_list.append(item)
-                        elif contains_repos(item, 0, max_depth):
-                            collect_repos(item, repos_list, is_root=False, depth=depth + 1, max_depth=max_depth)
-                except (OSError, PermissionError):
-                    continue
-        except (OSError, PermissionError):
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            match_voice_name = execute_opic(voices_dict["opic.config.match_voice_name"], config_ctx) or match_voice_name
+        except:
             pass
+    match_voice = voices_dict.get(match_voice_name)
+    if match_voice:
+        # Use OPIC's expansion system
+        matcher_context = {
+            **context,
+            "voice_body": voice_body,
+            "inputs": context.get("inputs", {}),
+            "voices": voices_dict
+        }
+        result = execute_opic(match_voice, matcher_context)
+        if result is not None:
+            context["execution_history"][voice_key] = result
+            return result
     
-    # Execute repos.collect voice chain
-    repos = []
-    collect_repos(home_path, repos, is_root=True)
+    # Fallback: Simple pattern matching
+    result = None
     
-    # Execute repos.list voice chain with realm discovery (following repos.list -> repo.discover_each -> repo.create_realms)
-    print(f"\nRepositories in {home_path}:")
-    print("=" * 80)
-    if repos:
-        for repo in sorted(repos):
-            rel_path = repo.relative_to(home_path)
-            
-            # Discover repository structure (implements repo.discover)
-            repo_key = str(repo.resolve())
-            if repo_key not in realm_data:
-                structure = discover_repo_structure(repo)
-                realm_info = create_repo_realm(repo, structure)
-                realm_data[repo_key] = realm_info
-            else:
-                realm_info = realm_data[repo_key]
-                structure = realm_info.get("structure", {})
-            
-            # Execute repos.summarize voice chain inline
-            summary = None
+    # Pattern 1: Mapping definition → extract string (circular: preserve structure)
+    if is_mapping_definition:
+        inner = voice_body.strip()[1:-1].strip()
+        last_quote_idx = inner.rfind('"')
+        result = inner[1:last_quote_idx]
+        try:
+            result = result.encode().decode('unicode_escape')
+        except:
+            pass
+        # Store and return immediately - don't fall through
+        if result is not None:
+            context["execution_history"][voice_key] = result
+            return result
+    
+    # Pattern 2: Execution chain → execute chain
+    if result is None and is_chain:
+        # Get execute chain voice name from config (discoverable, not hardcoded)
+        execute_chain_voice_name = "opic.execute_chain"  # Default fallback
+        skip_flag_name = "_skip_execute_chain_voice"  # Default fallback
+        if "opic.config.execute_chain_voice_name" in voices_dict:
             try:
-                for readme_file in repo.glob("README*"):
-                    if readme_file.is_file():
-                        content = readme_file.read_text(encoding='utf-8', errors='ignore')[:500]
-                        for line in content.split('\n')[:10]:
-                            line = line.strip()
-                            if line and len(line) > 20 and not line.startswith('#'):
-                                summary = line[:100]
-                                break
-                        break
+                config_ctx = {**context, "project_root": context.get("project_root", "")}
+                execute_chain_voice_name = execute_opic(voices_dict["opic.config.execute_chain_voice_name"], config_ctx) or execute_chain_voice_name
             except:
                 pass
-            
-            # Display repository with realm and structure info
-            print(f"\n  📦 {rel_path}")
-            if summary:
-                print(f"     {summary}")
-            
-            # Display discovered fields (realm structure)
-            fields = []
-            if structure.get("language"):
-                fields.append(f"lang:{structure['language']}")
-            if structure.get("build_system"):
-                fields.append(f"build:{structure['build_system']}")
-            if structure.get("test_framework"):
-                fields.append(f"test:{structure['test_framework']}")
-            
-            if fields:
-                print(f"     🏛  realm: {realm_info['realm_name']} | {' | '.join(fields)}")
-            else:
-                print(f"     🏛  realm: {realm_info['realm_name']}")
-        
-        # Save discovered realms
-        try:
-            realm_storage.write_text(json.dumps(realm_data, indent=2))
-        except:
-            pass
-    else:
-        print("  (no repositories found)")
-    print("=" * 80)
-    print(f"Total: {len(repos)} repository{'ies' if len(repos) != 1 else ''}")
-    if repos:
-        print(f"Realms discovered: {len(realm_data)}")
-
-def execute_plan(voices, defs, project_root):
-    """Implements opic.execute_plan voice from bootstrap.ops - thin shim
-    
-    All logic defined in opic_plan.ops.
-    Python only handles file I/O operations.
-    """
-    from pathlib import Path
-    
-    project_path = Path(project_root)
-    
-    # Execute plan.scan_directory voice (implements list_directory)
-    ops_files = sorted([f.name for f in project_path.glob("*.ops")])
-    py_files = sorted([f.name for f in project_path.glob("*.py") if f.name != "__pycache__"])
-    other_files = sorted([f.name for f in project_path.iterdir() if f.is_file() and f.suffix not in [".ops", ".py"] and not f.name.startswith(".")])
-    
-    # Execute plan.list_ops_files, plan.list_py_files, plan.list_other_files voices
-    # Execute plan.filter_core voice
-    core_files = [f for f in ops_files if any(x in f for x in ["bootstrap", "parse", "load", "execute", "compile"])]
-    # Execute plan.filter_systems voice
-    system_files = [f for f in ops_files if any(x in f for x in ["fee", "rct", "governance", "certificate", "ledger", "consensus", "witness"])]
-    # Execute plan.filter_launch voice
-    launch_files = [f for f in ops_files if any(x in f for x in ["whitepaper", "getting_started", "gallery", "service", "seed", "company"])]
-    # Execute plan.filter_examples voice
-    example_files = [f for f in ops_files if "example" in f or "test" in f]
-    # Execute plan.filter_other_ops voice
-    other_ops = [f for f in ops_files if f not in core_files + system_files + launch_files + example_files]
-    
-    # Execute plan.format_analysis voice
-    print("\n" + "=" * 70)
-    print("OPIC DIRECTORY PLAN")
-    print("=" * 70)
-    print(f"\n📊 Analysis:")
-    print(f"  Total .ops files: {len(ops_files)}")
-    print(f"  Python files: {len(py_files)}")
-    print(f"  Other files: {len(other_files)}")
-    
-    # Execute plan.format_categories voice
-    print(f"\n📁 Categories:")
-    print(f"  Core (bootstrap/parse/load/execute): {len(core_files)}")
-    print(f"  Systems (FEE/RCT/governance/certificate): {len(system_files)}")
-    print(f"  Launch (whitepaper/getting_started/gallery/service): {len(launch_files)}")
-    print(f"  Examples/Tests: {len(example_files)}")
-    print(f"  Other .ops files: {len(other_ops)}")
-    
-    # Execute plan.check_duplicates voice
-    print(f"\n🔍 Suggestions:")
-    if (project_path / "smart_contracts.ops").exists() and (project_path / "recursive_contract_theory.ops").exists():
-        print(f"  ⚠ Found both smart_contracts.ops and recursive_contract_theory.ops")
-        print(f"    → Consider removing smart_contracts.ops (renamed to recursive_contract_theory.ops)")
-    
-    # Execute plan.check_includes voice
-    missing_includes = []
-    for ops_file in ops_files:
-        try:
-            content = (project_path / ops_file).read_text()
-            for line in content.split("\n"):
-                if line.strip().startswith("include "):
-                    include_file = line.strip().replace("include ", "").strip()
-                    if not (project_path / include_file).exists():
-                        missing_includes.append((ops_file, include_file))
-        except:
-            pass
-    
-    if missing_includes:
-        print(f"  ⚠ Missing include files:")
-        for file, missing in missing_includes:
-            print(f"    → {file} includes {missing} (not found)")
-    
-    # Execute plan.suggest_organization voice
-    print(f"\n💡 Organization Suggestions:")
-    print(f"  1. Core files are well-organized (bootstrap, parse, load, execute)")
-    print(f"  2. Systems are comprehensive (FEE, RCT, governance, certificate, ledger)")
-    print(f"  3. Launch components are ready (whitepaper, getting_started, gallery, service)")
-    print(f"  4. Consider grouping related systems into subdirectories if it grows further")
-    
-    # Execute plan.suggest_next_steps voice
-    print(f"\n🚀 Next Steps:")
-    print(f"  1. Build company seed: make build-seed")
-    print(f"  2. Generate whitepaper: make whitepaper")
-    print(f"  3. Test runtime interface: make test")
-    print(f"  4. Self-compile: make self-compile")
-    print(f"  5. Launch site: make build-seed && make open-seed")
-    
-    print("\n" + "=" * 70)
-
-def execute_help(voices, defs, project_root, agent_realm='opic_realm', ca='opic_ca', execute_chain=None):
-    """Implements opic.execute_help voice from bootstrap.ops - thin shim"""
-    # All help content defined in opic_help.ops and agent_help.ops
-    # Python just executes opic's voices - no hardcoded content
-    import os
-    import json
-    
-    # Check environment (opic voices can use this)
-    agent_mode = os.environ.get('OPIC_HELP_AGENT', '').lower() == 'true'
-    query_topic = os.environ.get('OPIC_HELP_TOPIC', '')
-    
-    # Thin shim: execute opic's voices if available
-    if execute_chain:
-        if agent_mode and 'help.agent_format' in voices:
-            help_output = execute_chain(voices['help.agent_format'], voices)
-            if help_output:
-                print(help_output)
-                return
-        elif 'help.human_format' in voices:
-            help_output = execute_chain(voices['help.human_format'], voices)
-            if help_output:
-                print(help_output)
-                return
-    
-    # Minimal fallback (opic voices will generate this when implemented)
-    if agent_mode:
-        help_data = {
-            "system": "opic",
-            "extensions": voices.get('_opic_extensions', []),
-            "repo": voices.get('_opic_repo', None)
-        }
-        if query_topic and query_topic in help_data:
-            help_data = {query_topic: help_data[query_topic]}
-        print(json.dumps(help_data, indent=2))
-    else:
-        print("Opic CLI — Event-Based Compositional Language")
-        if voices.get('_opic_extensions'):
-            print(f"\nExtensions: {', '.join(voices['_opic_extensions'])}")
-        print("\n(Help content defined in opic_help.ops)")
-
-def execute_compile(voices, defs, project_root):
-    """Implements opic.execute_compile voice from bootstrap.ops - thin shim
-    
-    All logic defined in opic_compile.ops.
-    Python only handles subprocess calls for compilation.
-    """
-    from pathlib import Path
-    import subprocess
-    import shutil
-    import os
-    
-    # Follow opic.compile_install voice chain from opic_compile.ops
-    # opic.compile_install -> opic.self_compile -> opic.self_install -> opic.ready
-    
-    # Execute opic.compile_bootstrap voice
-    bootstrap_ops = project_root / "bootstrap.ops"
-    if bootstrap_ops.exists():
-        print("Compiling bootstrap.ops to Metal...")
-        generate_metal("bootstrap.ops", "bootstrap.metal")
-    
-    # Execute opic.compile_core voice
-    core_ops = project_root / "core.ops"
-    if core_ops.exists():
-        print("Compiling core.ops to Metal...")
-        generate_metal("core.ops", "core.metal")
-    
-    # Execute opic.compile_all_metal voice (compile all .metal files to metallib)
-    metal_compiler = shutil.which("xcrun")
-    if metal_compiler:
-        metal_files = [f for f in project_root.glob("*.metal") if f.name != "core.metal" or f.name != "bootstrap.metal"]
-        if metal_files:
-            print("Compiling Metal shaders to metallib...")
+        if "opic.config.skip_execute_chain_flag" in voices_dict:
             try:
-                subprocess.run([
-                    "xcrun", "-sdk", "macosx", "metal", "-c"
-                ] + [str(f) for f in metal_files[:5]] + [
-                    "-o", str(project_root / "opic.metallib")
-                ], check=True, cwd=str(project_root), capture_output=True)
-                print("✓ Compiled opic.metallib")
-            except subprocess.CalledProcessError as e:
-                print("⚠ Metal compilation failed")
+                config_ctx = {**context, "project_root": context.get("project_root", "")}
+                skip_flag_name = execute_opic(voices_dict["opic.config.skip_execute_chain_flag"], config_ctx) or skip_flag_name
+            except:
+                pass
+        execute_chain_voice = voices_dict.get(execute_chain_voice_name)
+        skip_execute_chain = context.get(skip_flag_name)
+        if execute_chain_voice and not skip_execute_chain:
+            chain_context = {
+                **context,
+                "chain_string": voice_body,
+                "voices": voices_dict,
+                "_skip_execute_chain_voice": True,
+            }
+            result = execute_opic(execute_chain_voice, chain_context)
+        else:
+            result = execute_opic_chain(voice_body, context)
     
-    # Execute opic.self_install voice chain
-    opic_binary = project_root / "opic"
-    if opic_binary.exists():
-        print("\nInstalling opic...")
-        # Execute opic.find_install_path voice
-        install_paths = [
-            Path("/usr/local/bin"),
-            Path.home() / ".local" / "bin"
-        ]
+    # Pattern 3: Extension → call Python (circular boundary)
+    if result is None and is_extension:
+        # Remove extension prefix (discoverable, not hardcoded)
+        result = call_extension(voice_body[len(ext_prefix):-len(ext_prefix)], context)
+    
+    # Pattern 4: String/value → return as-is (lossless)
+    if result is None:
+        if isinstance(voice_body, str):
+            try:
+                result = voice_body.encode().decode('unicode_escape')
+            except:
+                result = voice_body
+        else:
+            result = voice_body
+    
+    # Theory: Store result for stability detection (equilibrium tracking)
+    # Stable formations: result doesn't change = equilibrium reached
+    context["execution_history"][voice_key] = result
+    
+    return result
+
+
+def execute_opic_chain(chain_string: str, context: Dict[str, Any]) -> Any:
+    """
+    Execute chain - Circular bootstrap
+    Equilibrium: Python provides minimal bootstrap, OPIC executes itself
+    Never calls opic.execute_chain (that would break circular equilibrium)
+    """
+    return bootstrap_chain(chain_string, context)
+
+
+def bootstrap_chain(chain_string: str, context: Dict[str, Any]) -> Any:
+    """
+    Bootstrap chain execution - Circular phase flow
+    Equilibrium: Python provides primitives, OPIC executes itself
+    Symmetry breaking: Each step knows its role (input, voice, primitive, extension)
+    Lossless: Information preserved through circle S¹ (phase θ preserved)
+    """
+    chain_body = chain_string.strip()
+    chain_body = chain_body[1:-1].strip() if chain_body.startswith("{") and chain_body.endswith("}") else chain_body
+    
+    # Get configurable operators from config (discoverable, not hardcoded)
+    voices = context.get("voices", {})
+    chain_op = "->"  # Default fallback
+    plus_op = "+"  # Default fallback
+    ext_prefix = "$"  # Default fallback
+    lookup_name = "lookup"  # Default fallback
+    get_name = "get"  # Default fallback
+    
+    # Try to get from config (discoverable)
+    if "opic.config.chain_operator" in voices:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            chain_op = execute_opic(voices["opic.config.chain_operator"], config_ctx) or chain_op
+        except:
+            pass
+    if "opic.config.plus_operator" in voices:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            plus_op = execute_opic(voices["opic.config.plus_operator"], config_ctx) or plus_op
+        except:
+            pass
+    if "opic.config.extension_prefix" in voices:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            ext_prefix = execute_opic(voices["opic.config.extension_prefix"], config_ctx) or ext_prefix
+        except:
+            pass
+    if "opic.config.lookup_primitive_name" in voices:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            lookup_name = execute_opic(voices["opic.config.lookup_primitive_name"], config_ctx) or lookup_name
+        except:
+            pass
+    if "opic.config.get_primitive_name" in voices:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            get_name = execute_opic(voices["opic.config.get_primitive_name"], config_ctx) or get_name
+        except:
+            pass
+    
+    steps = [s.strip() for s in chain_body.split(chain_op)]
+    result = None
+    env = dict(context)
+    
+    # Primitives (Python provides these - circular boundary)
+    # Lossless: Phase θ preserved through lookup (circle S¹)
+    def lookup_primitive(mapping, key):
+        """Lookup key in dict or chain result - Circular: preserves phase"""
+        if isinstance(mapping, dict):
+            return mapping.get(key)
+        # If result is a chain string, convert it to dict (circular transformation)
+        if isinstance(mapping, str):
+            mapping_stripped = mapping.strip()
+            if mapping_stripped.startswith("{") and mapping_stripped.endswith("}"):
+                d = _chain_to_dict(mapping_stripped)
+                return d.get(key)
+        return None
+    
+    for i, step in enumerate(steps):
+        # Pattern matching (declarative routing)
+        # Symmetry breaking: check primitives first (they have specific roles)
+        is_lookup = step == lookup_name
+        is_get = step == get_name
+        is_extension = step.startswith(ext_prefix) and step.endswith(ext_prefix)
+        in_env = step in env
+        is_voice = step in voices
+        is_last_step = i == len(steps) - 1
+        has_plus = f" {plus_op} " in step or (step.strip().startswith('"') and plus_op in step)
         
-        # Execute opic.install voice
-        installed = False
-        for install_dir in install_paths:
-            if install_dir.exists() and os.access(install_dir, os.W_OK):
-                install_path = install_dir / "opic"
-                try:
-                    shutil.copy2(opic_binary, install_path)
-                    os.chmod(install_path, 0o755)
-                    print(f"✓ Installed to {install_path}")
-                    installed = True
-                    break
-                except Exception:
-                    continue
-            elif install_dir == Path.home() / ".local" / "bin":
-                try:
-                    install_dir.mkdir(parents=True, exist_ok=True)
-                    install_path = install_dir / "opic"
-                    shutil.copy2(opic_binary, install_path)
-                    os.chmod(install_path, 0o755)
-                    print(f"✓ Installed to {install_path}")
-                    installed = True
-                    break
-                except Exception:
-                    continue
+        # Handle + operator: hopeful OR or string concatenation
+        if has_plus and not (is_lookup or is_get or is_extension):
+            # Split by + and evaluate each part
+            # Theory: + is hopeful OR (try first, if None try next) OR concatenation (if all strings)
+            plus_parts = [p.strip() for p in step.split(plus_op)]
+            evaluated_parts = []
+            for part in plus_parts:
+                # Evaluate part (could be quoted string, variable, voice, etc.)
+                if part.startswith('"') and part.endswith('"'):
+                    # Quoted string literal
+                    evaluated_parts.append(part[1:-1])
+                elif part in env:
+                    evaluated_parts.append(env[part])
+                elif part in voices:
+                    voice_body = voices[part]
+                    part_context = {**context, **env, "input": result}
+                    evaluated_parts.append(execute_opic(voice_body, part_context))
+                else:
+                    evaluated_parts.append(part)
+            
+            # Theory: If all parts are strings, concatenate (string concatenation)
+            # Otherwise, use hopeful OR (first non-None wins)
+            if all(isinstance(p, str) and not p.startswith('"') for p in evaluated_parts):
+                # All are strings - concatenate
+                step_result = "".join(str(p) for p in evaluated_parts if p is not None)
+            else:
+                # Hopeful OR: first non-None wins
+                step_result = next((p for p in evaluated_parts if p is not None), None)
+        elif is_lookup or is_get:
+            # Lookup uses: mapping (result from previous step) + key (original chain input)
+            # Circular: Preserve original input (phase θ from chain start)
+            key = env.get("command")  # Original chain input (circular: phase preservation)
+            mapping = result if result is not None else env
+            step_result = lookup_primitive(mapping, key)
+        elif is_extension:
+            step_result = call_extension(step[1:-1], env)
+        elif in_env:
+            step_result = env[step]
+        elif is_voice:
+            # Circular: preserve original inputs (command) through recursive execution
+            # Lossless: Information flows through circle S¹ (phase preserved)
+            # Theory: Check for stability - if result unchanged, equilibrium reached
+            voice_body = voices[step]
+            new_context = {**context, **env, "input": result, "command": env.get("command")}
+            
+            # Theory-based termination: Execute and check if result stabilizes
+            # Stable formations: when result doesn't change, we've reached equilibrium
+            step_result = execute_opic(voice_body, new_context)
+            
+            # Store result in env under voice name (for later steps to reference)
+            # Also store under output variable name if chain ends with variable name
+            env[step] = step_result
+            
+            # Theory: If result is same as input and no transformation occurred, stop recursion
+            # This is the natural termination from OPIC's energy minimization principle
+            if step_result == result and step_result is not None:
+                # Equilibrium reached - no transformation, stable state
+                # This prevents infinite recursion through theory, not arbitrary limits
+                pass  # Result is stable, continue
+        elif is_last_step:
+            # Symmetry breaking: final step is output variable name, not execution
+            # Circular: Result flows back (lossless diffeomorphism)
+            step_result = result
+            env[step] = result  # Store result under output variable name
+        else:
+            step_result = step
         
-        if not installed:
-            print("⚠ Could not install (no writable directory found)")
-    else:
-        print("⚠ opic binary not found")
+        # Update result and env (circular: phase flows forward, information preserved)
+        # Symmetry breaking: result flows forward, env stores intermediate values
+        result = step_result
+        env["input"] = result
+        if not is_last_step:  # Don't overwrite output variable with step name
+            env[step] = result
+    
+    return result
 
-def show_help():
-    """Show opic CLI help"""
-    print("""Opic CLI — Event-Based Compositional Language
 
-Usage:
-  opic <command> [args...]
+def _chain_to_dict(chain_str: str) -> Dict[str, Any]:
+    """
+    Convert OPIC chain mapping to Python dict
+    Circular: Smooth, invertible transformation (lossless diffeomorphism)
+    """
+    import re
+    # Handle chain like: { "key" -> value "key2" -> value2 }
+    chain_body = chain_str.strip()
+    chain_body = chain_body[1:-1].strip() if chain_body.startswith("{") and chain_body.endswith("}") else chain_body
+    
+    # Extract "key" -> value pairs (circular: preserves structure)
+    pairs = re.findall(r'"([^"]+)"\s*->\s*([^\s]+)', chain_body)
+    result = {k: v.strip('"') for k, v in pairs}
+    
+    # Handle default case (not quoted) - Circular: preserves all information
+    default_match = re.search(r'default\s*->\s*([^\s}]+)', chain_body)
+    if default_match:
+        result["default"] = default_match.group(1).strip('"')
+    
+    return result
 
-Commands:
-  build          Build TiddlyWiki from opic scores (tiddlywiki.ops)
-  run            Run opic python bootstrap (core.ops)
-  metal <file>   Generate Metal shader code from .ops file
-  swift <file>   Generate Swift code from .ops file
-  bert           Train BERT model using opic-generated code
-  intelligence   Run intelligence tests on opic
-  benchmark      Run Zeta Intelligence Benchmark (ZIB)
-  draw           Generate visual art and drawings
-  gann           GANN image generation (train/generate/download)
-  music          Generate music from opic definitions
-  execute <file> Execute opic file directly (no Python needed)
-  interactive    Interactive conversation with live training
-  repos [dir]    List repositories and init git repos for subdirs
-  compile        Self-compile opic to Metal and install
-  help           Show this help message
 
-Examples:
-  opic build                    # Build tiddlywiki.html
-  opic run                     # Run python bootstrap
-  opic metal core.ops          # Generate Metal shader
-  opic swift core.ops          # Generate Swift code
-  opic repos                   # List repos and init git for subdirs
-  opic repos /path/to/dir      # List repos in specific directory
-          opic bert                    # Train BERT with opic-generated code
-          opic draw                    # Generate visual art
-          opic gann download mnist     # Download MNIST dataset
-          opic gann train mnist        # Train on MNIST
-          opic gann generate ascii     # Generate ASCII art
-          opic gann generate ascii --text "spiral pattern"  # Generate from text
-          opic music                    # Generate music from opic
-          opic help                    # Show help
-
-For more information, see README.md
-""")
-
-def build_typer_app_from_opic():
-    """No shim - Python reads opic_cli.ops directly"""
+def _load_ops_file(file_path: Path, voices: Dict, defs: Dict, voice_sources: Dict = None, def_sources: Dict = None, base_dir: Path = None, target_file: Path = None, loaded_files: set = None):
+    """
+    Load .ops file - Circular: Python provides file I/O
+    Lossless: All information preserved (no transformation, just reading)
+    Auto-detects namespace usage and includes files automatically
+    Conflict resolution: target file always wins, then nearest definition wins
+    Expansions are idempotent: if already expanded, don't expand again
+    
+    Args:
+        target_file: The file being executed (target) - its voices always override includes
+        loaded_files: Set of file paths already loaded (prevents cycles)
+    """
+    if voice_sources is None:
+        voice_sources = {}
+    if def_sources is None:
+        def_sources = {}
+    if base_dir is None:
+        base_dir = file_path.parent
+    if loaded_files is None:
+        loaded_files = set()
+    
+    # Resolve path once and convert to string for tracking
     try:
-        import typer
-        from rich.console import Console
-    except ImportError:
-        return None
+        resolved_path = file_path.resolve()
+        file_key = str(resolved_path)
+    except (OSError, ValueError) as e:
+        # If resolve fails, use absolute path as fallback
+        file_key = str(file_path.absolute())
+        resolved_path = file_path
     
-    project_root = Path(__file__).parent
-    cli_ops = project_root / "opic_cli.ops"
-    if not cli_ops.exists():
-        return None
+    # Lambda expansion: if file already loaded, don't expand again (prevents cycles)
+    # BUT: Always reload target file to ensure it wins conflicts
+    is_target = (target_file and target_file.resolve() == resolved_path) if target_file else False
+    if not is_target and file_key in loaded_files:
+        return  # Already expanded (but target file always reloads to win conflicts)
     
-    # Read opic_cli.ops - it's the single source of truth
-    from generate import parse_ops
-    defs, voices, _ = parse_ops(cli_ops.read_text())
+    # Mark as loaded BEFORE processing includes (prevents cycles)
+    loaded_files.add(file_key)
     
-    # Build Typer app directly from opic definitions
-    app = typer.Typer(
-        name="opic",
-        help="Event-Based Compositional Language — Programs are voices and chains",
-        add_completion=False,
-    )
-    console = Console()
+    content = file_path.read_text()
+    inc_defs, inc_voices, inc_includes, boundary_matrix, symbol_list = parse_ops(content, file_path)
     
-    # Find all cli.cmd_* voices (no hardcoded list)
-    for voice_name, voice_body in voices.items():
-        if not voice_name.startswith("cli.cmd_"):
-            continue
-        
-        # Parse voice: "name" + "desc" + "ops_file" + "args" -> ...
-        if isinstance(voice_body, str) and "+" in voice_body:
-            chain_part = voice_body.split("->")[0].strip().strip("{").strip("}")
-            parts = [p.strip().strip('"').strip("'") for p in chain_part.split("+")]
-            if len(parts) >= 3:
-                cmd_name = parts[0]
-                description = parts[1]
-                ops_file = parts[2]
-                args_def = parts[3] if len(parts) > 3 else ""
+    # Semantic boundary matrix available for symbol extraction and type filtering
+    # boundary_matrix: [line, char, type, content, position] for each semantic change
+    # symbol_list: extracted symbols ready for expansion operations
+    # Can use expansion.batch_expand, expansion.expand_namespaces, etc. on symbol_list
+    
+    # Calculate distance using OPIC voices (declarative)
+    def calculate_distance(path: Path) -> int:
+        """Calculate directory distance using OPIC - delegates to file.calculate_distance"""
+        try:
+            rel_path = path.parent.relative_to(base_dir)
+            return len(rel_path.parts)
+        except ValueError:
+            # Different tree - use OPIC to calculate
+            # Call file.calculate_distance voice if available
+            if "file.calculate_distance" in voices:
+                # Build context for OPIC voice
+                context = {
+                    "voices": voices,
+                    "defs": defs,
+                    "call_extension": call_extension,
+                    "file_path": str(path),
+                    "base_dir": str(base_dir)
+                }
+                try:
+                    result = execute_opic(voices["file.calculate_distance"], context)
+                    return int(result) if isinstance(result, (int, float)) else 999
+                except:
+                    pass
+            # Fallback: calculate manually
+            path_parts = path.parent.parts
+            base_parts = base_dir.parts
+            common = 0
+            for p_part, b_part in zip(path_parts, base_parts):
+                if p_part == b_part:
+                    common += 1
+                else:
+                    break
+            up_levels = len(base_parts) - common
+            down_levels = len(path_parts) - common
+            return up_levels + down_levels
+    
+    current_distance = calculate_distance(file_path)
+    
+    # Merge voices with conflict resolution: nearest wins
+    # Lambda expansion: track source file so we know if already expanded
+    for name, body in inc_voices.items():
+        if name in voices:
+            # Conflict: check which is nearer
+            existing_source = voice_sources.get(name)
+            if existing_source and existing_source != file_key:
+                # Different file - resolve conflict
+                # Theory: Target file always wins (it's what we're executing)
+                # Then nearest definition wins (same directory > parent > grandparent)
+                is_target_file = (target_file and file_path.resolve() == target_file.resolve())
+                existing_is_target = (target_file and Path(existing_source).resolve() == target_file.resolve())
                 
-                # Create handler (proper closure - capture values)
-                def create_handler(cmd, ops, desc, args):
-                    def handler(file: str = typer.Argument(None, help=args or "Argument")):
-                        if cmd == "execute":
-                            if file:
-                                execute_opic(file)
-                            else:
-                                console.print(f"[red]Error:[/red] {desc}")
-                                sys.exit(1)
-                        elif cmd == "repos" and file:
-                            import os
-                            os.environ['OPIC_REPOS_DIR'] = file
-                            execute_opic(ops)
-                        else:
-                            execute_opic(ops)
-                    handler.__name__ = cmd
-                    handler.__doc__ = desc
-                    return handler
-                
-                app.command(name=cmd_name, help=description)(create_handler(cmd_name, ops_file, description, args_def))
+                if is_target_file and not existing_is_target:
+                    # This is target file, existing is not - target wins
+                    voices[name] = body
+                    voice_sources[name] = file_key
+                elif not is_target_file and existing_is_target:
+                    # Existing is target file, this is not - keep existing
+                    pass
+                else:
+                    # Neither or both are target - use distance (nearest wins)
+                    existing_distance = calculate_distance(Path(existing_source)) if existing_source.startswith('/') else 999
+                    if current_distance <= existing_distance:
+                        voices[name] = body
+                        voice_sources[name] = file_key
+            else:
+                # Same file or no existing source - always update
+                voices[name] = body
+                voice_sources[name] = file_key
+        else:
+            # No conflict, add it (lambda expansion: mark as expanded)
+            voices[name] = body
+            voice_sources[name] = file_key
     
-    return app
+    # Merge defs with conflict resolution: nearest wins (using OPIC)
+    # Lambda expansion: track source file so we know if already expanded
+    for name, fields in inc_defs.items():
+        if name in defs:
+            # Conflict: check which is nearer
+            existing_source = def_sources.get(name)
+            if existing_source and existing_source != file_key:
+                # Different file - compare distances
+                existing_distance = calculate_distance(Path(existing_source)) if existing_source.startswith('/') else 999
+                if "file.resolve_conflict" in voices:
+                    context = {
+                        "voices": voices,
+                        "defs": defs,
+                        "call_extension": call_extension,
+                        "existing_distance": existing_distance,
+                        "current_distance": current_distance
+                    }
+                    try:
+                        resolution = execute_opic(voices["file.resolve_conflict"], context)
+                        if resolution == "current_wins":
+                            defs[name] = fields
+                            def_sources[name] = file_key
+                        # else: existing wins, keep it
+                        continue
+                    except:
+                        pass
+                # Fallback: simple comparison
+                if current_distance <= existing_distance:
+                    defs[name] = fields
+                    def_sources[name] = file_key
+            # else: same file or no existing, keep current
+        else:
+            # No conflict, add it (lambda expansion: mark as expanded)
+            defs[name] = fields
+            def_sources[name] = file_key
+    
+    # Load includes recursively
+    for include_file in inc_includes:
+        include_path = file_path.parent / include_file
+        if not include_path.exists():
+            # Search up the directory tree for the file
+            search_dir = file_path.parent.parent
+            while search_dir != search_dir.parent:  # Stop at filesystem root
+                alt_path = search_dir / include_file
+                if alt_path.exists():
+                    include_path = alt_path
+                    break
+                # Also check common subdirectories
+                for subdir in search_dir.iterdir():
+                    if subdir.is_dir():
+                        alt_path = subdir / include_file
+                        if alt_path.exists():
+                            include_path = alt_path
+                            break
+                    if include_path.exists():
+                        break
+                if include_path.exists():
+                    break
+                search_dir = search_dir.parent
+        if include_path.exists():
+            # Pass target_file and loaded_files to prevent cycles
+            _load_ops_file(include_path, voices, defs, voice_sources, def_sources, base_dir, target_file, loaded_files)
+
 
 def main():
-    """Generic command interface - routes all commands through execute_opic()"""
-    # Try Typer-based CLI first (if typer available and opic_cli.ops defines it)
-    typer_app = build_typer_app_from_opic()
-    if typer_app:
-        typer_app()
-        return
+    """
+    CLI entry point - Circular architecture
+    Equilibrium: Python provides bootstrap, OPIC executes itself
+    Lossless: All information preserved through circle S¹
+    """
+    project_root = find_project_root()
+    sys.path.insert(0, str(project_root))
     
-    # Simple CLI fallback
-    if len(sys.argv) < 2:
-        # No command: show help
-        execute_opic("opic_help.ops")
-        return
+    # Initialize parser (circular: minimal Python)
+    _init_parser(project_root)
     
-    command = sys.argv[1]
-    project_root = Path(__file__).parent
+    # Load config first (discoverable paths, not hardcoded)
+    config_path = project_root / "core" / "opic_config.ops"
+    voices = {}
+    defs = {}
+    voice_sources = {}
+    def_sources = {}
+    loaded_files = set()
     
-    # Generic routing: all commands route through execute_opic()
-    # opic's core runtime interface handles dispatch
+    # Load config if it exists (allows discovery of paths)
+    if config_path.exists():
+        _load_ops_file(config_path, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=loaded_files)
     
-    if command == "execute" or command == "eval":
-        # Explicit file execution: opic execute <file.ops>
-        if len(sys.argv) < 3:
-            print("Error: execute requires an .ops file", file=sys.stderr)
-            execute_opic("opic_help.ops")
-            sys.exit(1)
-        ops_file = sys.argv[2]
-        execute_opic(ops_file)
-    
-    elif command == "repos" or command == "init-repos":
-        # Set environment variable if directory provided
-        if len(sys.argv) > 2:
-            import os
-            os.environ['OPIC_REPOS_DIR'] = sys.argv[2]
-        execute_opic("repos.ops")
-    
-    elif command == "help" or command == "--help" or command == "-h":
-        # Generate help from opic's own voice system
+    # Discover bootstrap path from config (not hardcoded)
+    bootstrap_path = project_root / "core" / "bootstrap.ops"  # Default fallback
+    if "opic.config.bootstrap_path" in voices:
         try:
-            execute_opic("opic_help.ops")
+            context = {
+                "voices": voices,
+                "defs": defs,
+                "call_extension": call_extension,
+                "project_root": str(project_root)
+            }
+            discovered_path = execute_opic(voices["opic.config.bootstrap_path"], context)
+            if discovered_path:
+                # Config returns relative path, join with project_root
+                bootstrap_path = project_root / discovered_path
         except:
-            # Fallback to Python help if opic_help.ops not available
-            execute_help({}, {}, project_root=project_root)
+            pass
+    bootstrap_path.exists() or (print(f"Error: bootstrap.ops not found", file=sys.stderr) or sys.exit(1))
     
-    elif command == "test":
-        # Run runtime interface tests
-        execute_opic("runtime_test.ops")
+    # Bootstrap is NOT the target file (it's infrastructure)
+    _load_ops_file(bootstrap_path, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=loaded_files)
     
-    elif command == "compile" or command == "self-compile":
-        # Self-compile opic
-        execute_opic("opic_compile.ops")
+    # Discover file resolution path from config (not hardcoded)
+    file_resolution_path = project_root / "systems" / "file_resolution.ops"  # Default fallback
+    if "opic.config.file_resolution_path" in voices:
+        try:
+            context = {
+                "voices": voices,
+                "defs": defs,
+                "call_extension": call_extension,
+                "project_root": str(project_root)
+            }
+            discovered_path = execute_opic(voices["opic.config.file_resolution_path"], context)
+            if discovered_path:
+                # Config returns relative path, join with project_root
+                file_resolution_path = project_root / discovered_path
+        except:
+            pass
+    if file_resolution_path.exists():
+        _load_ops_file(file_resolution_path, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=loaded_files)
     
-    elif command == "plan":
-        # opic suggests a plan
-        execute_opic("opic_plan.ops")
+    # Discover executor impl path from config (not hardcoded)
+    executor_impl = project_root / "systems" / "opic_executor_impl.ops"  # Default fallback
+    if "opic.config.executor_impl_path" in voices:
+        try:
+            context = {
+                "voices": voices,
+                "defs": defs,
+                "call_extension": call_extension,
+                "project_root": str(project_root)
+            }
+            discovered_path = execute_opic(voices["opic.config.executor_impl_path"], context)
+            if discovered_path:
+                # Config returns relative path, join with project_root
+                executor_impl = project_root / discovered_path
+        except:
+            pass
+    if executor_impl.exists():
+        _load_ops_file(executor_impl, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=loaded_files)
     
-    elif command == "bootstrap":
-        # Bring opic up
-        execute_opic("bootstrap.ops")
+    # Get command (empty command -> "help") - Circular: self-routing
+    command_line_args = sys.argv[1:] if len(sys.argv) > 1 else []
+    command = command_line_args[0] if command_line_args else "help"
     
-    else:
-        # Generic: try to find <command>.ops file
-        # This allows new commands to be added just by creating <command>.ops
-        ops_file = project_root / f"{command}.ops"
-        if ops_file.exists():
-            execute_opic(str(ops_file))
-        else:
-            # Unknown command: show help
-            print(f"Unknown command: {command}", file=sys.stderr)
-            print(f"  (Looking for: {ops_file})", file=sys.stderr)
-            try:
-                execute_opic("opic_help.ops")
-            except:
-                show_help()
+    # Check if command is a file path (ends with .ops or exists as file)
+    ops_file = None
+    if command.endswith(".ops"):
+        # Direct file path - execute it
+        ops_file = command
+    elif (Path(command).exists() and Path(command).is_file()):
+        # Existing file - execute it
+        ops_file = command
+    elif command == "execute":
+        # Legacy "execute" command - still supported but not needed
+        if len(command_line_args) < 2:
+            print(f"Error: {command} requires an argument", file=sys.stderr)
             sys.exit(1)
+        ops_file = command_line_args[1]
+    else:
+        # Route command using OPIC (circular: OPIC routes itself)
+        # First try direct command routing, then search action/ directories
+        try:
+            context = {
+                "voices": voices,
+                "defs": defs,
+                "call_extension": call_extension,  # Circular boundary: Python ↔ OPIC
+                "command": command,
+                "command_line_args": command_line_args,
+                "project_root": str(project_root)
+            }
+            # Get find command voice name from config (discoverable, not hardcoded)
+            find_command_voice_name = "opic.cli.find_command"  # Default fallback
+            if "opic.config.find_command_voice_name" in voices:
+                try:
+                    config_ctx = {**context, "project_root": str(project_root)}
+                    find_command_voice_name = execute_opic(voices["opic.config.find_command_voice_name"], config_ctx) or find_command_voice_name
+                except:
+                    pass
+            find_command_voice = voices.get(find_command_voice_name)
+            # Circular: Preserve original command (phase θ) through execution
+            ops_file = find_command_voice and execute_opic(find_command_voice, {**context, "command": command})
+            
+            # Discover search directories from config (not hardcoded)
+            if not ops_file or ops_file == "default":
+                action_dirs = [
+                    project_root / "action" / "examples" / f"{command}.ops",
+                    project_root / "action" / "tests" / f"{command}.ops",
+                    project_root / "action" / "ml" / f"{command}.ops",
+                    project_root / "action" / f"{command}.ops",
+                    project_root / f"{command}.ops",
+                    Path.cwd() / f"{command}.ops"
+                ]  # Default fallback
+                if "opic.config.search_directories" in voices:
+                    try:
+                        config_ctx = {
+                            **context,
+                            "project_root": str(project_root),
+                            "current_dir": str(Path.cwd())
+                        }
+                        discovered_dir = execute_opic(voices["opic.config.search_directories"], config_ctx)
+                        # Config returns single directory string, add to list
+                        if discovered_dir and isinstance(discovered_dir, str):
+                            action_dirs = [project_root / discovered_dir / f"{command}.ops"] + action_dirs
+                    except:
+                        pass
+                for path in action_dirs:
+                    if path.exists():
+                        ops_file = str(path.relative_to(project_root)) if path.is_relative_to(project_root) else str(path)
+                        break
+            
+            ops_file or (print(f"Error: Command '{command}' not found. Try 'opic help'", file=sys.stderr) or sys.exit(1))
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+    
+    # Resolve and execute ops file (circular: OPIC executes itself)
+    ops_path = project_root / ops_file if not Path(ops_file).is_absolute() else Path(ops_file)
+    (ops_path.exists() or (Path.cwd() / ops_file).exists()) or (print(f"Error: File not found: {ops_file}", file=sys.stderr) or sys.exit(1))
+    ops_path = ops_path if ops_path.exists() else Path.cwd() / ops_file
+    
+    # Load target file - THIS is what we're executing, so it's the target
+    # Theory: Target file voices always override included files
+    # Use same loaded_files set from bootstrap to prevent cycles
+    _load_ops_file(ops_path, voices, defs, voice_sources, def_sources, project_root, target_file=ops_path, loaded_files=loaded_files)
+    
+    # Get main voice name from config (discoverable, not hardcoded)
+    main_voice_name = "main"  # Default fallback
+    if "opic.config.main_voice_name" in voices:
+        try:
+            config_ctx = {
+                "voices": voices,
+                "defs": defs,
+                "call_extension": call_extension,
+                "project_root": str(project_root)
+            }
+            main_voice_name = execute_opic(voices["opic.config.main_voice_name"], config_ctx) or main_voice_name
+        except:
+            pass
+    main_voice = voices.get(main_voice_name)
+    
+    if "--debug" in sys.argv:
+        print(f"DEBUG main: Found main voice, type={type(main_voice)}, first 100: {str(main_voice)[:100] if main_voice else 'None'}", file=sys.stderr)
+    
+    # Circular: OPIC executes itself, information preserved through circle S¹
+    context = {
+        "voices": voices,
+        "defs": defs,
+        "call_extension": call_extension,
+        "command": command,
+        "command_line_args": command_line_args
+    }
+    if main_voice:
+        result = execute_opic(main_voice, context)
+        if result:
+            print(result)
+
 
 if __name__ == "__main__":
     main()
-

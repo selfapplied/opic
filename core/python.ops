@@ -1,0 +1,118 @@
+;;; python.ops — Declarative Python Primitive Registry
+;;; Python reads this to know what primitives to provide
+
+;; Python primitive type: name, signature, implementation_hint
+def python_primitive {
+  name,              ;; Primitive name (e.g., "python.add")
+  signature,         ;; Input/output signature
+  category,          ;; Category: "file", "math", "string", "dict", "list", "type", "execution"
+  description        ;; What it does
+}
+
+;; ============================================================================
+;; FILE OPERATIONS
+;; ============================================================================
+
+def python.file_read { name: "python.file_read", signature: "path -> text", category: "file", description: "Read file content" }
+def python.file_write { name: "python.file_write", signature: "path + content -> written", category: "file", description: "Write file content" }
+def python.file_exists { name: "python.file_exists", signature: "path -> exists", category: "file", description: "Check if file exists" }
+
+;; ============================================================================
+;; MATH OPERATIONS
+;; ============================================================================
+
+def python.add { name: "python.add", signature: "a + b -> result", category: "math", description: "Add two numbers or strings" }
+def python.multiply { name: "python.multiply", signature: "a + b -> result", category: "math", description: "Multiply two numbers" }
+def python.divide { name: "python.divide", signature: "a + b -> result", category: "math", description: "Divide two numbers" }
+
+;; ============================================================================
+;; STRING OPERATIONS
+;; ============================================================================
+
+def python.split { name: "python.split", signature: "text + separator -> parts", category: "string", description: "Split string by separator" }
+def python.join { name: "python.join", signature: "parts + separator -> text", category: "string", description: "Join list with separator" }
+def python.strip { name: "python.strip", signature: "text -> cleaned", category: "string", description: "Strip whitespace" }
+def python.contains { name: "python.contains", signature: "text + substring -> found", category: "string", description: "Check if text contains substring" }
+def python.slice_from_1 { name: "python.slice_from_1", signature: "text -> stripped", category: "string", description: "Slice string from index 1" }
+def python.slice_to_minus_1 { name: "python.slice_to_minus_1", signature: "text -> stripped", category: "string", description: "Slice string to index -1" }
+def python.strip_quotes { name: "python.strip_quotes", signature: "text -> cleaned", category: "string", description: "Strip quotes from string" }
+
+;; ============================================================================
+;; DICTIONARY OPERATIONS
+;; ============================================================================
+
+def python.lookup { name: "python.lookup", signature: "dict + key -> value", category: "dict", description: "Get value from dict" }
+def python.update { name: "python.update", signature: "dict + key + value -> updated_dict", category: "dict", description: "Set value in dict" }
+def python.dict_from_inputs { name: "python.dict_from_inputs", signature: "inputs -> env", category: "dict", description: "Create dict from inputs" }
+
+;; ============================================================================
+;; LIST OPERATIONS
+;; ============================================================================
+
+def python.append { name: "python.append", signature: "list + item -> new_list", category: "list", description: "Append item to list" }
+def python.for_each { name: "python.for_each", signature: "list + function -> results", category: "list", description: "Map function over list" }
+def python.for_each_step { name: "python.for_each_step", signature: "steps -> steps", category: "list", description: "For each step (identity)" }
+def python.for_each_step_execute { name: "python.for_each_step_execute", signature: "steps -> steps", category: "list", description: "For each step execute (identity)" }
+def python.take_last { name: "python.take_last", signature: "items -> last", category: "list", description: "Take last item from list" }
+def python.get_first { name: "python.get_first", signature: "items -> first", category: "list", description: "Get first item from list" }
+
+;; ============================================================================
+;; TYPE OPERATIONS
+;; ============================================================================
+
+def python.is_string { name: "python.is_string", signature: "value -> is_string", category: "type", description: "Check if value is string" }
+def python.is_dict { name: "python.is_dict", signature: "value -> is_dict", category: "type", description: "Check if value is dict" }
+def python.is_list { name: "python.is_list", signature: "value -> is_list", category: "type", description: "Check if value is list" }
+def python.is_primitive { name: "python.is_primitive", signature: "name -> is_primitive", category: "type", description: "Check if name is a primitive" }
+
+;; ============================================================================
+;; EXECUTION OPERATIONS
+;; ============================================================================
+
+def python.call_primitive { name: "python.call_primitive", signature: "name + env -> result", category: "execution", description: "Call a primitive by name" }
+
+;; ============================================================================
+;; PATH OPERATIONS
+;; ============================================================================
+
+def python.join_path { name: "python.join_path", signature: "base + part -> path", category: "path", description: "Join path components" }
+def python.list_directory { name: "python.list_directory", signature: "directory -> files", category: "path", description: "List files in directory" }
+
+;; ============================================================================
+;; PRIMITIVE REGISTRY
+;; ============================================================================
+
+;; All Python primitives (Python reads this)
+voice python.primitives / {
+  python.file_read +
+  python.file_write +
+  python.file_exists +
+  python.add +
+  python.multiply +
+  python.divide +
+  python.split +
+  python.join +
+  python.strip +
+  python.contains +
+  python.slice_from_1 +
+  python.slice_to_minus_1 +
+  python.strip_quotes +
+  python.lookup +
+  python.update +
+  python.dict_from_inputs +
+  python.append +
+  python.for_each +
+  python.for_each_step +
+  python.for_each_step_execute +
+  python.take_last +
+  python.get_first +
+  python.is_string +
+  python.is_dict +
+  python.is_list +
+  python.is_primitive +
+  python.call_primitive +
+  python.join_path +
+  python.list_directory ->
+  all_primitives
+}
+

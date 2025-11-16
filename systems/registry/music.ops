@@ -1,0 +1,197 @@
+;;; music.ops — Extensible music scale/pattern registry
+
+include base.ops
+
+;; ============================================================================
+;; DEFINITIONS
+;; ============================================================================
+
+def musical_scale {
+  scale_name,
+  intervals,
+  root_note,
+  metadata
+}
+
+def chord_quality {
+  chord_name,
+  intervals,
+  metadata
+}
+
+def rhythm_pattern {
+  pattern_name,
+  time_signature,
+  note_sequence,
+  metadata
+}
+
+def musical_pattern {
+  pattern_name,
+  note_sequence,
+  metadata
+}
+
+def music_registry {
+  registry,
+  scales,
+  chords,
+  rhythms,
+  patterns,
+  tempos
+}
+
+;; ============================================================================
+;; OPERATIONS
+;; ============================================================================
+
+voice register_scale / {
+  music_registry + scale_name + intervals + root_note + metadata + description + usage + examples + related_entries -> 
+  create_entry -> 
+  register -> 
+  updated_registry
+}
+
+voice create_entry / {
+  scale_name + intervals + root_note + metadata + description + usage + examples + related_entries -> 
+  build_scale_config -> 
+  create_entry -> 
+  scale_entry
+}
+
+voice build_scale_config / {
+  scale_name + intervals + root_note + metadata -> 
+  combine_fields -> 
+  config
+}
+
+voice register_chord / {
+  music_registry + chord_name + intervals + metadata + description + usage + examples + related_entries -> 
+  create_entry -> 
+  register -> 
+  updated_registry
+}
+
+voice create_chord_entry / {
+  chord_name + intervals + metadata + description + usage + examples + related_entries -> 
+  build_chord_config -> 
+  create_entry -> 
+  chord_entry
+}
+
+voice build_chord_config / {
+  chord_name + intervals + metadata -> 
+  combine_fields -> 
+  config
+}
+
+voice register_rhythm / {
+  music_registry + pattern_name + time_signature + note_sequence + metadata + description + usage + examples + related_entries -> 
+  create_entry -> 
+  register -> 
+  updated_registry
+}
+
+voice create_rhythm_entry / {
+  pattern_name + time_signature + note_sequence + metadata + description + usage + examples + related_entries -> 
+  build_rhythm_config -> 
+  create_entry -> 
+  rhythm_entry
+}
+
+voice build_rhythm_config / {
+  pattern_name + time_signature + note_sequence + metadata -> 
+  combine_fields -> 
+  config
+}
+
+voice register_pattern / {
+  music_registry + pattern_name + note_sequence + metadata + description + usage + examples + related_entries -> 
+  create_entry -> 
+  register -> 
+  updated_registry
+}
+
+voice create_pattern_entry / {
+  pattern_name + note_sequence + metadata + description + usage + examples + related_entries -> 
+  build_pattern_config -> 
+  create_entry -> 
+  pattern_entry
+}
+
+voice build_pattern_config / {
+  pattern_name + note_sequence + metadata -> 
+  combine_fields -> 
+  config
+}
+
+voice get_scale / {
+  music_registry + scale_name -> 
+  get -> 
+  scale_entry
+}
+
+voice get_chord / {
+  music_registry + chord_name -> 
+  get -> 
+  chord_entry
+}
+
+voice get_rhythm / {
+  music_registry + pattern_name -> 
+  get -> 
+  rhythm_entry
+}
+
+voice get_pattern / {
+  music_registry + pattern_name -> 
+  get -> 
+  pattern_entry
+}
+
+voice help / {
+  music_registry -> 
+  help -> 
+  music_help
+}
+
+voice list_scales / {
+  music_registry -> 
+  filter_by_type "scale" -> 
+  extract_names -> 
+  scales_list
+}
+
+voice list_chords / {
+  music_registry -> 
+  filter_by_type "chord" -> 
+  extract_names -> 
+  chords_list
+}
+
+voice list_rhythms / {
+  music_registry -> 
+  filter_by_type "rhythm" -> 
+  extract_names -> 
+  rhythms_list
+}
+
+voice list_patterns / {
+  music_registry -> 
+  filter_by_type "pattern" -> 
+  extract_names -> 
+  patterns_list
+}
+
+voice discover / {
+  music_registry + query -> 
+  discover -> 
+  matching_elements
+}
+
+target music_registry / "music_system"
+voice main / {
+  music_registry + element_name -> 
+  get -> 
+  music_registry
+}

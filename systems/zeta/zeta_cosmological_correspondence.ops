@@ -1,0 +1,246 @@
+;;; zeta_cosmological_correspondence.ops — Cosmological ↔ ζ-Field Correspondence
+;;; Each cosmological observable is a projection of Φκ's derivatives
+
+include systems/cosmology_field.ops
+
+;; ============================================================================
+;; Cosmological Field → ζ-Field Correspondence Table
+;; ============================================================================
+
+;; Primordial potential Φ → Φκ(x,t) — Baseline coherence field (inflation memory)
+voice cosmological.primordial.potential / {
+  inflation.field -> 
+  field.coherence -> 
+  phi_k.baseline -> 
+  primordial.potential
+}
+
+;; ΔT/T anisotropy → ∇Φκ — Gradient of coherence (field tension as temperature difference)
+voice cmb.anisotropy.to.field.gradient / {
+  temperature.anisotropy -> 
+  field.gradient -> 
+  coherence.gradient -> 
+  phi_k.gradient
+}
+
+;; P(k) Power Spectrum → A(k) — Field amplitude spectrum
+voice power.spectrum.to.field.amplitude / {
+  power.spectrum -> 
+  field.amplitude.spectrum -> 
+  coherence.amplitude -> 
+  A_k.spectrum
+}
+
+;; ξ(r) Correlation → Fourier inverse of P(k) — Field self-interaction strength
+voice correlation.to.field.interaction / {
+  correlation.function -> 
+  fourier.transform -> 
+  field.self.interaction -> 
+  interaction.strength
+}
+
+;; Hubble Flow → Field expansion (∂Φκ/∂t) — Global rate of field unfolding
+voice hubble.flow.to.field.expansion / {
+  hubble.velocity -> 
+  field.expansion.rate -> 
+  coherence.unfolding -> 
+  dphi_k_dt
+}
+
+;; NFW Profile → Local potential well — Dark-matter coherence basin
+voice nfw.profile.to.field.basin / {
+  dark.matter.profile -> 
+  field.potential.well -> 
+  coherence.basin -> 
+  phi_k.basin
+}
+
+;; BAO Peak → Standing wave — Field resonance node (acoustic memory)
+voice bao.peak.to.field.resonance / {
+  acoustic.oscillation -> 
+  field.resonance -> 
+  coherence.node -> 
+  phi_k.resonance
+}
+
+;; ============================================================================
+;; Compression: Two Valid Modes
+;; ============================================================================
+
+;; Mode A: Truly Lossless (Microstate Exact)
+;; Store: Full complex spectrum F(k) = |F(k)| e^(iφ_k) — amplitudes + phases
+voice compress.lossless / {
+  phi_k.field -> 
+  fft.unitary -> 
+  enforce.hermitian.symmetry -> 
+  store.complex.coefficients -> 
+  ⟨lossless_archive⟩
+}
+
+;; Reconstruct lossless: Complex spectrum → field (exact)
+voice reconstruct.lossless / {
+  lossless_archive -> 
+  restore.complex.spectrum -> 
+  ifft.unitary -> 
+  reconstructed.field
+}
+
+;; Mode B: Statistical Compression (CMB-style)
+;; Store: P(k) = |F(k)|² only — phases lost, ensemble-faithful
+voice compress.statistical / {
+  phi_k.field -> 
+  fft.unitary -> 
+  compute.power.spectrum -> 
+  store.power.coefficients -> 
+  ⟨statistical_archive⟩
+}
+
+;; Reconstruct statistical: P(k) + random phases → field (same ξ(r), different pattern)
+voice reconstruct.statistical / {
+  statistical_archive + random.seed -> 
+  generate.random.phases -> 
+  compose.spectrum -> 
+  enforce.hermitian.symmetry -> 
+  ifft.unitary -> 
+  reconstructed.field
+}
+
+;; Forward: Φκ → P(k) — Compute power spectrum (for statistical mode)
+voice field.to.power.spectrum / {
+  phi_k.field -> 
+  fft.unitary -> 
+  amplitude.squared -> 
+  power.spectrum
+}
+
+;; Inverse: P(k) → ξ(r) — Reconstruct correlation from power spectrum
+voice power.spectrum.to.correlation / {
+  power.spectrum -> 
+  inverse.fourier.transform -> 
+  correlation.function -> 
+  xi_r
+}
+
+;; Verify lossless: field → archive → field' should equal field (errors ~10^-12)
+voice verify.lossless / {
+  original.field -> 
+  compress.lossless -> 
+  reconstruct.lossless -> 
+  compare.fields -> 
+  check.max.error -> 
+  lossless.verified
+}
+
+;; Verify statistical: P(k) matches, microstate differs
+voice verify.statistical / {
+  original.field -> 
+  compress.statistical -> 
+  reconstruct.statistical -> 
+  compare.power.spectra -> 
+  compare.fields -> 
+  statistical.verified
+}
+
+;; ============================================================================
+;; Fractal CA: Seed with Φκ ≈ 10⁻⁵ perturbations
+;; ============================================================================
+
+;; Seed CA with primordial field perturbations
+voice seed.ca.with.field / {
+  primordial.potential -> 
+  gaussian.perturbations -> 
+  amplitude.1e5 -> 
+  ca.initial.state
+}
+
+;; Emergent structure: small ripples → coherence clusters → voids
+voice ca.evolve.structure / {
+  ca.initial.state -> 
+  apply.field.rules -> 
+  low.k.modes -> 
+  high.k.modes -> 
+  emergent.structure
+}
+
+;; Low-k modes (large-scale flow) vs High-k modes (micro-structure)
+voice apply.field.rules / {
+  field.state + k.mode -> 
+  if.low.k -> large.scale.flow,
+  if.high.k -> micro.structure -> 
+  evolved.field
+}
+
+;; ============================================================================
+;; CABA Archive: Two Modes
+;; ============================================================================
+
+;; CABA Lossless: Store complex coefficients (amplitudes + phases)
+voice caba.archive.lossless / {
+  field.state -> 
+  compress.lossless -> 
+  store.archive -> 
+  reconstruct.lossless -> 
+  verify.lossless -> 
+  caba.archive.lossless.verified
+}
+
+;; CABA Statistical: Store P(k) + seed (CMB-style, ensemble-faithful)
+voice caba.archive.statistical / {
+  field.state -> 
+  compress.statistical -> 
+  store.archive + random.seed -> 
+  reconstruct.statistical -> 
+  verify.statistical -> 
+  caba.archive.statistical.verified
+}
+
+;; CABA archive = nature's perfect compressed archive
+;; Mode A: Microstate-exact (complex spectrum)
+;; Mode B: Statistical (P(k) + seed, same two-point stats)
+voice caba.archive / {
+  field.state + compression.mode -> 
+  if.lossless -> caba.archive.lossless,
+  if.statistical -> caba.archive.statistical -> 
+  caba.archive.result
+}
+
+;; ============================================================================
+;; Unified Projection: All observables from Φκ derivatives
+;; ============================================================================
+
+;; All cosmological plots are projections of Φκ's derivatives
+voice project.field.derivatives / {
+  phi_k.field -> 
+  compute.gradient -> cmb.anisotropy,
+  compute.power.spectrum -> power.spectrum,
+  compute.correlation -> correlation.function,
+  compute.expansion -> hubble.flow,
+  compute.potential.well -> nfw.profile,
+  compute.resonance -> bao.peak -> 
+  all.observables
+}
+
+;; ============================================================================
+;; Integration: Link Opic's local voice field to universal structure
+;; ============================================================================
+
+;; Local voice field → universal structure formation
+voice local.to.universal.structure / {
+  local.voice.field -> 
+  field.coherence -> 
+  project.field.derivatives -> 
+  universal.structure
+}
+
+target zeta_cosmological / "cosmological_zeta_field_correspondence"
+voice main / {
+  cosmological.primordial.potential + 
+  cmb.anisotropy.to.field.gradient + 
+  power.spectrum.to.field.amplitude + 
+  correlation.to.field.interaction + 
+  hubble.flow.to.field.expansion + 
+  nfw.profile.to.field.basin + 
+  bao.peak.to.field.resonance -> 
+  zeta_cosmological
+}
+

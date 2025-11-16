@@ -1,0 +1,322 @@
+;;; base.ops — Base extensible registry system
+
+include core/codegen.ops
+
+;; ============================================================================
+;; DEFINITIONS
+;; ============================================================================
+
+def registry_entry {
+  name,
+  config,
+  metadata,
+  handlers,
+  validators,
+  description,
+  usage,
+  examples,
+  related_entries
+}
+
+def registry {
+  name,
+  entries,
+  lookup_rules,
+  composition_rules,
+  default_entry
+}
+
+;; ============================================================================
+;; CORE OPERATIONS
+;; ============================================================================
+
+voice register / {
+  registry + entry_name + config + metadata -> 
+  create_entry -> 
+  validate_entry -> 
+  add_entry -> 
+  updated_registry
+}
+
+voice create_entry / {
+  entry_name + config + metadata + description + usage + examples + related_entries -> 
+  build_entry -> 
+  entry
+}
+
+voice create_entry_with_help / {
+  entry_name + config + metadata + description + usage + examples + related_entries -> 
+  create_entry -> 
+  entry
+}
+
+voice validate_entry / {
+  entry + registry -> 
+  check_name_unique -> 
+  validate_config -> 
+  validate_metadata -> 
+  validated
+}
+
+voice add_entry / {
+  registry + validated -> 
+  add_to_entries -> 
+  updated_registry
+}
+
+voice get / {
+  registry + entry_name -> 
+  lookup -> 
+  entry
+}
+
+voice lookup / {
+  registry + entry_name -> 
+  search_entries -> 
+  if_found -> entry -> 
+  if_not_found -> get_default -> 
+  result
+}
+
+voice get_default / {
+  registry -> 
+  extract_default_entry -> 
+  default
+}
+
+voice compose / {
+  registry + entry_names + composition_rules -> 
+  lookup_all -> 
+  apply_composition -> 
+  composed
+}
+
+voice lookup_all / {
+  registry + entry_names -> 
+  for_each -> get -> 
+  entries_list
+}
+
+voice apply_composition / {
+  entries_list + composition_rules -> 
+  apply_rules -> 
+  composed
+}
+
+voice extend / {
+  registry + new_entries -> 
+  merge_entries -> 
+  updated_registry
+}
+
+voice merge_entries / {
+  registry + new_entries -> 
+  for_each -> register -> 
+  merged
+}
+
+voice query / {
+  registry + query -> 
+  filter_entries -> 
+  matching_entries
+}
+
+voice filter_entries / {
+  registry + query -> 
+  apply_filter -> 
+  filtered
+}
+
+voice list / {
+  registry -> 
+  extract_entry_names -> 
+  entry_list
+}
+
+voice has / {
+  registry + entry_name -> 
+  lookup -> 
+  if_found -> true -> 
+  if_not_found -> false -> 
+  exists
+}
+
+;; ============================================================================
+;; INITIALIZATION
+;; ============================================================================
+
+voice create / {
+  registry_name + default_entry -> 
+  build -> 
+  empty_registry
+}
+
+voice build / {
+  registry_name + default_entry -> 
+  create_structure -> 
+  registry
+}
+
+voice create_structure / {
+  registry_name + default_entry -> 
+  build_object -> 
+  registry
+}
+
+;; ============================================================================
+;; HELP & DISCOVERABILITY
+;; ============================================================================
+
+voice help / {
+  registry -> 
+  describe -> 
+  list_entries -> 
+  show_usage -> 
+  show_examples -> 
+  help_output
+}
+
+voice describe / {
+  registry -> 
+  extract_name -> 
+  extract_description -> 
+  format_description -> 
+  description_text
+}
+
+voice list_entries / {
+  registry -> 
+  list -> 
+  for_each_entry -> 
+  get_entry_info -> 
+  format_entry_list -> 
+  entry_list
+}
+
+voice get_entry_info / {
+  registry + entry_name -> 
+  get -> 
+  extract_info -> 
+  info
+}
+
+voice show_usage / {
+  registry -> 
+  list_entries -> 
+  extract_usage -> 
+  format_usage -> 
+  usage_text
+}
+
+voice show_examples / {
+  registry -> 
+  list_entries -> 
+  extract_examples -> 
+  format_examples -> 
+  examples_text
+}
+
+voice help_entry / {
+  registry + entry_name -> 
+  get -> 
+  extract_help_info -> 
+  format_help -> 
+  help_text
+}
+
+voice extract_help_info / {
+  entry -> 
+  extract_description -> 
+  extract_usage -> 
+  extract_examples -> 
+  extract_related -> 
+  help_info
+}
+
+voice discover / {
+  registry + query -> 
+  filter_entries -> 
+  rank_by_relevance -> 
+  matching_entries
+}
+
+voice rank_by_relevance / {
+  entries + query -> 
+  calculate_relevance -> 
+  sort_by_score -> 
+  ranked
+}
+
+voice calculate_relevance / {
+  entry + query -> 
+  match_name -> 
+  match_description -> 
+  match_concepts -> 
+  combine_scores -> 
+  relevance_score
+}
+
+voice interactive_discover / {
+  registry -> 
+  show_menu -> 
+  handle_query -> 
+  discovery_results
+}
+
+voice show_menu / {
+  registry -> 
+  list -> 
+  format_menu -> 
+  menu_text
+}
+
+voice handle_query / {
+  registry + query -> 
+  discover -> 
+  format_results -> 
+  results_text
+}
+
+voice generate_discoverability / {
+  registry -> 
+  list_entries -> 
+  get_all_descriptions -> 
+  get_all_examples -> 
+  get_all_usage -> 
+  format_json -> 
+  discoverability_data
+}
+
+voice get_all_descriptions / {
+  registry -> 
+  list -> 
+  for_each_entry -> 
+  get_entry_info -> 
+  extract_descriptions -> 
+  descriptions_map
+}
+
+voice get_all_examples / {
+  registry -> 
+  list -> 
+  for_each_entry -> 
+  get_entry_info -> 
+  extract_examples -> 
+  examples_map
+}
+
+voice get_all_usage / {
+  registry -> 
+  list -> 
+  for_each_entry -> 
+  get_entry_info -> 
+  extract_usage -> 
+  usage_map
+}
+
+target base_registry / "registry"
+voice main / {
+  registry + entry_name -> 
+  get -> 
+  base_registry
+}

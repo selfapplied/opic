@@ -1,0 +1,93 @@
+;;; archive.ops — Query archived material from git history
+;;; All archived files are preserved in git - use this to surface them
+
+;; ============================================================================
+;; ARCHIVE QUERY SYSTEM
+;; ============================================================================
+;; Archive was deleted but preserved in git history (commit 3df2d2a)
+;; Use these voices to find and retrieve archived material
+
+;; Query archived files by pattern
+voice archive.query / {
+  query ->
+  archive.search_git_history ->
+  archive.filter_by_query ->
+  archive.format_results ->
+  results
+}
+
+;; Search git history for archived files
+voice archive.search_git_history / {
+  query ->
+  git.log_archive_commit ->
+  git.list_files_in_commit ->
+  archived_files
+}
+
+;; Filter files by query (name, path, content)
+voice archive.filter_by_query / {
+  archived_files + query ->
+  archive.match_filename ->
+  archive.match_path ->
+  archive.match_content ->
+  matching_files
+}
+
+;; Format results for display
+voice archive.format_results / {
+  matching_files ->
+  archive.group_by_category ->
+  archive.format_list ->
+  formatted_results
+}
+
+;; Retrieve specific archived file
+voice archive.retrieve / {
+  file_path ->
+  git.show_file_from_archive ->
+  file_content
+}
+
+;; List all archived files (by category)
+voice archive.list_all / {
+  git.list_archive_commit_files ->
+  archive.group_by_directory ->
+  archive.format_tree ->
+  archive_tree
+}
+
+;; Search archived content (grep through git history)
+voice archive.search_content / {
+  search_term ->
+  git.grep_archive_commit ->
+  archive.format_matches ->
+  matches
+}
+
+;; ============================================================================
+;; HELP & USAGE
+;; ============================================================================
+
+voice archive.help / {
+  ;; Usage:
+  ;;   archive.query "topic or filename"
+  ;; will search git history at commit 3df2d2a
+  ;; and surface matching archived .ops files as summaries/links.
+  ;;
+  ;; Examples:
+  ;;   archive.query "cosmology"     -> finds cosmological files
+  ;;   archive.query "ml.ops"        -> finds ML-related files
+  ;;   archive.query "protocol"       -> finds protocol files
+  ;;
+  ;; All 776 archived files are preserved in git history.
+  ;; Use this voice to surface material pertinent to a query.
+  ;;
+  ;; Archive commit: 3df2d2a
+  ;; Archive deletion: f0d3631
+  ;;
+  "archive_query_help"
+}
+
+target archive / "archive_query_system"
+voice main / {archive.query -> archive}
+

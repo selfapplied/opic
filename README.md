@@ -54,247 +54,82 @@ That's it. `greet` is a voice that transforms input to output. `main` chains voi
 ### Prerequisites
 
 - Python 3.8 or higher
-- Make (optional, but recommended)
+- `make` (optional, but it drives the case studies)
 
-### Installation
+### Clone & Run
 
 ```bash
 git clone https://github.com/selfapplied/opic.git
 cd opic
-make
+make case-studies   # runs every core case study and writes .out/ files
 ```
 
-This gives you an interactive opic shell:
-
-```
-opic> bootstrap.ops
-opic> repos.ops
-opic> plan.ops
-opic> exit
-```
-
-### One-Minute Demo
+You can also run them individually:
 
 ```bash
-make bootstrap    # Bring opic up
-make test         # Run tests
+make cosmology      # Generates CMB / NFW / BAO field report
+make reasoning      # Emits the reasoning + self-explanation narrative
+make tests          # Describes the field-based test harness
+make compression    # Walks through the critical-geometry codec
+make emergent       # Summarizes actor-coupled modeling
+make solve          # Shows the solve → emit pipeline
+make typst          # Generates the invariant whitepaper (Typst + PDF)
+make show-tests     # Pretty-print an existing narrative (.out must exist or target reruns)
 ```
 
----
+Outputs land under `.out/case_studies/core/<name>/`.  
+Typst source + PDF land under `docs/whitepaper/`.
+Quick peek: `make show-<target>` pretty-prints the latest narrative (auto-runs it if missing).
+No extra tooling, no subscriptions—just `python3` and `make`.
 
-## How It Works
-
-### Voices
-
-A voice is a transformation:
-
-```ops
-voice add / {a + b -> a + b -> sum}
-```
-
-### Chains
-
-Voices compose into chains:
-
-```ops
-voice process / {input -> step1 -> step2 -> step3 -> output}
-voice main / {process "data" -> process}
-```
-
-### Self-Hosting
-
-opic defines itself in `.ops` files:
-- `bootstrap.ops` — Minimal kernel
-- `opic_parse.ops` — Self-parser
-- `opic_load.ops` — Self-loader
-- `opic_execute.ops` — Self-executor
-
-```
-┌─────────────┐
-│ parser.ops  │ ──┐
-└─────────────┘   │
-                  ├──> opic executes itself
-┌─────────────┐   │
-│ loader.ops  │ ──┤
-└─────────────┘   │
-                  │
-┌─────────────┐   │
-│ executor.ops│ ──┘
-└─────────────┘
-```
-
----
-
-## Cryptographic Nervous System
-
-Each voice is signed with a certificate that defines its realm and permissions. Executing a voice requires verifying its signature — ensuring trust in distributed execution.
-
-### Realms
-
-Each agent has its own realm and certificate authority:
-
-```ops
-def realm { name, ca, agents, boundaries }
-def certificate { issuer, subject, permissions, signature, realm, ca }
-```
-
-### Certificate Flow
-
-```
-┌──────────────┐
-│   Voice      │
-│  Definition  │
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│ Certificate  │ ──> Signed with realm CA
-│   Signing    │
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│  Execution   │ ──> Verify signature before run
-│  Verification│
-└──────────────┘
-```
-
-### Signed Voices
-
-`.ops` files can include signed headers:
-
-```ops
----
-signature: sha256:abc123...
-ca: opic_ca
-realm: opic_realm
----
-voice example / {input -> transform -> output}
-```
-
----
-
-## System Architecture
-
-### Core Systems
-
-- **bootstrap.ops** — Minimal kernel
-- **certificate.ops** — Permission system
-- **signed.ops** — Signed voice headers
-- **witness.ops** — Execution witnessing
-- **proof.ops** — Proof engine
-- **vfs.ops** — Virtual filesystem
-
-### Launch Systems
-
-- **fee.ops** — Field Equation Exchange
-- **recursive_contract_theory.ops** — RCT
-- **learning_pools.ops** — Learning pools
-- **whitepaper.ops** — Technical bluepaper
-
-### Wiki/Documentation Layer
-
-- **tiddlywiki.ops** — Tiddler types and composition
-- **tiddlers/** — Conversion tools, markup handling, drive system
-
-See [System Architecture](docs/architecture.md) for details.
-
----
-
-## Make Targets
-
-**Default:** `make` → Interactive opic shell
-
-**Core Commands:**
-```bash
-make bootstrap      # Bring opic up (creates .opicup witness checkpoint)
-make install        # Install opic system-wide
-make build          # Build TiddlyWiki
-make seed           # Build company seed
-make compile        # Self-compile opic to Metal
-make test           # Run runtime interface tests
-make plan           # opic suggests a plan for directory
-```
-
-**Launch Components:**
-```bash
-make whitepaper     # Generate FEE + RCT bluepaper
-make fee            # Field Equation Exchange
-make rct            # Recursive Contract Theory
-```
-
----
-
-## Examples
-
-### Simple Voice
-
-```ops
-voice add / {a + b -> a + b -> sum}
-voice main / {add 2 3 -> add}
-```
-
-### Chain Composition
-
-```ops
-voice process / {input -> step1 -> step2 -> step3 -> output}
-voice main / {process "data" -> process}
-```
-
-### Self-Hosting
-
-```ops
-voice opic.parse_ops / {ops_text -> split_lines -> parse_each -> defs + voices}
-voice opic.load_recursive / {file_path + agent_realm + ca -> opic.load_with_verification -> voices}
-```
-
----
-
-## Environment Variables
+If you want an interactive REPL afterwards:
 
 ```bash
-export OPIC_REALM="your_realm"      # Set your agent realm (default: opic_realm)
-export OPIC_CA="your_ca"            # Set your certificate authority (default: opic_ca)
-export OPIC_REPOS_DIR="/path/to/repos"  # Set repos directory (default: $HOME)
+make               # launches the opic shell
 ```
 
 ---
 
-## Witness Checkpoint System
+## Execution Model
 
-opic creates a `.opicup` file when it successfully self-hosts. This is the **memory bank** - persistent proof that opic is up.
+- **Voices** are invariant-preserving transformations: `voice name / { chain }`. Each one carries charge + mass so OPIC knows how it bends the local field.
+- **Chains** are field flows. `->` performs symmetry breaking, `+` is hopeful OR (first stable result wins) and, if every operand is a string, concatenation. This is how we stay in “code as flow,” not “code as syntax.”
+- **Implicit Loader** honors attention. Mention `compression.` and the loader resolves it—no explicit includes inside the case studies. Target files always win conflict resolution.
+- **Theory-Based Recursion Control** watches equilibrium. When a voice returns the same result with the same inputs, energy stops flowing and recursion halts naturally. No arbitrary depth limits, no stack overflows.
+- **Ledger Alignment** keeps the bootstrap voices (`core/bootstrap.ops`, `systems/opic_executor_impl.ops`, etc.) as the single nervous system. Everything you run—including the Typst generator—extends those voices instead of bypassing them.
 
-**Locations checked:**
-- `.opicup` (project root)
-- `$HOME/.opicup` (user home)
-- `/usr/local/share/opic/.opicup` (system-wide, after install)
-
----
-
-## Philosophy
-
-opic embodies:
-- **Recursive self-reference** — opic defines itself
-- **Compositional elegance** — Voices compose naturally
-- **Cryptographic trust** — Certificates enforce boundaries
-- **Generational ethics** — Seven-generation resonance
-- **Distributed cognition** — Federated realms
-
-Learn more in [`docs/philosophy.md`](docs/philosophy.md) — field equations, seven-generation ethics, resonant trust theory, and more.
+This is OPIC’s "Invariant-Generative Worldbuilding" stance: extending the field is the default; fragmentation is a smell.
 
 ---
 
-## The Riemann Connection
+## Case Studies At a Glance
 
-opic's architecture naturally expresses the duality at the heart of analytic number theory.
+Each target is an include-free `main.ops` that emits a narrative report.
 
-- **Left Flank — Category (Discrete)**: voices compose into a spectrum of *prime morphisms*, forming an Euler-like product.
-- **Right Flank — Field (Continuous)**: coherence evolves under field equations whose Fourier–Mellin transform mirrors ζ(s)'s analytic continuation.
-- **Bridge — Certificate Operator**: a unitary transformation equating the two halves, echoing ζ(s) = χ(s) ζ(1 − s).
+| Case Study  | Make Target | Output File                                           | Summary                               |
+|-------------|-------------|-------------------------------------------------------|---------------------------------------|
+| Cosmology   | `make cosmology`   | `.out/case_studies/core/cosmology/predictions.out`   | CMB, NFW, BAO predictions from field invariants |
+| Reasoning   | `make reasoning`   | `.out/case_studies/core/reasoning/explanations.out`  | Logical reasoning + self-explanation narrative    |
+| Tests       | `make tests`       | `.out/case_studies/core/tests/tests.out`             | Field-based scoring / executor flow report        |
+| Compression | `make compression` | `.out/case_studies/core/compression/compression.out` | Critical-geometry codec overview                   |
+| Emergent    | `make emergent`    | `.out/case_studies/core/emergent/emergent.out`       | Actor-coupled modeling & regime analysis           |
+| Solve → Emit| `make solve`       | `.out/case_studies/core/solve/solve.out`             | Solve semantically, emit to python/rust/wasm      |
+| Whitepaper  | `make typst`       | `docs/whitepaper/invariant_whitepaper.(typ|pdf)`     | Lemmas, theorems, and proofs for new invariant tools |
 
-Together, these create a "pincer model" where discrete structure and continuous resonance meet along a critical line of coherence.
+`make case-studies` runs them all in sequence.
 
-See [`docs/riemann_hypothesis_experiment.md`](docs/riemann_hypothesis_experiment.md) for the full theory and experiment plan.
+---
+
+## Typst Whitepaper
+
+`systems/whitepaper.ops` is a new include-free voice that:
+
+1. Composes a Typst document describing invariant-generative worldbuilding.
+2. Introduces lemmas, theorems, and proofs for the new field tools.
+3. Calls `typst.write_file` and `typst.render` through OPIC’s primitive boundary.
+
+`make typst` produces both the `.typ` source and the rendered `.pdf` inside `docs/whitepaper/`.  
+If Typst is not installed, the voice still emits the document string so you can compile it later.
 
 ---
 
@@ -310,20 +145,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 4. Commit your changes (`git commit -m 'Add amazing feature'`)
 5. Push to the branch (`git push origin feature/amazing-feature`)
 6. Open a Pull Request
-
----
-
-## Documentation
-
-- **[Theory](docs/theory.md)** — Mathematical foundations (category theory, type theory, field dynamics)
-- **[Philosophy](docs/philosophy.md)** — Core principles and vision
-- **[Architecture](docs/architecture.md)** — System architecture overview
-- **[Riemann Hypothesis Whitepaper](docs/riemann_whitepaper.md)** — Theoretical framing and baseline results
-- **[Riemann Experiment Plan](docs/riemann_hypothesis_experiment.md)** — Full experiment plan with 7 phases
-- **Technical Bluepaper**: `make whitepaper`
-- **Getting Started**: `make getting-started`
-- **System Plan**: `python3 opic execute systems/opic_plan.ops`
-- **Integration Paper**: See `wiki/tiddlers/INTEGRATION_PAPER.md`
 
 ---
 

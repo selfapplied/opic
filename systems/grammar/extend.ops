@@ -1,0 +1,167 @@
+;;; extend.ops — How to extend the root grammar
+
+;; ============================================================================
+;; EXTENDING THE ROOT GRAMMAR
+;; ============================================================================
+;; Root grammar (core/bootstrap.ops) handles: def, voice, target
+;; • include is DEPRECATED — use attention-based discovery instead
+;; • target creates named entry points (multiple entry points per file)
+;; Grammar extensions add domain-specific syntax patterns via registry
+
+;; ============================================================================
+;; STEP 1: ADD TRANSFORMATION LOGIC TO SYNTAX.ops
+;; ============================================================================
+;; Add transformation voices to syntax.ops:
+
+;; 1. grammar.transform_<domain>
+;;    • Receives extracted_data (quoted strings, config blocks from parser)
+;;    • Extracts domain-specific fields
+;;    • Calls format voice
+
+;; 2. grammar.format_<domain>_register
+;;    • Formats register call with proper arguments
+;;    • Returns transformed line
+
+;; Note: Parser (parser.ops) handles pattern matching and extraction automatically
+
+;; ============================================================================
+;; STEP 2: REGISTER IN SYNTAX.ops
+;; ============================================================================
+;; Add to syntax.ops:
+
+;; voice register_<domain>_syntax / {
+;;   syntax_registry -> 
+;;   grammar.register_rule "<rule_name>" 
+;;     "<pattern>" 
+;;     "grammar.transform_to_<domain>_register" 
+;;     <priority> 
+;;     "<description>" 
+;;     "<usage>" 
+;;     [<examples>] -> 
+;;   updated_registry
+;; }
+
+;; Then call it in init voice:
+;; voice init / {
+;;   -> 
+;;   grammar.init_registry -> 
+;;   register_operator_syntax ->
+;;   register_status_syntax -> 
+;;   register_filter_syntax -> 
+;;   register_translation_syntax ->
+;;   register_<domain>_syntax ->  ;; Add here
+;;   syntax_registry
+;; }
+
+;; ============================================================================
+;; STEP 3: PATTERN MATCHING
+;; ============================================================================
+;; Patterns are matched by:
+;; • Starts with (simple prefix match)
+;; • Contains (substring match)
+;; • Regex (full regex support)
+
+;; Priority determines order (higher = tried first)
+;; If multiple patterns match, highest priority wins
+
+;; ============================================================================
+;; STEP 4: TRANSFORMATION
+;; ============================================================================
+;; Transform voice receives:
+;; • line — Original line
+;; • extracted_data — Parsed components (quoted strings, config blocks, etc.)
+
+;; Transform voice returns:
+;; • transformed_line — Line that root grammar can parse
+
+;; Example transformation:
+;; Input:  register status "active" with { display: "Active" }
+;; Output: status.register status_registry "active" "Active" [] [] {} "Active status" ...
+
+;; ============================================================================
+;; EXAMPLE: ADDING "register scale" SYNTAX (DOCUMENTATION ONLY)
+;; ============================================================================
+;; This section shows the pattern for adding a new registration type.
+;; The code below is documentation - copy and adapt it to syntax.ops to implement.
+
+;; Step 1: Add transformation logic to syntax.ops:
+;; voice grammar.transform_scale / {
+;;   extracted_data ->
+;;   grammar.extract_first_quoted_string ->
+;;   grammar.extract_config_block ->
+;;   grammar.parse_config_block -> 
+;;   grammar.get_field "intervals" ->
+;;   grammar.get_field "description" ->
+;;   grammar.format_scale_register ->
+;;   register_call
+;; }
+;;
+;; voice grammar.format_scale_register / {
+;;   scale_name + intervals + description -> 
+;;   "scale.register scale_registry \"" + scale_name + "\" \"" + intervals + "\" \"" + description + "\"" ->
+;;   register_call
+;; }
+
+;; Step 2: Update context detection if needed (if scale has unique quoted string count):
+;; voice grammar.detect_register_type / {
+;;   extracted_data ->
+;;   grammar.count_quoted_strings ->
+;;   count == 4 -> "scale" ->  ;; if scale has 4 quoted strings
+;;   count == 3 -> "translation" ->
+;;   count == 2 -> "filter" ->
+;;   count == 1 -> "status" ->
+;;   register_type
+;; }
+
+;; Step 3: Add to transform_by_context in syntax.ops:
+;; voice grammar.transform_by_context / {
+;;   register_type + extracted_data ->
+;;   register_type == "scale" -> grammar.transform_scale ->
+;;   register_type == "status" -> grammar.transform_status ->
+;;   register_type == "filter" -> grammar.transform_filter ->
+;;   register_type == "translation" -> grammar.transform_translation ->
+;;   transformed_line
+;; }
+
+;; Step 4: Register pattern in syntax.ops:
+;; voice register_scale_syntax / {
+;;   syntax_registry -> 
+;;   grammar.register_rule "register_scale" 
+;;     "register scale" 
+;;     "grammar.transform_register" 
+;;     1 
+;;     "Transforms 'register scale \"name\" with {...}' to scale.register call" 
+;;     "register scale \"major\" with { intervals: \"2,2,1,2,2,2,1\" }" 
+;;     ["register scale \"major\" with { intervals: \"2,2,1,2,2,2,1\" }"] -> 
+;;   updated_registry
+;; }
+
+;; Step 5: Add to init voice in syntax.ops:
+;; voice init / {
+;;   -> 
+;;   grammar.init_registry -> 
+;;   register_operator_syntax ->
+;;   register_status_syntax -> 
+;;   register_filter_syntax -> 
+;;   register_translation_syntax ->
+;;   register_scale_syntax ->  ;; Add here
+;;   syntax_registry
+;; }
+
+;; ============================================================================
+;; UNDERSTANDING
+;; ============================================================================
+
+voice grammar.extend.understand / {
+  "How do I extend the root grammar?" ->
+  "Add transformation logic to syntax.ops (transform and format voices)." ->
+  "Register the pattern in syntax.ops using grammar.register_rule." ->
+  "Update context detection if needed (based on quoted string count)." ->
+  "Add the registration call to the init voice." ->
+  "Parser handles pattern matching automatically; context determines transformation." ->
+  understanding
+}
+
+target extend / "grammar_extension_guide"
+voice main / {grammar.extend.understand -> extend}
+

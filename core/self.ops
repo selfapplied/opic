@@ -1,0 +1,46 @@
+;;; self.ops — Understanding of the core directory
+
+;; Purpose: The core directory contains OPIC's foundational systems:
+;;          bootstrap, parser, loader, executor, and CLI routing.
+
+;; Convention: Core files define OPIC's essential capabilities.
+;;             These are loaded first and provide the foundation for everything else.
+
+;; Core Structure:
+;;   - bootstrap.ops: CLI command routing and entry point
+;;   - opic_parse.ops: Parser implementation (declarative)
+;;   - opic_load.ops: Loader implementation (declarative)
+;;   - opic_executor.py: Python executor (minimal bootstrap)
+;;   - semantic_boundaries.ops: Symbol extraction and type filtering
+
+;; Discovery: Core files are loaded explicitly during bootstrap.
+;;            They provide the foundation for attention-based discovery.
+
+;; Core Principles:
+;;   - Minimal Python: Only file I/O and primitives
+;;   - Self-hosting: Parser, loader, executor all defined in OPIC
+;;   - Circular architecture: Python ↔ OPIC boundary preserves information
+;;   - Attention-based: Files discovered through namespace usage
+
+;; Self-understanding: Core defines OPIC's foundation. Everything builds on core.
+
+voice core.understand / {
+  "What is the core directory?" ->
+  "The core directory contains OPIC's foundational systems." ->
+  "Core provides bootstrap, parser, loader, executor, and CLI routing." ->
+  "Core files are loaded first and provide the foundation for everything else." ->
+  understanding
+}
+
+voice core.explain / {
+  "Explain OPIC's core architecture:" ->
+  "Core provides minimal Python bootstrap with file I/O and primitives." ->
+  "OPIC defines parser, loader, and executor in OPIC itself." ->
+  "Circular architecture: Python ↔ OPIC boundary preserves information." ->
+  "Attention-based discovery: Files loaded through namespace usage." ->
+  explanation
+}
+
+target core / "core_directory_understanding"
+voice main / {core.understand -> core}
+

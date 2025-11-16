@@ -1,0 +1,230 @@
+;;; syntax.ops — Unified grammar extension system
+;;; Context-aware syntax transformations using implicit behavior
+
+;; Root grammar: core/bootstrap.ops (def, voice, include, target)
+;; Extensions: register status, register filter, register translation, operator alignment
+;; Uses context to differentiate behavior instead of globally unique patterns
+
+;; ============================================================================
+;; GRAMMAR REGISTRY
+;; ============================================================================
+
+def grammar_rule {
+  pattern, transform_voice, priority, description, usage, examples
+}
+
+voice grammar.init_registry / {
+  -> create_registry -> grammar_registry
+}
+
+voice grammar.register_rule / {
+  grammar_registry + rule_name + pattern + transform_voice + priority + description + usage + examples ->
+  registry.create_entry -> registry.register -> updated_registry
+}
+
+;; ============================================================================
+;; SYNTAX REGISTRY INITIALIZATION
+;; ============================================================================
+
+voice init / {
+  -> 
+  grammar.init_registry -> 
+  register_operator_syntax ->
+  register_status_syntax -> 
+  register_filter_syntax -> 
+  register_translation_syntax -> 
+  syntax_registry
+}
+
+voice register_status_syntax / {
+  syntax_registry -> grammar.register_rule "register_status" "register status" "grammar.transform_register" 1
+    "Crisp syntax for registering statuses" "register status \"active\" with { display: \"Active\" }"
+    ["register status \"active\" with { display: \"Active\" }"] -> updated_registry
+}
+
+voice register_filter_syntax / {
+  syntax_registry -> grammar.register_rule "register_filter" "register filter" "grammar.transform_register" 1
+    "Crisp syntax for registering filters" "register filter \"bootstrap\" in \"core\" with { patterns: [\"bootstrap\"] }"
+    ["register filter \"bootstrap\" in \"core\" with { patterns: [\"bootstrap\"] }"] -> updated_registry
+}
+
+voice register_translation_syntax / {
+  syntax_registry -> grammar.register_rule "register_translation" "register translation" "grammar.transform_register" 1
+    "Crisp syntax for registering translations" "register translation \"mse\" from \"opic\" to \"swift\" with { pattern: \"...\" }"
+    ["register translation \"mse\" from \"opic\" to \"swift\" with { pattern: \"error = ...\" }"] -> updated_registry
+}
+
+;; ============================================================================
+;; CONTEXT-AWARE TRANSFORMATION
+;; ============================================================================
+
+;; Unified transform voice uses context (extracted_data structure) to determine behavior
+;; Context differentiates: status vs filter vs translation based on data structure
+;; Called by parser.ops with: extracted_data -> call_voice
+;; extracted_data contains: quoted_strings, config_blocks extracted by parser
+;; Detection: translation has 3 quoted strings, filter has 2, status has 1
+voice grammar.transform_register / {
+  extracted_data ->
+  grammar.detect_register_type ->
+  grammar.transform_by_context ->
+  transformed_line
+}
+
+;; Detect register type from extracted_data structure (context-aware)
+;; Translation: "name" from "lang1" to "lang2" → 3 quoted strings
+;; Filter: "name" in "category" → 2 quoted strings  
+;; Status: "name" → 1 quoted string
+voice grammar.detect_register_type / {
+  extracted_data ->
+  grammar.count_quoted_strings ->
+  count == 3 -> "translation" ->
+  count == 2 -> "filter" ->
+  count == 1 -> "status" ->
+  register_type
+}
+
+;; Transform based on detected type (context-aware)
+voice grammar.transform_by_context / {
+  register_type + extracted_data ->
+  register_type == "status" -> grammar.transform_status ->
+  register_type == "filter" -> grammar.transform_filter ->
+  register_type == "translation" -> grammar.transform_translation ->
+  transformed_line
+}
+
+;; Status transformation: register status "name" with { ... } → status.register call
+voice grammar.transform_status / {
+  extracted_data ->
+  grammar.extract_first_quoted_string ->
+  grammar.extract_config_block ->
+  grammar.parse_config_block ->
+  grammar.get_field "display" ->
+  grammar.get_field "transitions" ->
+  grammar.get_field "handlers" ->
+  grammar.get_field "metadata" ->
+  grammar.get_field "description" ->
+  grammar.get_field "usage" ->
+  grammar.get_field "examples" ->
+  grammar.get_field "related" ->
+  grammar.format_status_register ->
+  register_call
+}
+
+voice grammar.format_status_register / {
+  status_name + display_name + transitions + handlers + metadata + description + usage + examples + related ->
+  "status.register status_registry \"" + status_name + "\" \"" + display_name + "\" " +
+  format_list transitions + " " + format_list handlers + " " + format_dict metadata + " " +
+  "\"" + description + "\" \"" + usage + "\" " + format_list examples + " " + format_list related ->
+  register_call
+}
+
+;; Filter transformation: register filter "name" in "category" with { ... } → filter.register call
+voice grammar.transform_filter / {
+  extracted_data ->
+  grammar.extract_first_quoted_string ->
+  grammar.extract_second_quoted_string ->
+  grammar.extract_config_block ->
+  grammar.parse_config_block ->
+  grammar.get_field "patterns" ->
+  grammar.get_field "metadata" ->
+  grammar.get_field "priority" ->
+  grammar.get_field "description" ->
+  grammar.get_field "usage" ->
+  grammar.get_field "examples" ->
+  grammar.get_field "related" ->
+  grammar.format_filter_register ->
+  register_call
+}
+
+voice grammar.format_filter_register / {
+  filter_name + category + patterns + metadata + priority + description + usage + examples + related ->
+  "filter.register filter_registry \"" + filter_name + "\" " + format_list patterns +
+  " \"" + category + "\" " + format_dict metadata + " " + priority + " \"" +
+  description + "\" \"" + usage + "\" " + format_list examples + " " + format_list related ->
+  register_call
+}
+
+;; Translation transformation: register translation "name" from "lang1" to "lang2" with { ... } → translation.register call
+voice grammar.transform_translation / {
+  extracted_data ->
+  grammar.extract_first_quoted_string ->
+  grammar.extract_second_quoted_string ->
+  grammar.extract_third_quoted_string ->
+  grammar.extract_config_block ->
+  grammar.parse_config_block ->
+  grammar.get_field "pattern" ->
+  grammar.get_field "template" ->
+  grammar.get_field "metadata" ->
+  grammar.get_field "priority" ->
+  grammar.get_field "description" ->
+  grammar.get_field "usage" ->
+  grammar.get_field "examples" ->
+  grammar.get_field "related" ->
+  grammar.format_translation_register ->
+  register_call
+}
+
+voice grammar.format_translation_register / {
+  rule_name + source_lang + target_lang + pattern + template + metadata + priority + description + usage + examples + related ->
+  "translation.register translation_registry \"" + rule_name + "\" \"" + pattern + "\" \"" +
+  template + "\" \"" + source_lang + "\" \"" + target_lang + "\" " + format_dict metadata +
+  " " + priority + " \"" + description + "\" \"" + usage + "\" " + format_list examples +
+  " " + format_list related ->
+  register_call
+}
+
+;; Helper: get field from config map with default
+voice grammar.get_field / {
+  config_map + field_name + default_value ->
+  grammar.lookup ->
+  if_found -> value ->
+  if_not_found -> default_value ->
+  field_value
+}
+
+;; ============================================================================
+;; OPERATOR ALIGNMENT
+;; ============================================================================
+
+;; Operators align phrases: operator ⊕ phrase → remove operator → format phrase
+;;   "-" voice moves through → voice moves / { through }
+;;   "+" def structure → def structure { }
+
+voice grammar.transform_operator_to_standard / {
+  line -> grammar.remove_operator -> grammar.format_phrase -> standard_line
+}
+
+voice grammar.remove_operator / {
+  line -> grammar.strip_leading_quote -> grammar.take_first_char -> grammar.strip_leading_space -> phrase
+}
+
+voice grammar.format_phrase / {
+  phrase -> grammar.split_on_space -> grammar.take_first_word -> grammar.take_rest_words ->
+  grammar.format_by_type -> standard_line
+}
+
+voice grammar.format_by_type / {
+  first_word + rest_words ->
+  first_word == "voice" -> "voice " + rest_words + " / { " + rest_words + " }" ->
+  first_word == "def" -> "def " + rest_words + " { }" ->
+  first_word == "doc" -> "doc " + rest_words + " / { " + rest_words + " }" ->
+  first_word == "test" -> "test " + rest_words + " / { " + rest_words + " }" ->
+  first_word == "view" -> "view " + rest_words + " / { " + rest_words + " }" ->
+  standard_line
+}
+
+voice register_operator_syntax / {
+  syntax_registry -> grammar.register_rule "operator_alignment" "^\"[-+@#~]\"" "grammar.transform_operator_to_standard" 10
+    "Operator alignment: operator ⊕ phrase → standard format" "\"-\" voice moves through"
+    ["\"-\" voice moves through", "\"+\" def structure"] -> updated_registry
+}
+
+;; ============================================================================
+;; HELPERS
+;; ============================================================================
+
+voice help / { syntax_registry -> registry.help -> syntax_help }
+voice discover / { syntax_registry + query -> registry.discover -> matching_rules }
+
+target syntax / "syntax_registry"
+voice main / { init -> syntax }

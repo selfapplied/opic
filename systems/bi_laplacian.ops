@@ -1,0 +1,29 @@
+;;; bi_laplacian.ops — OPIC entrypoints for Bi-Laplacian experiments
+;;; Uses Python extensions to run the simulation scripts, respecting OPIC's execution flow.
+
+voice bi_l.run_sim / {
+  "$build.scripts.bi_l_ops.run_sim$" ->
+  output
+}
+
+voice bi_l.run_sweep / {
+  "$build.scripts.bi_l_ops.run_sweep$" ->
+  output
+}
+
+voice bi_l.modes_table / {
+  "$build.scripts.bi_l_ops.run_modes_table$" ->
+  output
+}
+
+voice bi_l.all / {
+  bi_l.run_sim ->
+  bi_l.run_sweep ->
+  bi_l.modes_table ->
+  output
+}
+
+target bi_laplacian / "bi_l_experiments"
+voice main / {bi_l.all -> output}
+
+

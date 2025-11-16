@@ -1,0 +1,55 @@
+;;; reasoning/main.ops — Reasoning case study (include-free narrative)
+;;; Demonstrates OPIC reasoning + self-explanation directly
+
+voice main / {
+  "======================================================================
+REASONING OUTPUT
+======================================================================
+
+REASONING CAPABILITIES
+======================
+
+OPIC provides logical reasoning through voices:
+- Deductive: modus ponens, modus tollens, syllogism
+- Inductive: pattern recognition, generalization
+- Abductive: best explanation inference
+- Goal-directed: backward/forward chaining
+- Meta-reasoning: reasoning about reasoning
+
+Example reasoning chain:
+  goal: 'solve problem' ->
+  reason.toward_goal ->
+  reason.plan ->
+  reason.verify ->
+  solution
+
+======================================================================
+SELF-EXPLANATION
+======================================================================
+
+How OPIC works:
+1. Bootstrap: core/bootstrap.ops loads the kernel
+2. Parse: opic_parse.ops turns .ops files into voices/defs
+3. Load: opic_load.ops discovers additional files via attention
+4. Execute: opic_execute.ops runs chains using the implicit matcher
+5. Self-hosting: parser, loader, executor all live in OPIC itself
+
+Components:
+- Voices: composable transformations (voice name / { chain })
+- Chains: sequential composition (input -> voice1 -> voice2 -> output)
+- Fields: implicit frames that carry charge/mass for discovery
+- Expansion system: directories/files expand to symbols automatically
+- Implicit routing: '+' is hopeful OR, '->' is structural symmetry breaking
+
+======================================================================
+TAKEAWAYS
+======================================================================
+
+This case study demonstrates:
+- Logical reasoning chains (deductive / inductive / abductive)
+- Self-explanation of OPIC's structure and runtime
+- Natural language output generated directly from voices
+- Include-free design that relies on implicit expansion + attention
+======================================================================"
+}
+

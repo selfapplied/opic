@@ -1,0 +1,349 @@
+;;; parse.ops — Circle diffeomorphism model for OPIC parsing
+
+;; ============================================================================
+;; FORMAL DEFINITION: Degree-1 Circle Map
+;; ============================================================================
+
+;; OPIC's parser is a degree-1 circle map: f: S¹ → S¹
+;; Every token lives on the circle S¹ = ℝ/ℤ
+;; The parser rotates tokens until they land in a valid basin
+
+;; Circle parameterization: θ ∈ [0, 1) represents position on S¹
+;; North pole (θ = 0): Force toward structured meaning (voice resolution)
+;; South pole (θ = 0.5): Force toward literal meaning (data interpretation)
+
+def circle_map {
+  f: "S¹ → S¹",           ;; Degree-1 diffeomorphism
+  degree: 1,              ;; Winding number = 1 (every point has exactly one preimage)
+  rotation_number: ρ,     ;; ρ ∈ ℝ (how much the map rotates)
+  lift: F: "ℝ → ℝ"        ;; Lift to universal cover: F(x+1) = F(x) + 1
+}
+
+;; ============================================================================
+;; TWO ATTRACTORS: Voice Resolution vs Literal Interpretation
+;; ============================================================================
+
+;; Attractor 1: Voice Resolution (Stable Fixed Point)
+;; Condition: File exists → stable periodic orbit
+;; Basin: θ ∈ [0, ε) ∪ [1-ε, 1) for small ε > 0
+
+def voice_attractor {
+  type: "stable_fixed_point",
+  condition: "file_exists(token)",
+  basin: "θ ∈ [0, ε) ∪ [1-ε, 1)",
+  interpretation: "structured_meaning",
+  curvature: "high"       ;; High curvature → strong pull toward structure
+}
+
+;; Attractor 2: Literal Interpretation (Fallback Orbit)
+;; Condition: File doesn't exist → smooth rotation to literal
+;; Basin: θ ∈ [ε, 1-ε]
+
+def literal_attractor {
+  type: "fallback_orbit",
+  condition: "!file_exists(token)",
+  basin: "θ ∈ [ε, 1-ε]",
+  interpretation: "literal_data",
+  curvature: "low"        ;; Low curvature → weak pull, defaults to literal
+}
+
+;; ============================================================================
+;; C¹ DIFFEOMORPHISM: Smooth Flow Model
+;; ============================================================================
+
+;; The parser is a C¹ diffeomorphism: smooth, invertible, continuously differentiable
+;; No discontinuities, no cliffs, no quote walls
+;; Flow follows field curvature φₖ
+
+voice parse.circle_diffeomorphism / {
+  token + context ->
+  parse.compute_curvature ->
+  parse.rotate_to_attractor ->
+  resolved_value
+}
+
+;; Compute field curvature φₖ for token in context
+;; Curvature biases which attractor the system flows toward
+
+voice parse.compute_curvature / {
+  token + context ->
+  field.compute_phi_k ->
+  curvature
+}
+
+;; Rotate token toward appropriate attractor based on curvature
+;; High curvature → rotate toward voice attractor (θ → 0)
+;; Low curvature → rotate toward literal attractor (θ → 0.5)
+
+voice parse.rotate_to_attractor / {
+  token + curvature ->
+  parse.check_file_exists ->
+  parse.if_high_curvature_rotate_to_voice ->
+  parse.if_low_curvature_rotate_to_literal ->
+  resolved_value
+}
+
+;; ============================================================================
+;; SMOOTH ROTATION: No Discrete Jumps
+;; ============================================================================
+
+;; Rotation function: R_ρ(θ) = θ + ρ (mod 1)
+;; ρ is determined by curvature: ρ = ρ(φₖ)
+;; High φₖ → ρ ≈ 0 (stay near voice attractor)
+;; Low φₖ → ρ ≈ 0.5 (rotate to literal attractor)
+
+voice parse.rotate / {
+  theta + curvature ->
+  parse.compute_rotation_number ->
+  parse.apply_rotation ->
+  rotated_theta
+}
+
+;; Rotation number: ρ(φₖ) = (1 - φₖ) * 0.5
+;; When φₖ = 1 (maximum curvature): ρ = 0 (no rotation, stay at voice)
+;; When φₖ = 0 (minimum curvature): ρ = 0.5 (rotate to literal)
+
+voice parse.compute_rotation_number / {
+  curvature ->
+  parse.normalize_curvature ->
+  parse.compute_rho ->
+  rotation_number
+}
+
+;; Apply rotation: θ' = θ + ρ (mod 1)
+voice parse.apply_rotation / {
+  theta + rotation_number ->
+  parse.add_modulo_one ->
+  rotated_theta
+}
+
+;; ============================================================================
+;; LITERALNESS AS CURVATURE CONSEQUENCE
+;; ============================================================================
+
+;; Literalness is not a token type - it's a curvature consequence
+;; A token becomes literal when curvature is too low to sustain structure
+;; No quotes needed - the system naturally flows to literal when structure fails
+
+voice parse.literalness_from_curvature / {
+  token + curvature ->
+  parse.check_curvature_threshold ->
+  parse.if_below_threshold_treat_as_literal ->
+  parse.if_above_threshold_try_voice_resolution ->
+  interpretation
+}
+
+;; Curvature threshold: φₖ < ε → literal interpretation
+;; Default: ε = 0.1 (low curvature → literal)
+
+voice parse.check_curvature_threshold / {
+  curvature + threshold ->
+  parse.compare ->
+  below_threshold
+}
+
+;; ============================================================================
+;; UNIVERSAL PATTERN: Feigenbaum's α
+;; ============================================================================
+
+;; Like Feigenbaum's α: refine ambiguity by folding until stable
+;; The parser folds and re-folds until a behavior becomes stable
+;; Each fold increases curvature, pushing toward structure
+
+voice parse.feigenbaum_folding / {
+  token + context ->
+  parse.initial_fold ->
+  parse.check_stability ->
+  parse.if_unstable_refold ->
+  parse.repeat_until_stable ->
+  stable_interpretation
+}
+
+;; Folding operation: increases curvature by factor α ≈ 2.5029
+;; Each fold makes structure more likely
+
+voice parse.fold / {
+  token + alpha ->
+  parse.apply_fold ->
+  folded_token
+}
+
+;; ============================================================================
+;; OPERATORS AS BOUNDARY CONDITIONS
+;; ============================================================================
+
+;; Operators (->, +, .) are structural singularities
+;; They mark where the diffeomorphism changes branch
+;; They force high curvature → structure
+
+def operator_boundary {
+  operators: ["->", "+", "."],
+  type: "structural_singularity",
+  curvature: "infinite",  ;; Forces structure
+  interpretation: "always_structured"
+}
+
+;; Check if token contains operator → force structure
+voice parse.check_operator_boundary / {
+  token ->
+  parse.contains_operator ->
+  parse.if_operator_force_structure ->
+  interpretation
+}
+
+;; ============================================================================
+;; IMPLEMENTATION: Smooth Flow Algorithm
+;; ============================================================================
+
+;; Algorithm:
+;; 1. Check for quotes → if present, rotate to meta space (talking ABOUT symbol)
+;; 2. Compute curvature φₖ(token, context)
+;; 3. Check file existence (voice attractor condition)
+;; 4. If file exists and φₖ > threshold → voice resolution
+;; 5. If file doesn't exist or φₖ < threshold → rotate to literal
+;; 6. Quotes mark meta distinction (relative), not static type (absolute)
+
+;; Quotes as RELATIVE distinction of meta:
+;; • Without quotes: hello → use hello at current frame (execute/resolve/apply)
+;; • With quotes: "hello" → shift to meta frame, reference hello relative to that frame
+;; • Quotes shift the reference frame relative to context - frame shift, not type change
+;; • Meta is relative to where you are, not an absolute property of the symbol
+
+;; Distinction without quotes (for literals):
+;; • Execution flows: Operators (->, +, .) → high curvature → structure
+;; • Natural language: No operators + no file → low curvature → literal
+;; • Context resolves: Field curvature biases toward voice or literal attractor
+;; • Smooth rotation: No discrete jumps, continuous flow
+
+voice parse.smooth_flow / {
+  token + voices + agent_realm + ca ->
+  parse.check_operator_boundary ->
+  parse.compute_curvature ->
+  parse.try_voice_resolution ->
+  parse.rotate_to_literal ->
+  resolved_value
+}
+
+;; Check if token contains operator (structural singularity - force structure)
+voice parse.check_operator_boundary / {
+  token ->
+  parse.contains_operator ->
+  parse.if_operator_try_voice_first ->
+  operator_checked
+}
+
+;; Check if token contains operators ->, +, or .
+voice parse.contains_operator / {
+  token ->
+  string.contains "->" ->
+  string.contains "+" ->
+  string.contains "." ->
+  has_operator
+}
+
+;; If operator present, try voice resolution first (high curvature)
+voice parse.if_operator_try_voice_first / {
+  token + has_operator + voices ->
+  parse.if_true_try_voice ->
+  parse.if_false_continue ->
+  operator_result
+}
+
+;; Compute curvature φₖ for token
+;; Simplified: check file existence, namespace, context
+voice parse.compute_curvature / {
+  token ->
+  parse.check_file_exists ->
+  parse.check_namespace ->
+  parse.check_context ->
+  curvature
+}
+
+;; Check if token looks like file path and exists
+voice parse.check_file_exists / {
+  token ->
+  string.ends_with ".ops" ->
+  file.exists ->
+  file_exists
+}
+
+;; Check if token contains namespace separator (.)
+voice parse.check_namespace / {
+  token ->
+  string.contains "." ->
+  has_namespace
+}
+
+;; Check context (simplified: namespace suggests structure)
+voice parse.check_context / {
+  file_exists + has_namespace ->
+  parse.combine_signals ->
+  curvature_value
+}
+
+;; Combine signals: file_exists = 0.9, namespace = 0.7, default = 0.1
+voice parse.combine_signals / {
+  file_exists + has_namespace ->
+  parse.if_file_exists_return_high ->
+  parse.if_namespace_return_medium ->
+  parse.if_neither_return_low ->
+  curvature
+}
+
+;; Try voice resolution (structured meaning attractor)
+voice parse.try_voice_resolution / {
+  token + voices + curvature ->
+  parse.if_high_curvature ->
+  parse.find_voice ->
+  parse.if_found_return_voice ->
+  parse.if_not_found_continue ->
+  voice_result
+}
+
+;; High curvature threshold: φₖ > 0.1
+voice parse.if_high_curvature / {
+  curvature ->
+  parse.compare_threshold ->
+  is_high_curvature
+}
+
+;; Find voice in voices dict
+voice parse.find_voice / {
+  token + voices ->
+  dict.lookup ->
+  voice_body
+}
+
+;; If voice found, return it
+voice parse.if_found_return_voice / {
+  voice_body + is_high_curvature ->
+  parse.if_not_none_return ->
+  voice_result
+}
+
+;; Smooth rotation to literal attractor (low curvature)
+voice parse.rotate_to_literal / {
+  token + voice_result ->
+  parse.if_no_voice_result ->
+  parse.return_literal ->
+  resolved_value
+}
+
+;; If no voice resolution, return token as literal
+voice parse.if_no_voice_result / {
+  voice_result ->
+  parse.is_none ->
+  should_use_literal
+}
+
+;; Return token as literal (smooth rotation complete)
+voice parse.return_literal / {
+  token + should_use_literal ->
+  parse.if_true_return_token ->
+  parse.if_false_return_voice ->
+  resolved_value
+}
+
+target circle_diffeomorphism / "circle_diffeomorphism_model"
+voice main / {parse.smooth_flow -> circle_diffeomorphism}
+
