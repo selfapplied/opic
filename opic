@@ -8,6 +8,7 @@ Symmetry: Smooth, invertible transformations
 
 import sys
 import importlib
+import importlib.util
 from pathlib import Path
 from typing import Dict, Any
 
@@ -45,9 +46,61 @@ def call_extension(extension_path: str, env: Dict[str, Any]) -> Any:
     Python ABI: resolve $module.function$ → call
     Circular: Smooth, invertible transformation (Python ↔ OPIC)
     Lossless: All information preserved through boundary
+    
+    Supports both absolute module paths (e.g., "sys.path") and repository-relative
+    paths (e.g., "build.scripts.bi_l_ops") by adding project root to sys.path.
     """
     try:
+        project_root = env.get("project_root")
+        if project_root:
+            project_root_path = Path(project_root)
+            if str(project_root_path) not in sys.path:
+                sys.path.insert(0, str(project_root_path))
+        
         parts = extension_path.split(".")
+        # Try repository-relative path first (e.g., "build/scripts/bi_l_ops.py")
+        # For "build.scripts.bi_l_ops.run_sim", parts = ["build", "scripts", "bi_l_ops", "run_sim"]
+        # We want: module_path = "build/scripts/bi_l_ops.py", func_name = "run_sim"
+        if len(parts) >= 2:
+            try:
+                # Convert "build.scripts.bi_l_ops" -> "build/scripts/bi_l_ops.py"
+                # Last part is function name, rest is module path
+                func_name = parts[-1]
+                module_parts = parts[:-1]
+                
+                # Try with project_root first if available
+                if project_root:
+                    rel_path = "/".join(module_parts) + ".py"
+                    module_path = project_root_path / rel_path
+                else:
+                    # Fallback: try relative to current working directory
+                    rel_path = "/".join(module_parts) + ".py"
+                    module_path = Path.cwd() / rel_path
+                
+                if "--debug" in sys.argv:
+                    print(f"DEBUG extension: trying path={module_path}, exists={module_path.exists()}", file=sys.stderr)
+                
+                if module_path.exists():
+                    # Load as module from file
+                    module_name = module_parts[-1]  # Use last part as module name
+                    spec = importlib.util.spec_from_file_location(module_name, module_path)
+                    if spec and spec.loader:
+                        module = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(module)
+                        # Get function from module
+                        obj = getattr(module, func_name, None)
+                        if obj and callable(obj):
+                            if "--debug" in sys.argv:
+                                print(f"DEBUG extension: found function {func_name} in {module_path}", file=sys.stderr)
+                            return obj(env)
+            except Exception as e:
+                if "--debug" in sys.argv:
+                    import traceback
+                    print(f"DEBUG extension path resolution failed: {e}", file=sys.stderr)
+                    traceback.print_exc(file=sys.stderr)
+                pass
+        
+        # Fallback: try standard import
         module = importlib.import_module(parts[0])
         obj = module
         for attr in parts[1:]:
@@ -60,12 +113,15 @@ def call_extension(extension_path: str, env: Dict[str, Any]) -> Any:
 
 def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     """
-    Execute OPIC voice - Circular execution
+    Execute OPIC voice - Expansion-based energetic coupled solver
     Symmetry breaking: mapping definitions (data) vs execution chains (code)
     Lossless: All information flows through circle S¹ (phase preservation)
     
     Theory-based termination: Stops at equilibrium when result stabilizes.
     Stable formations equalize charge and minimize symbol count.
+    
+    Energetic coupling: Only expand if free energy decreases.
+    F(k) = E(k) + λ_comp·C(k); expand if F(k+1) < F(k) - ε
     """
     # DEBUG: See what we're executing
     if "--debug" in sys.argv:
@@ -75,6 +131,12 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     if "execution_history" not in context:
         context["execution_history"] = {}
     
+    # Initialize expansion depth/complexity tracking
+    if "expansion_depth" not in context:
+        context["expansion_depth"] = 0
+    if "expansion_complexity" not in context:
+        context["expansion_complexity"] = 0.0
+    
     # Pattern: {chain} → check if it's a mapping definition or execution chain
     is_chain = isinstance(voice_body, str) and voice_body.strip().startswith("{") and voice_body.strip().endswith("}")
     
@@ -82,16 +144,18 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
         print(f"DEBUG: is_chain={is_chain}, voice_body type={type(voice_body)}, first 50: {str(voice_body)[:50] if isinstance(voice_body, str) else 'not string'}", file=sys.stderr)
     
     # Pattern: $extension$ → call Python (circular boundary)
-    # Get extension prefix from config (discoverable, not hardcoded)
+    # Use default prefix without config lookup (avoid recursion)
     ext_prefix = "$"  # Default fallback
-    voices_dict = context.get("voices", {})
-    if "opic.config.extension_prefix" in voices_dict:
-        try:
-            config_ctx = {**context, "project_root": context.get("project_root", "")}
-            ext_prefix = execute_opic(voices_dict["opic.config.extension_prefix"], config_ctx) or ext_prefix
-        except:
-            pass
-    is_extension = isinstance(voice_body, str) and voice_body.startswith(ext_prefix) and voice_body.endswith(ext_prefix)
+    # Check if voice_body is an extension string (starts and ends with prefix)
+    is_extension = isinstance(voice_body, str) and len(voice_body) > 1 and voice_body.startswith(ext_prefix) and voice_body.endswith(ext_prefix)
+    
+    # Energetic coupling: If extension, execute immediately (no expansion cost)
+    if is_extension:
+        result = call_extension(voice_body[len(ext_prefix):-len(ext_prefix)], context)
+        if result is not None:
+            voice_key = str(voice_body)
+            context["execution_history"][voice_key] = result
+            return result
     
     # Symmetry breaking: mapping definitions contain "key" -> value patterns
     # Circular: They preserve structure (lossless diffeomorphism)
@@ -127,22 +191,50 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     # Pattern matching (declarative routing) - Use OPIC's expansion system
     voices_dict = context.get("voices", {})
     
+    # Energetic coupling: Calculate current free energy before expansion
+    current_depth = context["expansion_depth"]
+    current_complexity = context["expansion_complexity"]
+    # E(k) = expansion depth (proxy for energy)
+    # C(k) = complexity (symbol count, voice count, etc.)
+    energy_k = float(current_depth)
+    complexity_k = current_complexity + (len(str(voice_body)) * 0.001)  # Symbol count cost
+    lambda_comp = context.get("opic.config.lambda_comp", 0.01)  # Complexity temperature
+    epsilon = context.get("opic.config.epsilon", 0.001)  # Acceptance threshold
+    free_energy_k = energy_k + lambda_comp * complexity_k
+    
+    # Calculate projected free energy if we expand
+    projected_depth = current_depth + 1
+    projected_complexity = complexity_k + (len(str(voice_body)) * 0.002)  # Expansion adds cost
+    free_energy_k1 = float(projected_depth) + lambda_comp * projected_complexity
+    
+    # Metastable band check: don't expand past max depth
+    max_depth = context.get("opic.config.max_expansion_depth", 100)
+    in_metastable_band = current_depth < max_depth
+    
+    # Only expand if free energy decreases AND we're in metastable band
+    should_expand = (free_energy_k1 < free_energy_k - epsilon) and in_metastable_band
+    
+    if "--debug" in sys.argv:
+        print(f"DEBUG: depth={current_depth}, F(k)={free_energy_k:.6f}, F(k+1)={free_energy_k1:.6f}, expand={should_expand}", file=sys.stderr)
+    
     # Get match voice name from config (discoverable, not hardcoded)
     match_voice_name = "opic.match_voice_body_pattern"  # Default fallback
-    if "opic.config.match_voice_name" in voices_dict:
+    if "opic.config.match_voice_name" in voices_dict and should_expand:
         try:
             config_ctx = {**context, "project_root": context.get("project_root", "")}
             match_voice_name = execute_opic(voices_dict["opic.config.match_voice_name"], config_ctx) or match_voice_name
         except:
             pass
-    match_voice = voices_dict.get(match_voice_name)
-    if match_voice:
-        # Use OPIC's expansion system
+    match_voice = voices_dict.get(match_voice_name) if should_expand else None
+    if match_voice and should_expand:
+        # Use OPIC's expansion system (only if energetically favorable)
         matcher_context = {
             **context,
             "voice_body": voice_body,
             "inputs": context.get("inputs", {}),
-            "voices": voices_dict
+            "voices": voices_dict,
+            "expansion_depth": projected_depth,
+            "expansion_complexity": projected_complexity
         }
         result = execute_opic(match_voice, matcher_context)
         if result is not None:
@@ -196,12 +288,8 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
         else:
             result = execute_opic_chain(voice_body, context)
     
-    # Pattern 3: Extension → call Python (circular boundary)
-    if result is None and is_extension:
-        # Remove extension prefix (discoverable, not hardcoded)
-        result = call_extension(voice_body[len(ext_prefix):-len(ext_prefix)], context)
-    
-    # Pattern 4: String/value → return as-is (lossless)
+    # Pattern 3: String/value → return as-is (lossless)
+    # (Extension already handled early via energetic coupling)
     if result is None:
         if isinstance(voice_body, str):
             try:

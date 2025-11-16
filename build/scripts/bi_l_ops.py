@@ -7,7 +7,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional, List
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 VENV_PY = PROJECT_ROOT / ".venv" / "bin" / "python"
@@ -18,12 +18,12 @@ def _ensure_dirs() -> None:
 	RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _run_python(script_rel: str, args: list[str] | None = None, env_extra: Dict[str, str] | None = None) -> str:
+def _run_python(script_rel: str, args: Optional[List[str]] = None, env_extra: Optional[Dict[str, str]] = None) -> str:
 	"""
 	Run a repository python script inside .venv if present; otherwise fall back to system python.
 	Returns stdout+stderr for logging in OPIC.
 	"""
-	python_bin = VENVPY if (VENV_PY.exists()) else "python3"
+	python_bin = str(VENV_PY) if VENV_PY.exists() else "python3"
 	script_path = PROJECT_ROOT / script_rel
 	cmd = [str(python_bin), str(script_path)]
 	if args:
