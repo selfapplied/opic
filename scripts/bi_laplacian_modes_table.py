@@ -106,11 +106,17 @@ def build_tables(k_values: List[int]) -> Dict:
 		vals = valuation_energies(psi_n, H_p_dict)
 		E_val_sum = sum(vals.values())
 		E_inf = float(lambda_n - E_val_sum)
+		# Invariance norms: ||(S_p - I) ψ_n|| = |log p| * sqrt(ψ_n† H_p ψ_n)
+		inv_norms: Dict[int, float] = {}
+		for p in primes:
+			Ep = max(vals[p], 0.0)
+			inv_norms[p] = float(math.log(p) * math.sqrt(Ep))
 		mode_rows.append({
 			"n": n,
 			"lambda": lambda_n,
 			"E_inf": E_inf,
 			**{f"E_{p}": vals[p] for p in primes},
+			**{f"invnorm_{p}": inv_norms[p] for p in primes},
 		})
 
 	# Prepare tables for requested k values
@@ -125,7 +131,7 @@ def build_tables(k_values: List[int]) -> Dict:
 			"N_t": N_t,
 			"T": T,
 			"delta_t": (2.0 * T) / N_t,
-			"description": "Energy decomposition per mode: lambda_n, E_inf, E_2, E_3",
+			"description": "Per-mode: lambda_n, E_inf, E_2, E_3, invnorm_2=||(S_2-I)ψ||, invnorm_3=||(S_3-I)ψ||",
 		},
 		"k_values": k_values,
 		"tables": tables,

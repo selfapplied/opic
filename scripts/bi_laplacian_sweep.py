@@ -24,13 +24,23 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 
-# Local imports by path without packaging; mirror core logic from the single-run script
-from scripts.bi_laplacian_sim import (
-	build_periodic_circulant_laplacian,
-	build_fractional_shift_matrix,
-	build_hp_from_shift,
-	compute_spectrum,
-)
+# Import helpers from sibling script by modifying sys.path if needed
+try:
+	from bi_laplacian_sim import (
+		build_periodic_circulant_laplacian,
+		build_fractional_shift_matrix,
+		build_hp_from_shift,
+		compute_spectrum,
+	)
+except Exception:
+	import sys
+	sys.path.append(os.path.dirname(__file__))
+	from bi_laplacian_sim import (
+		build_periodic_circulant_laplacian,
+		build_fractional_shift_matrix,
+		build_hp_from_shift,
+		compute_spectrum,
+	)
 
 
 def ensure_output_dir() -> str:
