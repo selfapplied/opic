@@ -1,0 +1,49 @@
+;;; tests/main.ops — Tests case study narrative (include-free)
+;;; Generates a textual report of OPIC's test harness
+
+voice main / {
+"======================================================================
+TESTS CASE STUDY
+======================================================================
+
+TEST HARNESS OVERVIEW
+=====================
+
+OPIC treats each test as a field specimen:
+- Scoring voices map outputs to φₖ curvature and coherence
+- Self-tests demonstrate that voices can validate themselves
+- Executor flow tests follow a chain from input -> parse -> execute -> witness
+
+FIELD-SCORE EXAMPLE
+-------------------
+  test_result ->
+    test.compute_field ->
+    test.measure_curvature ->
+    test.compute_coherence ->
+    score (1 - |φₖ_actual - φₖ_expected| / (avg + 1))
+
+This shows how reasoning-free tests still rely on the same energy minimization logic.
+
+SELF-TEST LOOP
+--------------
+Each test file is executable and asserts:
+- Structural integrity (definitions expand correctly)
+- Voice reachability (implicit attention can find them)
+- Narrative proof strings that document what was validated
+
+EXECUTOR FLOW TRACE
+-------------------
+  input -> opic.parse -> opic.load -> opic.execute_chain -> result
+
+The executor flow test logs each phase, showing the implicit matcher dispatching
+to voices such as `opic.match_voice_body_pattern` and `opic.execute_chain`.
+
+TAKEAWAYS
+---------
+- Tests are first-class voices, not external artifacts
+- Scoring relies on the same φₖ / charge-mass field model as the rest of OPIC
+- Include-free, attention-driven loading keeps the suite self-healing
+======================================================================
+"
+}
+

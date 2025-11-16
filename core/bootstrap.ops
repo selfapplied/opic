@@ -5,8 +5,18 @@
 ;; Core types
 
 ;; Every particle is a list of fields combined via operations assigned to a symbol.
-;; "(symbol) { (field1) [op] (field2) [...] }
-;; The operator order is determined by the first 
+;; "<symbol> [parts] (measure) {fields...}"
+;; A run is a solver that finds the lowest energetic configuration of a particle.
+;;    <symbol> is a symmetry break, a binding
+;;    [parts] defines how a symbol expands
+;;    (measure) is a number expression defining the binding energy for the expansion
+;;    {fields} defines an inner expression
+;;
+;; Implicit behavior defines how each line in a file is interpreted, using a context
+;; frame to fit the line into meaning. A cir
+
+
+;; The operator order is determined by the first fiel
 ;; Every field either defines an expansion or is made up of particles
 ;; "(field): (number expression 
 ;; 

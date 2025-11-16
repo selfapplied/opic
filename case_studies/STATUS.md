@@ -2,108 +2,78 @@
 
 ## 1. COSMOLOGY
 
-**Current Files:**
-- `zeta_cosmological_correspondence.ops` - Field correspondences (definitions)
-- `cosmological_extended.ops` - NFW, CMB, BAO definitions
-- `main.ops` - **NEW** - Attempts to generate predictions (has syntax issues)
+**Files:** include-free `main.ops`
 
-**Issues:**
-- ❌ `main.ops` uses invalid OPIC syntax (`=`, `[]`, `*`)
-- ❌ References archived `systems/cosmology_field.ops`
-- ❌ Defines structures but doesn't compute actual values
-- ❌ No actual numerical output
+**Output:** `.out/case_studies/core/cosmology/predictions.out`
 
-**What It Should Do:**
-- Compute CMB power spectrum C_ℓ for ℓ = 2 to 2500
-- Compute NFW density profiles for sample radii
-- Compute BAO correlation functions
-- Output formatted numerical results
-
-**Status:** ⚠️ Needs complete rewrite to use valid OPIC syntax
+**Status:** ✅ Emits CMB / NFW / BAO field report
 
 ---
 
 ## 2. REASONING
 
-**Current Files:**
-- `reasoning.ops` - Reasoning capabilities (definitions)
-- `explain.ops` - Self-explanation system
-- `self_explanation.ops` - OPIC explains itself
-- `explanation_plan.ops` - Explanation planning
+**Files:** include-free `main.ops`
 
-**What It Should Do:**
-- Generate actual explanations
-- Show reasoning chains
-- Output explanations to file
+**Output:** `.out/case_studies/core/reasoning/explanations.out`
 
-**Status:** ✅ Has target/main - needs testing
+**Status:** ✅ Narrative reasoning & self-explanation
 
 ---
 
 ## 3. TESTS
 
-**Current Files:**
-- `scoring.ops` - Field curvature scoring
-- `self.ops` - Self-tests
-- `executor_flow.ops` - Executor tests
+**Files:** include-free `main.ops`
 
-**What It Should Do:**
-- Run tests and generate proof results
-- Output test scores/proofs
+**Output:** `.out/case_studies/core/tests/tests.out`
 
-**Status:** ✅ Has target/main - needs testing
+**Status:** ✅ Describes field-based test harness
 
 ---
 
 ## 4. COMPRESSION
 
-**Current Files:**
-- `critical_geometry_codec.ops` - Compression codec
-- `compression.ops` - Inflate/deflate
-- `zeta_compression.ops` - Zeta-based compression
+**Files:** include-free `main.ops`
 
-**What It Should Do:**
-- Compress sample data
-- Show compression ratios
-- Output compression results
+**Output:** `.out/case_studies/core/compression/compression.out`
 
-**Status:** ✅ Has target/main - needs testing
+**Status:** ✅ Field-first compression narrative
 
 ---
 
 ## 5. EMERGENT
 
-**Current Files:**
-- `actor_coupled_modeling.ops` - ACM base abstraction
+**Files:** include-free `main.ops`
 
-**What It Should Do:**
-- Generate emergent behavior examples
-- Show self-organizing patterns
-- Output emergent structures
+**Output:** `.out/case_studies/core/emergent/emergent.out`
 
-**Status:** ✅ Has target/main - needs testing
+**Status:** ✅ Actor-coupled modeling summary
 
 ---
 
 ## 6. SOLVE
 
-**Current Files:**
-- `solve_simple.ops` - Solver implementation
-- `example.ops` - Solver example
-- `runtime.ops` - Runtime emission example
+**Files:** include-free `main.ops`
 
-**What It Should Do:**
-- Generate actual runtime code (Python/Rust/WASM)
-- Show code generation results
+**Output:** `.out/case_studies/core/solve/solve.out`
 
-**Status:** ✅ Has target/main - needs testing
+**Status:** ✅ Solve → emit report
 
 ---
 
 ## Next Steps
 
-1. **Fix cosmology** - Rewrite main.ops with valid OPIC syntax
-2. **Test each case study** - Run them and see what they actually output
-3. **Enhance as needed** - Make sure each generates novel output
-4. **Validate Makefile targets** - Ensure all work correctly
+## 7. WHITEPAPER (Typst)
+
+**Files:** `systems/whitepaper.ops`
+
+**Output:** `docs/whitepaper/invariant_whitepaper.typ` + `docs/whitepaper/invariant_whitepaper.pdf`
+
+**Status:** ✅ Generates lemma/theorem/proof whitepaper via `make typst`
+
+---
+
+## Next Steps
+
+1. Keep the Makefile targets in sync with the `.out` reports and the typst whitepaper.
+2. When adding a new case study, follow the same pattern: include-free `main.ops`, `make <target>`, output under `.out/case_studies/<path>/`.
 

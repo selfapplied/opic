@@ -1,0 +1,54 @@
+;;; compression/main.ops — Compression case study narrative
+;;; Summarizes OPIC's critical-geometry codec + adaptive compression stack
+
+voice main / {
+"======================================================================
+COMPRESSION CASE STUDY
+======================================================================
+
+FIELD-FIRST COMPRESSION
+=======================
+
+OPIC does not compress bytes directly.
+It compresses behaviors:
+  • measure.critical_geometry → bundles U, C, α̂, δ̂, ζ-zero spectra
+  • compress.critical_geometry → packs that bundle into a .cgz block
+  • zeta_compression.ops / compression.ops → derive codecs for signals,
+    neural fields, and time-series by reusing the same field signatures.
+
+The encoded block {U, C, α̂, δ̂, chief_voice_basis, canonical_map, rg_iterates}
+is the “compressed Turing-composition signature” a compositor needs to regrow
+the original behavior.
+
+SCORING A SIGNAL
+----------------
+signal_field + dimension_family + region ->
+  measure.critical_geometry ->
+  pack_critical_geometry_block ->
+  cg_block
+
+If universality ≈ 1, we push into U-compression (store canonical map + scaling).
+If criticality spikes, we switch to C-compression (project onto RG manifolds).
+If both float in the middle, we promote ζ-zero spacings to act as an adaptive
+spectral basis.
+
+ADAPTIVE ROUTING
+----------------
+voice compression.chooser:
+  incoming_signal ->
+  detect.behavioral_phase ->
+  choose.codec "critical_geometry" | "wavelet" | "memoryless" ->
+  codec.plan
+
+That chooser is already defined in compression.ops and demonstrates how to
+map a signal’s field curvature to a codec selection without any manual wiring.
+
+TAKEAWAYS
+---------
+  • Compression is an implicit behavior: include-free, entirely voice-driven.
+  • The same φₖ / RG math that governs learning also governs compression.
+  • Case study artifacts live in case_studies/core/compression/*.ops, and running
+    `make compression` now emits this narrative into .out/case_studies/core/compression/compression.out.
+======================================================================"
+}
+

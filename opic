@@ -151,10 +151,19 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
             return result
     
     # Pattern 2: Execution chain → execute chain
-    # Theory: Use Python bootstrap for now (opic.execute_chain would recurse)
-    # TODO: Once expansion system is fully self-hosting, use opic.execute_chain
     if result is None and is_chain:
-        result = execute_opic_chain(voice_body, context)
+        execute_chain_voice = voices_dict.get("opic.execute_chain")
+        skip_execute_chain = context.get("_skip_execute_chain_voice")
+        if execute_chain_voice and not skip_execute_chain:
+            chain_context = {
+                **context,
+                "chain_string": voice_body,
+                "voices": voices_dict,
+                "_skip_execute_chain_voice": True,
+            }
+            result = execute_opic(execute_chain_voice, chain_context)
+        else:
+            result = execute_opic_chain(voice_body, context)
     
     # Pattern 3: Extension → call Python (circular boundary)
     if result is None and is_extension:
@@ -224,10 +233,37 @@ def bootstrap_chain(chain_string: str, context: Dict[str, Any]) -> Any:
         in_env = step in env
         is_voice = step in voices
         is_last_step = i == len(steps) - 1
+        has_plus = " + " in step or (step.strip().startswith('"') and "+" in step)
         
-        # Execute step (circular: phase flows through S¹, information preserved)
-        # Symmetry breaking: lookup/get use result (mapping) and original chain input
-        if is_lookup or is_get:
+        # Handle + operator: hopeful OR or string concatenation
+        if has_plus and not (is_lookup or is_get or is_extension):
+            # Split by + and evaluate each part
+            # Theory: + is hopeful OR (try first, if None try next) OR concatenation (if all strings)
+            plus_parts = [p.strip() for p in step.split("+")]
+            evaluated_parts = []
+            for part in plus_parts:
+                # Evaluate part (could be quoted string, variable, voice, etc.)
+                if part.startswith('"') and part.endswith('"'):
+                    # Quoted string literal
+                    evaluated_parts.append(part[1:-1])
+                elif part in env:
+                    evaluated_parts.append(env[part])
+                elif part in voices:
+                    voice_body = voices[part]
+                    part_context = {**context, **env, "input": result}
+                    evaluated_parts.append(execute_opic(voice_body, part_context))
+                else:
+                    evaluated_parts.append(part)
+            
+            # Theory: If all parts are strings, concatenate (string concatenation)
+            # Otherwise, use hopeful OR (first non-None wins)
+            if all(isinstance(p, str) and not p.startswith('"') for p in evaluated_parts):
+                # All are strings - concatenate
+                step_result = "".join(str(p) for p in evaluated_parts if p is not None)
+            else:
+                # Hopeful OR: first non-None wins
+                step_result = next((p for p in evaluated_parts if p is not None), None)
+        elif is_lookup or is_get:
             # Lookup uses: mapping (result from previous step) + key (original chain input)
             # Circular: Preserve original input (phase θ from chain start)
             key = env.get("command")  # Original chain input (circular: phase preservation)
@@ -247,6 +283,10 @@ def bootstrap_chain(chain_string: str, context: Dict[str, Any]) -> Any:
             # Theory-based termination: Execute and check if result stabilizes
             # Stable formations: when result doesn't change, we've reached equilibrium
             step_result = execute_opic(voice_body, new_context)
+            
+            # Store result in env under voice name (for later steps to reference)
+            # Also store under output variable name if chain ends with variable name
+            env[step] = step_result
             
             # Theory: If result is same as input and no transformation occurred, stop recursion
             # This is the natural termination from OPIC's energy minimization principle

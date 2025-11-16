@@ -1,0 +1,46 @@
+;;; solve/main.ops — Solve → Emit case study narrative
+;;; Showcases OPIC solving semantically, then emitting to runtimes
+
+voice main / {
+"======================================================================
+SOLVE → EMIT CASE STUDY
+======================================================================
+
+FLOW OVERVIEW
+=============
+1. Solve semantically inside OPIC’s invariant space.
+2. Emit the resolved meaning into a concrete runtime.
+3. Runtimes inherit the semantics; OPIC never compromises them.
+
+EXAMPLE PROGRAM
+---------------
+def point { x: int, y: int, mass: float }
+voice add_points / { p1 + p2 -> point.create (p1.x + p2.x) (p1.y + p2.y) (p1.mass + p2.mass) }
+voice increment   / { p -> add_points p (point.create 1 1 0.0) }
+
+OPIC resolves:
+  • Types: point = {x: int, y: int, mass: float}
+  • Dependencies: increment → add_points → point.create
+
+RUNTIME CAPABILITIES
+--------------------
+voice solve_for_python / { "runtime.ops" + "python.cp311" -> solve -> python_code + report }
+voice solve_for_rust   / { "runtime.ops" + "rust"         -> solve -> rust_code   + report }
+voice solve_for_wasm   / { "runtime.ops" + "wasm"         -> solve -> wasm_code   + report }
+
+Each target advertises its capabilities:
+  python.cp311 → dynamic types, runtime checks
+  rust         → affine types, compile-time safety
+  wasm         → sandboxed determinism
+
+RESULT: The same OPIC semantics populate different runtimes without re-specifying intent.
+
+REPORT
+------
+When you run `make solve`, OPIC emits a narrative confirming:
+  • which runtimes were targeted
+  • how the semantic graph mapped to each
+  • that no constraint graphs or rewrites were needed
+======================================================================"
+}
+

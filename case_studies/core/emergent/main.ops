@@ -1,0 +1,59 @@
+;;; emergent/main.ops — Emergent case study narrative
+;;; Actor-coupled modeling: regimes, causal graphs, version evolution
+
+voice main / {
+"======================================================================
+EMERGENT CASE STUDY
+======================================================================
+
+ACTOR-COUPLED MODELING
+======================
+
+An actor-coupled model is the primordial OPIC abstraction:
+  • actors with morphisms F_A : S_t → S_{t+1}
+  • causal graphs capturing state → state transitions
+  • control parameters steering behavior
+  • metric functionals observing outcomes
+  • iteration: S_{t+1} = F_A(S_t; r)
+  • regime reveal: fixed / periodic / chaotic / unknown
+  • critical geometry via α–δ scaling
+  • universality embedding through zeta traces / field curvature
+  • version evolution (git-like DAG) as witness history
+
+REGIME REVEAL
+-------------
+observable_sequence ->
+  variance_of_sequence ->
+  autocorrelation_of_sequence ->
+  period_of_sequence ->
+  lyapunov_of_sequence ->
+  regime_from_properties ->
+  regime
+
+This isn’t classification. The sequence *already is* its regime;
+we simply unfold what the geometry is telling us.
+
+CAUSAL GRAPH LOOP
+-----------------
+state_t + actor + state_{t+1} ->
+  causal_graph.add_edge ->
+  updated_graph
+
+Tracking the entire causal chain lets OPIC derive witnesses for
+emergent behavior, not just snapshots.
+
+VERSION EVOLUTION
+-----------------
+git.commit -> git.push -> git.merge ⇒ actor_coupled_model.version_evolve
+
+Every evolution is a morphism. Git history becomes a discrete trace
+of actor interactions, suitable for replay or field analysis.
+
+TAKEAWAYS
+---------
+  • Emergence = actor iteration under field metrics, not accidents.
+  • Regimes are geometric identities discovered via α–δ + Lyapunov curvature.
+  • Version DAGs are part of the physics: they store causal witnesses.
+======================================================================"
+}
+

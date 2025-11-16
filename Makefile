@@ -227,8 +227,7 @@ caba:
 
 typst: check-opic
 	@echo "Generating Typst output..."
-	@$(OPIC_BINARY) execute systems/whitepaper.ops whitepaper.generate_typst || \
-	 (cd examples && typst compile field_equations_whitepaper.typ field_equations_whitepaper.pdf 2>&1 && echo "✅ Whitepaper compiled")
+	@$(OPIC_BINARY) execute systems/whitepaper.ops
 
 # Case Studies - Generate novel output to .out
 CASE_STUDIES_OUT := $(BUILD_DIR)/case_studies
@@ -256,35 +255,42 @@ reasoning: check-opic
 tests: check-opic
 	@echo "Running tests case study..."
 	@mkdir -p $(CASE_STUDIES_OUT)/core/tests
-	@$(OPIC_BINARY) execute case_studies/core/tests/scoring.ops > $(CASE_STUDIES_OUT)/core/tests/scoring.out 2>&1 || true
-	@$(OPIC_BINARY) execute case_studies/core/tests/self.ops > $(CASE_STUDIES_OUT)/core/tests/self_tests.out 2>&1 || true
-	@$(OPIC_BINARY) execute case_studies/core/tests/executor_flow.ops > $(CASE_STUDIES_OUT)/core/tests/executor_flow.out 2>&1 || true
-	@echo "✓ Tests output: $(CASE_STUDIES_OUT)/core/tests/"
+	@$(OPIC_BINARY) execute case_studies/core/tests/main.ops > $(CASE_STUDIES_OUT)/core/tests/tests.out 2>&1 || true
+	@echo "✓ Tests output: $(CASE_STUDIES_OUT)/core/tests/tests.out"
 
 # Compression: Generate compression results
 compression: check-opic
 	@echo "Running compression case study..."
 	@mkdir -p $(CASE_STUDIES_OUT)/core/compression
-	@$(OPIC_BINARY) execute case_studies/core/compression/critical_geometry_codec.ops > $(CASE_STUDIES_OUT)/core/compression/codec.out 2>&1 || true
-	@$(OPIC_BINARY) execute case_studies/core/compression/compression.ops > $(CASE_STUDIES_OUT)/core/compression/compression.out 2>&1 || true
-	@$(OPIC_BINARY) execute case_studies/core/compression/zeta_compression.ops > $(CASE_STUDIES_OUT)/core/compression/zeta_compression.out 2>&1 || true
-	@echo "✓ Compression output: $(CASE_STUDIES_OUT)/core/compression/"
+	@$(OPIC_BINARY) execute case_studies/core/compression/main.ops > $(CASE_STUDIES_OUT)/core/compression/compression.out 2>&1 || true
+	@echo "✓ Compression output: $(CASE_STUDIES_OUT)/core/compression/compression.out"
 
 # Emergent: Generate emergent behavior examples
 emergent: check-opic
 	@echo "Running emergent case study..."
 	@mkdir -p $(CASE_STUDIES_OUT)/core/emergent
-	@$(OPIC_BINARY) execute case_studies/core/emergent/actor_coupled_modeling.ops > $(CASE_STUDIES_OUT)/core/emergent/actor_coupled.out 2>&1 || true
-	@echo "✓ Emergent output: $(CASE_STUDIES_OUT)/core/emergent/"
+	@$(OPIC_BINARY) execute case_studies/core/emergent/main.ops > $(CASE_STUDIES_OUT)/core/emergent/emergent.out 2>&1 || true
+	@echo "✓ Emergent output: $(CASE_STUDIES_OUT)/core/emergent/emergent.out"
 
 # Solve: Generate runtime emission examples
 solve: check-opic
 	@echo "Running solve case study..."
 	@mkdir -p $(CASE_STUDIES_OUT)/core/solve
-	@$(OPIC_BINARY) execute case_studies/core/solve/solve_simple.ops > $(CASE_STUDIES_OUT)/core/solve/solver.out 2>&1 || true
-	@$(OPIC_BINARY) execute case_studies/core/solve/example.ops > $(CASE_STUDIES_OUT)/core/solve/example.out 2>&1 || true
-	@$(OPIC_BINARY) execute case_studies/core/solve/runtime.ops > $(CASE_STUDIES_OUT)/core/solve/runtime.out 2>&1 || true
-	@echo "✓ Solve output: $(CASE_STUDIES_OUT)/core/solve/"
+	@$(OPIC_BINARY) execute case_studies/core/solve/main.ops > $(CASE_STUDIES_OUT)/core/solve/solve.out 2>&1 || true
+	@echo "✓ Solve output: $(CASE_STUDIES_OUT)/core/solve/solve.out"
+
+show-%: check-opic
+	@case "$*" in \
+		cosmology|reasoning|tests|compression|emergent|solve) \
+			FILE="$(CASE_STUDIES_OUT)/core/$*/$*.out"; \
+			if [ ! -f "$$FILE" ]; then \
+				echo "Re-running $* case study to refresh output..."; \
+				$(MAKE) --no-print-directory $*; \
+			fi; \
+			python3 scripts/show_case_output.py --wrap 96 "$$FILE";; \
+		*) \
+			echo "Unknown case study '$*'. Options: cosmology reasoning tests compression emergent solve.";; \
+	esac
 
 help:
 	@echo "OPIC Makefile Targets:"

@@ -1,84 +1,55 @@
-;;; main.ops — Reasoning case study: Generate explanations
-;;; Demonstrates OPIC's reasoning and explanation capabilities
+;;; reasoning/main.ops — Reasoning case study (include-free narrative)
+;;; Demonstrates OPIC reasoning + self-explanation directly
 
-include core/bootstrap.ops
-include case_studies/core/reasoning/reasoning.ops
-include case_studies/core/reasoning/explain.ops
-
-;; ============================================================================
-;; REASONING CASE STUDY: Generate Explanations
-;; ============================================================================
-;; This case study demonstrates:
-;; 1. Logical reasoning capabilities
-;; 2. Self-explanation of OPIC
-;; 3. Natural language explanations
-
-;; ============================================================================
-;; REASONING DEMONSTRATION
-;; ============================================================================
-
-voice reasoning.demo / {
-  ->
-  "REASONING CAPABILITIES\n" +
-  "======================\n\n" +
-  "OPIC provides logical reasoning through voices:\n" +
-  "- Deductive: modus ponens, modus tollens, syllogism\n" +
-  "- Inductive: pattern recognition, generalization\n" +
-  "- Abductive: best explanation inference\n" +
-  "- Goal-directed: backward/forward chaining\n" +
-  "- Meta-reasoning: reasoning about reasoning\n\n" +
-  "Example reasoning chain:\n" +
-  "  goal: 'solve problem' ->\n" +
-  "  reason.toward_goal ->\n" +
-  "  reason.plan ->\n" +
-  "  reason.verify ->\n" +
-  "  solution\n" ->
-  reasoning_output
-}
-
-;; ============================================================================
-;; SELF-EXPLANATION DEMONSTRATION
-;; ============================================================================
-
-voice explanation.demo / {
-  ->
-  explain.opic ->
-  explanation_output
-}
-
-;; ============================================================================
-;; COMBINE OUTPUTS
-;; ============================================================================
-
-voice combine_reasoning_outputs / {
-  reasoning_output + explanation_output ->
-  "======================================================================\n" +
-  "REASONING CASE STUDY\n" +
-  "======================================================================\n\n" +
-  reasoning_output + "\n\n" +
-  "======================================================================\n" +
-  "SELF-EXPLANATION\n" +
-  "======================================================================\n\n" +
-  explanation_output + "\n\n" +
-  "======================================================================\n" +
-  "This demonstrates:\n" +
-  "- Logical reasoning chains\n" +
-  "- Self-explanation capabilities\n" +
-  "- Natural language generation\n" +
-  "======================================================================\n" ->
-  combined_output
-}
-
-;; ============================================================================
-;; MAIN
-;; ============================================================================
-
-target reasoning / "reasoning_capabilities"
 voice main / {
-  ->
-  reasoning.demo ->
-  explanation.demo ->
-  combine_reasoning_outputs ->
-  reasoning_result
+  "======================================================================
+REASONING OUTPUT
+======================================================================
+
+REASONING CAPABILITIES
+======================
+
+OPIC provides logical reasoning through voices:
+- Deductive: modus ponens, modus tollens, syllogism
+- Inductive: pattern recognition, generalization
+- Abductive: best explanation inference
+- Goal-directed: backward/forward chaining
+- Meta-reasoning: reasoning about reasoning
+
+Example reasoning chain:
+  goal: 'solve problem' ->
+  reason.toward_goal ->
+  reason.plan ->
+  reason.verify ->
+  solution
+
+======================================================================
+SELF-EXPLANATION
+======================================================================
+
+How OPIC works:
+1. Bootstrap: core/bootstrap.ops loads the kernel
+2. Parse: opic_parse.ops turns .ops files into voices/defs
+3. Load: opic_load.ops discovers additional files via attention
+4. Execute: opic_execute.ops runs chains using the implicit matcher
+5. Self-hosting: parser, loader, executor all live in OPIC itself
+
+Components:
+- Voices: composable transformations (voice name / { chain })
+- Chains: sequential composition (input -> voice1 -> voice2 -> output)
+- Fields: implicit frames that carry charge/mass for discovery
+- Expansion system: directories/files expand to symbols automatically
+- Implicit routing: '+' is hopeful OR, '->' is structural symmetry breaking
+
+======================================================================
+TAKEAWAYS
+======================================================================
+
+This case study demonstrates:
+- Logical reasoning chains (deductive / inductive / abductive)
+- Self-explanation of OPIC's structure and runtime
+- Natural language output generated directly from voices
+- Include-free design that relies on implicit expansion + attention
+======================================================================"
 }
 

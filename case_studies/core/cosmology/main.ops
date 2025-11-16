@@ -1,8 +1,6 @@
 ;;; main.ops — Cosmology case study: Generate CMB predictions
 ;;; Self-contained: computes actual cosmological predictions
 
-include core/bootstrap.ops
-
 ;; ============================================================================
 ;; COSMOLOGY CASE STUDY: Generate Actual Predictions
 ;; ============================================================================
@@ -66,7 +64,6 @@ voice bao.compute_correlation / {
 ;; MAIN: Generate all predictions
 ;; ============================================================================
 
-target cosmology / "cosmology_predictions"
 voice main / {
   "======================================================================
 COSMOLOGICAL PREDICTIONS

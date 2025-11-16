@@ -1,0 +1,122 @@
+;;; whitepaper.ops — Typst whitepaper generator (include-free)
+;;; Builds the invariant-generative field report with lemmas, theorems, proofs.
+
+voice whitepaper_output_path / {
+  ->
+  "docs/whitepaper/invariant_whitepaper.typ" ->
+  file_path ->
+  whitepaper_typst_path
+}
+
+voice whitepaper_pdf_output / {
+  ->
+  "docs/whitepaper/invariant_whitepaper.pdf" ->
+  output_path ->
+  whitepaper_pdf_path
+}
+
+voice whitepaper_compose_typst / {
+"
+#set document(author: \"OPIC Field Lab\", title: \"Invariant-Generative Worldbuilding\")
+#set page(width: 8.5in, height: 11in, margin: 1in)
+#let lemma(name, body) = block(outset: 9pt, inset: 12pt, stroke: 0.4pt + luma(70%), radius: 6pt, [
+  #strong[ Lemma — #name ]
+  body
+])
+#let theorem(name, body) = block(outset: 10pt, inset: 14pt, stroke: 0.6pt + rgb(0x53, 0x8d, 0xff), radius: 6pt, [
+  #strong[ Theorem — #name ]
+  body
+])
+#let proof(name, steps) = block(outset: 6pt, inset: 12pt, stroke: 0.4pt + luma(50%), dash: \"dotted\", radius: 4pt, [
+  #strong[ Proof Sketch — #name ]
+  steps
+])
+
+= OPIC: Invariant Calculus Field Notes
+
+== Abstract
+We treat OPIC programs as flows on invariant space. Every voice is a frame-aware morphism; every chain aligns charge, mass, and symmetry breaking. This note documents the living toolkit for building systems without scaffolding, culminating in a typst-generated whitepaper.
+
+== Invariant Toolkit
+- Charge tracks how strongly a voice bends the local field.
+- Mass measures the inertia of a definition.
+- Symmetry breaking (`->`) is how we advance the ledger one event at a time.
+- Hopeful OR (`+`) lets us try equilibria without cloning logic.
+
+#lemma(\"Equilibrium Lemma\", [
+  Within a chain, if a voice returns the same value with the same boundary conditions, its local energy flow is zero. The execution stack records this equilibrium and halts recursion naturally.
+])
+
+#theorem(\"Invariant Expansion Theorem\", [
+  Mentioning a namespace perturbs the attention field enough for the loader to expand the corresponding file. No includes are required because the distance metric (target first, then nearest neighbor) already respects the ledger.
+])
+
+#proof(\"Invariant Expansion Theorem\", [
+  1. Target file anchors the hull, so its voices always override includes.
+  2. The loader tracks `loaded_files` and ignores already-stable expansions unless they are the target again.
+  3. Namespaces discovered inside the chain seed follow-up expansions through the attention map.
+  Therefore we obtain expansion without manual wiring.
+])
+
+== New Tools
+- **Complexity-Based Routing** now delegates to OPIC voices, giving simple strings (narratives) a direct path and routing structured chains through `opic.execute_chain`.
+- **Charge-Mass Guarding** keeps recursion safe: we stop when charge dissipates rather than when counters hit a max depth.
+- **Target Override Ledger** ensures every `.ops` file executed by the user wins conflicts against infrastructure files.
+
+#theorem(\"Charge-Mass Routing\", [
+  Given a voice body `V`, let `c(V)` be its measured complexity (charge) and `m(V)` its inertia (mass). If `c(V)=1`, we emit the literal narrative; if `c(V)>1`, we route through the executor voices so that transformation happens inside OPIC.
+])
+
+#proof(\"Charge-Mass Routing\", [
+  - The bootstrap classifier inspects braces and operators to assign charge.
+  - String literals with no extra operators settle immediately (massless narrative).
+  - Structured chains carry additional charge, so the solver hands them to `opic.execute_chain`.
+  - Once `execute_chain` stabilizes, the resulting value reduces charge to zero, signaling completion.
+])
+
+#lemma(\"Field Override Lemma\", [
+  When two voices share the same name, the target file wins regardless of directory distance. This keeps scaffolding out of the user path and lets new repos extend the ledger without forking it.
+])
+
+== Narrative Outputs
+- `make cosmology` — physics report (CMB, NFW, BAO).
+- `make reasoning` — reasoning + self-explanation narrative.
+- `make compression` — critical-geometry codec recap.
+- `make emergent` — actor-coupled modeling field notes.
+- `make solve` — solve → emit walkthrough.
+- `make typst` — this whitepaper.
+
+== Outlook
+The next repository (ZetaCore) inherits this clean slate: include-free targets, theory-driven recursion control, Typst-grade documentation, and no stray scaffolding.
+" ->
+typst_document
+}
+
+voice whitepaper_write_document / {
+  whitepaper_output_path ->
+  whitepaper_compose_typst ->
+  typst.write_file ->
+  file_path ->
+  whitepaper_typst_file
+}
+
+voice whitepaper_render_pdf / {
+  whitepaper_typst_file + whitepaper_pdf_output ->
+  typst.render ->
+  output_path ->
+  whitepaper_pdf_file
+}
+
+voice whitepaper_report / {
+  "Typst whitepaper\n  typst: " + whitepaper_typst_file + "\n  pdf: " + whitepaper_pdf_file + "\n" ->
+  output
+}
+
+voice whitepaper_generate_typst / {
+  whitepaper_write_document ->
+  whitepaper_render_pdf ->
+  whitepaper_report
+}
+
+voice main / {whitepaper_generate_typst -> output}
+
