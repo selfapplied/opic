@@ -1,24 +1,24 @@
 ;;; bi_laplacian.ops — OPIC entrypoints for Bi-Laplacian experiments
 ;;; Uses Python extensions to run the simulation scripts, respecting OPIC's execution flow.
 
-voice bi_l.run_sim / "$build.scripts.bi_l_ops.run_sim$"
+voice runsimulation / "$build.scripts.bi_l_ops.run_sim$"
 
-voice bi_l.run_sweep / "$build.scripts.bi_l_ops.run_sweep$"
+voice runsweep / "$build.scripts.bi_l_ops.run_sweep$"
 
-voice bi_l.modes_table / "$build.scripts.bi_l_ops.run_modes_table$"
+voice generatemodestable / "$build.scripts.bi_l_ops.run_modes_table$"
 
 ;; Declarative-contextual adaptive step:
 ;; Reads epsilon, lambda_comp, a1,a2,a3, N_t, P, q_k from context (if present)
 ;; Returns a concise decision string. No loops here; external driver can iterate.
-voice bi_l.adaptive_step / "$build.scripts.bi_l_ops.adaptive_step$"
+voice adaptivestep / "$build.scripts.bi_l_ops.adaptive_step$"
 
-voice bi_l.all / {
-  bi_l.run_sim ->
-  bi_l.adaptive_step ->
+voice all / {
+  runsimulation ->
+  adaptivestep ->
   output
 }
 
-target bi_laplacian / "bi_l_experiments"
-voice main / {bi_l.all -> output}
+target bilaplacian / "bilaplacian experiments"
+voice main / {all -> output}
 
 
