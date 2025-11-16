@@ -82,7 +82,16 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
         print(f"DEBUG: is_chain={is_chain}, voice_body type={type(voice_body)}, first 50: {str(voice_body)[:50] if isinstance(voice_body, str) else 'not string'}", file=sys.stderr)
     
     # Pattern: $extension$ → call Python (circular boundary)
-    is_extension = isinstance(voice_body, str) and voice_body.startswith("$") and voice_body.endswith("$")
+    # Get extension prefix from config (discoverable, not hardcoded)
+    ext_prefix = "$"  # Default fallback
+    voices_dict = context.get("voices", {})
+    if "opic.config.extension_prefix" in voices_dict:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            ext_prefix = execute_opic(voices_dict["opic.config.extension_prefix"], config_ctx) or ext_prefix
+        except:
+            pass
+    is_extension = isinstance(voice_body, str) and voice_body.startswith(ext_prefix) and voice_body.endswith(ext_prefix)
     
     # Symmetry breaking: mapping definitions contain "key" -> value patterns
     # Circular: They preserve structure (lossless diffeomorphism)
@@ -118,8 +127,15 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     # Pattern matching (declarative routing) - Use OPIC's expansion system
     voices_dict = context.get("voices", {})
     
-    # Try OPIC's own matcher first (from opic_executor_impl.ops or bootstrap.ops)
-    match_voice = voices_dict.get("opic.match_voice_body_pattern")
+    # Get match voice name from config (discoverable, not hardcoded)
+    match_voice_name = "opic.match_voice_body_pattern"  # Default fallback
+    if "opic.config.match_voice_name" in voices_dict:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            match_voice_name = execute_opic(voices_dict["opic.config.match_voice_name"], config_ctx) or match_voice_name
+        except:
+            pass
+    match_voice = voices_dict.get(match_voice_name)
     if match_voice:
         # Use OPIC's expansion system
         matcher_context = {
@@ -152,8 +168,23 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     
     # Pattern 2: Execution chain → execute chain
     if result is None and is_chain:
-        execute_chain_voice = voices_dict.get("opic.execute_chain")
-        skip_execute_chain = context.get("_skip_execute_chain_voice")
+        # Get execute chain voice name from config (discoverable, not hardcoded)
+        execute_chain_voice_name = "opic.execute_chain"  # Default fallback
+        skip_flag_name = "_skip_execute_chain_voice"  # Default fallback
+        if "opic.config.execute_chain_voice_name" in voices_dict:
+            try:
+                config_ctx = {**context, "project_root": context.get("project_root", "")}
+                execute_chain_voice_name = execute_opic(voices_dict["opic.config.execute_chain_voice_name"], config_ctx) or execute_chain_voice_name
+            except:
+                pass
+        if "opic.config.skip_execute_chain_flag" in voices_dict:
+            try:
+                config_ctx = {**context, "project_root": context.get("project_root", "")}
+                skip_flag_name = execute_opic(voices_dict["opic.config.skip_execute_chain_flag"], config_ctx) or skip_flag_name
+            except:
+                pass
+        execute_chain_voice = voices_dict.get(execute_chain_voice_name)
+        skip_execute_chain = context.get(skip_flag_name)
         if execute_chain_voice and not skip_execute_chain:
             chain_context = {
                 **context,
@@ -167,7 +198,8 @@ def execute_opic(voice_body: Any, context: Dict[str, Any]) -> Any:
     
     # Pattern 3: Extension → call Python (circular boundary)
     if result is None and is_extension:
-        result = call_extension(voice_body[1:-1], context)
+        # Remove extension prefix (discoverable, not hardcoded)
+        result = call_extension(voice_body[len(ext_prefix):-len(ext_prefix)], context)
     
     # Pattern 4: String/value → return as-is (lossless)
     if result is None:
@@ -205,10 +237,49 @@ def bootstrap_chain(chain_string: str, context: Dict[str, Any]) -> Any:
     chain_body = chain_string.strip()
     chain_body = chain_body[1:-1].strip() if chain_body.startswith("{") and chain_body.endswith("}") else chain_body
     
-    steps = [s.strip() for s in chain_body.split("->")]
+    # Get configurable operators from config (discoverable, not hardcoded)
+    voices = context.get("voices", {})
+    chain_op = "->"  # Default fallback
+    plus_op = "+"  # Default fallback
+    ext_prefix = "$"  # Default fallback
+    lookup_name = "lookup"  # Default fallback
+    get_name = "get"  # Default fallback
+    
+    # Try to get from config (discoverable)
+    if "opic.config.chain_operator" in voices:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            chain_op = execute_opic(voices["opic.config.chain_operator"], config_ctx) or chain_op
+        except:
+            pass
+    if "opic.config.plus_operator" in voices:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            plus_op = execute_opic(voices["opic.config.plus_operator"], config_ctx) or plus_op
+        except:
+            pass
+    if "opic.config.extension_prefix" in voices:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            ext_prefix = execute_opic(voices["opic.config.extension_prefix"], config_ctx) or ext_prefix
+        except:
+            pass
+    if "opic.config.lookup_primitive_name" in voices:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            lookup_name = execute_opic(voices["opic.config.lookup_primitive_name"], config_ctx) or lookup_name
+        except:
+            pass
+    if "opic.config.get_primitive_name" in voices:
+        try:
+            config_ctx = {**context, "project_root": context.get("project_root", "")}
+            get_name = execute_opic(voices["opic.config.get_primitive_name"], config_ctx) or get_name
+        except:
+            pass
+    
+    steps = [s.strip() for s in chain_body.split(chain_op)]
     result = None
     env = dict(context)
-    voices = context.get("voices", {})
     
     # Primitives (Python provides these - circular boundary)
     # Lossless: Phase θ preserved through lookup (circle S¹)
@@ -227,19 +298,19 @@ def bootstrap_chain(chain_string: str, context: Dict[str, Any]) -> Any:
     for i, step in enumerate(steps):
         # Pattern matching (declarative routing)
         # Symmetry breaking: check primitives first (they have specific roles)
-        is_lookup = step == "lookup"
-        is_get = step == "get"
-        is_extension = step.startswith("$") and step.endswith("$")
+        is_lookup = step == lookup_name
+        is_get = step == get_name
+        is_extension = step.startswith(ext_prefix) and step.endswith(ext_prefix)
         in_env = step in env
         is_voice = step in voices
         is_last_step = i == len(steps) - 1
-        has_plus = " + " in step or (step.strip().startswith('"') and "+" in step)
+        has_plus = f" {plus_op} " in step or (step.strip().startswith('"') and plus_op in step)
         
         # Handle + operator: hopeful OR or string concatenation
         if has_plus and not (is_lookup or is_get or is_extension):
             # Split by + and evaluate each part
             # Theory: + is hopeful OR (try first, if None try next) OR concatenation (if all strings)
-            plus_parts = [p.strip() for p in step.split("+")]
+            plus_parts = [p.strip() for p in step.split(plus_op)]
             evaluated_parts = []
             for part in plus_parts:
                 # Evaluate part (could be quoted string, variable, voice, etc.)
@@ -530,26 +601,76 @@ def main():
     # Initialize parser (circular: minimal Python)
     _init_parser(project_root)
     
-    # Load bootstrap.ops for command routing (circular: OPIC routes itself)
-    bootstrap_path = project_root / "core" / "bootstrap.ops"
-    bootstrap_path.exists() or (print(f"Error: bootstrap.ops not found", file=sys.stderr) or sys.exit(1))
-    
+    # Load config first (discoverable paths, not hardcoded)
+    config_path = project_root / "core" / "opic_config.ops"
     voices = {}
     defs = {}
     voice_sources = {}
     def_sources = {}
+    loaded_files = set()
+    
+    # Load config if it exists (allows discovery of paths)
+    if config_path.exists():
+        _load_ops_file(config_path, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=loaded_files)
+    
+    # Discover bootstrap path from config (not hardcoded)
+    bootstrap_path = project_root / "core" / "bootstrap.ops"  # Default fallback
+    if "opic.config.bootstrap_path" in voices:
+        try:
+            context = {
+                "voices": voices,
+                "defs": defs,
+                "call_extension": call_extension,
+                "project_root": str(project_root)
+            }
+            discovered_path = execute_opic(voices["opic.config.bootstrap_path"], context)
+            if discovered_path:
+                # Config returns relative path, join with project_root
+                bootstrap_path = project_root / discovered_path
+        except:
+            pass
+    bootstrap_path.exists() or (print(f"Error: bootstrap.ops not found", file=sys.stderr) or sys.exit(1))
+    
     # Bootstrap is NOT the target file (it's infrastructure)
-    _load_ops_file(bootstrap_path, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=set())
+    _load_ops_file(bootstrap_path, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=loaded_files)
     
-    # Load file resolution system for distance calculation
-    file_resolution_path = project_root / "systems" / "file_resolution.ops"
+    # Discover file resolution path from config (not hardcoded)
+    file_resolution_path = project_root / "systems" / "file_resolution.ops"  # Default fallback
+    if "opic.config.file_resolution_path" in voices:
+        try:
+            context = {
+                "voices": voices,
+                "defs": defs,
+                "call_extension": call_extension,
+                "project_root": str(project_root)
+            }
+            discovered_path = execute_opic(voices["opic.config.file_resolution_path"], context)
+            if discovered_path:
+                # Config returns relative path, join with project_root
+                file_resolution_path = project_root / discovered_path
+        except:
+            pass
     if file_resolution_path.exists():
-        _load_ops_file(file_resolution_path, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=set())
+        _load_ops_file(file_resolution_path, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=loaded_files)
     
-    # Load OPIC executor implementation (circular: OPIC executes itself)
-    executor_impl = project_root / "systems" / "opic_executor_impl.ops"
+    # Discover executor impl path from config (not hardcoded)
+    executor_impl = project_root / "systems" / "opic_executor_impl.ops"  # Default fallback
+    if "opic.config.executor_impl_path" in voices:
+        try:
+            context = {
+                "voices": voices,
+                "defs": defs,
+                "call_extension": call_extension,
+                "project_root": str(project_root)
+            }
+            discovered_path = execute_opic(voices["opic.config.executor_impl_path"], context)
+            if discovered_path:
+                # Config returns relative path, join with project_root
+                executor_impl = project_root / discovered_path
+        except:
+            pass
     if executor_impl.exists():
-        _load_ops_file(executor_impl, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=set())
+        _load_ops_file(executor_impl, voices, defs, voice_sources, def_sources, project_root, target_file=None, loaded_files=loaded_files)
     
     # Get command (empty command -> "help") - Circular: self-routing
     command_line_args = sys.argv[1:] if len(sys.argv) > 1 else []
@@ -581,11 +702,19 @@ def main():
                 "command_line_args": command_line_args,
                 "project_root": str(project_root)
             }
-            find_command_voice = voices.get("opic.cli.find_command")
+            # Get find command voice name from config (discoverable, not hardcoded)
+            find_command_voice_name = "opic.cli.find_command"  # Default fallback
+            if "opic.config.find_command_voice_name" in voices:
+                try:
+                    config_ctx = {**context, "project_root": str(project_root)}
+                    find_command_voice_name = execute_opic(voices["opic.config.find_command_voice_name"], config_ctx) or find_command_voice_name
+                except:
+                    pass
+            find_command_voice = voices.get(find_command_voice_name)
             # Circular: Preserve original command (phase θ) through execution
             ops_file = find_command_voice and execute_opic(find_command_voice, {**context, "command": command})
             
-            # If not found via routing, search action/ directories directly
+            # Discover search directories from config (not hardcoded)
             if not ops_file or ops_file == "default":
                 action_dirs = [
                     project_root / "action" / "examples" / f"{command}.ops",
@@ -594,7 +723,20 @@ def main():
                     project_root / "action" / f"{command}.ops",
                     project_root / f"{command}.ops",
                     Path.cwd() / f"{command}.ops"
-                ]
+                ]  # Default fallback
+                if "opic.config.search_directories" in voices:
+                    try:
+                        config_ctx = {
+                            **context,
+                            "project_root": str(project_root),
+                            "current_dir": str(Path.cwd())
+                        }
+                        discovered_dir = execute_opic(voices["opic.config.search_directories"], config_ctx)
+                        # Config returns single directory string, add to list
+                        if discovered_dir and isinstance(discovered_dir, str):
+                            action_dirs = [project_root / discovered_dir / f"{command}.ops"] + action_dirs
+                    except:
+                        pass
                 for path in action_dirs:
                     if path.exists():
                         ops_file = str(path.relative_to(project_root)) if path.is_relative_to(project_root) else str(path)
@@ -613,8 +755,22 @@ def main():
     # Load target file - THIS is what we're executing, so it's the target
     # Theory: Target file voices always override included files
     # Use same loaded_files set from bootstrap to prevent cycles
-    _load_ops_file(ops_path, voices, defs, voice_sources, def_sources, project_root, target_file=ops_path, loaded_files=set())
-    main_voice = voices.get("main")
+    _load_ops_file(ops_path, voices, defs, voice_sources, def_sources, project_root, target_file=ops_path, loaded_files=loaded_files)
+    
+    # Get main voice name from config (discoverable, not hardcoded)
+    main_voice_name = "main"  # Default fallback
+    if "opic.config.main_voice_name" in voices:
+        try:
+            config_ctx = {
+                "voices": voices,
+                "defs": defs,
+                "call_extension": call_extension,
+                "project_root": str(project_root)
+            }
+            main_voice_name = execute_opic(voices["opic.config.main_voice_name"], config_ctx) or main_voice_name
+        except:
+            pass
+    main_voice = voices.get(main_voice_name)
     
     if "--debug" in sys.argv:
         print(f"DEBUG main: Found main voice, type={type(main_voice)}, first 100: {str(main_voice)[:100] if main_voice else 'None'}", file=sys.stderr)
