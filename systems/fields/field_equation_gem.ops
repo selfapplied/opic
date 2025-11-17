@@ -1,0 +1,469 @@
+;;; field_equation_gem.ops — Field Equation Gem (FEG): Portable Morphic Seed
+;;; 
+;;; A field-equation-flavored gem that flows between systems:
+;;;   • Portable: semantic structure, not concrete implementation
+;;;   • Semi-formal: readable to math, code, and neural-style LLMs
+;;;   • Symbolic but not fragile: composable into code, spec, or math
+;;;   • Small enough to seed, large enough to recurse
+;;;
+;;; Version: FEG-0.1
+;;; Checksum: morphic_crystal_ζ
+;;; Glyph: ◊ (diamond operator for morphic transformation)
+;;;
+;;; NOTE: Field operations (field.gradient, field.energy, etc.) are SEMANTIC
+;;;       placeholders. Each system (Gemini, Famous.ai, OPIC, etc.) interprets
+;;;       these operations according to its own architecture. The gem is a
+;;;       specification that can be instantiated differently in each soil.
+
+include systems/actor_coupled_modeling.ops
+
+;; ============================================================================
+;; FIELD EQUATION GEM: Core Structure
+;; ============================================================================
+
+;; FieldEquation: the morphic seed crystal
+;; Domain X, metric g(x), actor state A(t) ∈ H, evolution Φ, stabilizer Ω, resonance ρ
+def field_equation {
+  domain,              ;; X: semantic or physical substrate
+  metric,             ;; g(x): local cost/curvature structure
+  actor_state,        ;; A(t) ∈ H: Hilbert-layer representation
+  evolution,          ;; dA/dt = Φ(A, ∇g, S): field morphism kernel
+  stabilizer,         ;; Ω = argmin(E[A|g,S]): energy-minimizing attractor basin
+  resonance,          ;; ρ = corr(Ψ(A), Ψ*(A)): harmonic self-coherence measure
+  emit,               ;; {A, Ω, ρ}: outputs usable as next morphic input
+  version: "FEG-0.1", ;; Version identifier
+  checksum: "morphic_crystal_ζ", ;; Canonical checksum
+  glyph: "◊",         ;; Visual glyph
+  mass: 8,            ;; Ionic mass (field structure weight)
+  charge: +1          ;; Ionic charge (positive - emits field structure)
+}
+
+;; ============================================================================
+;; OPIC OPERATORS: Morphic Composition Grammar
+;; ============================================================================
+
+;; (.) identity flow — pass through unchanged
+voice opic.identity / {
+  x -> x
+}
+
+;; (↺) self-application / Y seed — recursive morphism
+voice opic.self_apply / {
+  morphism -> morphism(morphism)
+}
+
+;; (⊕) hopeful OR / constructive merge — parallel composition
+voice opic.constructive_merge / {
+  x + y -> x + y  ;; Uses OPIC's native + operator
+}
+
+;; (∴) witness emission — emit to witness system
+voice opic.witness_emit / {
+  field_equation ->
+  extract_emit ->
+  witness.record ->
+  witness_record
+}
+
+;; ============================================================================
+;; FIELD EVOLUTION: dA/dt = Φ(A, ∇g, S)
+;; ============================================================================
+
+;; Field morphism kernel: Φ(A, ∇g, S)
+;; Transforms actor state using metric gradient and source
+voice field_equation.evolve / {
+  field_equation ->
+  extract_actor_state ->
+  extract_metric ->
+  extract_source ->
+  compute_metric_gradient ->
+  apply_morphism_kernel ->
+  update_actor_state ->
+  updated_field_equation
+}
+
+;; Extract actor state A(t) from field equation
+voice extract_actor_state / {
+  field_equation ->
+  get_actor_state ->
+  actor_state
+}
+
+;; Extract metric g(x) from field equation
+voice extract_metric / {
+  field_equation ->
+  get_metric ->
+  metric
+}
+
+;; Extract source S from field equation (implicit in domain)
+voice extract_source / {
+  field_equation ->
+  get_domain ->
+  extract_source_from_domain ->
+  source
+}
+
+;; Compute metric gradient ∇g
+voice compute_metric_gradient / {
+  metric + domain ->
+  field.gradient ->
+  metric_gradient
+}
+
+;; Apply morphism kernel: Φ(A, ∇g, S)
+voice apply_morphism_kernel / {
+  actor_state + metric_gradient + source ->
+  field.morphism_kernel ->
+  actor_state_delta
+}
+
+;; Update actor state: A(t+dt) = A(t) + dt·Φ(A, ∇g, S)
+voice update_actor_state / {
+  field_equation + actor_state_delta ->
+  integrate_state ->
+  updated_actor_state ->
+  set_actor_state ->
+  updated_field_equation
+}
+
+;; ============================================================================
+;; STABILIZER: Ω = argmin(E[A|g,S])
+;; ============================================================================
+
+;; Energy-minimizing attractor basin
+;; Finds the stable configuration that minimizes energy given metric and source
+voice field_equation.stabilize / {
+  field_equation ->
+  extract_energy_functional ->
+  minimize_energy ->
+  find_attractor_basin ->
+  set_stabilizer ->
+  stabilized_field_equation
+}
+
+;; Extract energy functional: E[A|g,S]
+voice extract_energy_functional / {
+  field_equation ->
+  construct_energy_functional ->
+  energy_functional
+}
+
+;; Construct energy functional from actor state, metric, and source
+voice construct_energy_functional / {
+  actor_state + metric + source ->
+  field.energy ->
+  energy_functional
+}
+
+;; Minimize energy: argmin(E[A|g,S])
+voice minimize_energy / {
+  energy_functional + actor_state ->
+  field.minimize ->
+  optimal_state
+}
+
+;; Find attractor basin around optimal state
+voice find_attractor_basin / {
+  optimal_state + metric ->
+  field.attractor_basin ->
+  stabilizer
+}
+
+;; Set stabilizer Ω in field equation
+voice set_stabilizer / {
+  field_equation + stabilizer ->
+  update_stabilizer ->
+  stabilized_field_equation
+}
+
+;; ============================================================================
+;; RESONANCE: ρ = corr(Ψ(A), Ψ*(A))
+;; ============================================================================
+
+;; Harmonic self-coherence measure
+;; Measures how well the field resonates with itself
+voice field_equation.resonate / {
+  field_equation ->
+  extract_actor_state ->
+  compute_wavefunction ->
+  compute_conjugate ->
+  compute_correlation ->
+  set_resonance ->
+  resonated_field_equation
+}
+
+;; Compute wavefunction: Ψ(A)
+voice compute_wavefunction / {
+  actor_state ->
+  field.wavefunction ->
+  wavefunction
+}
+
+;; Compute conjugate: Ψ*(A)
+voice compute_conjugate / {
+  wavefunction ->
+  field.conjugate ->
+  conjugate_wavefunction
+}
+
+;; Compute correlation: corr(Ψ(A), Ψ*(A))
+voice compute_correlation / {
+  wavefunction + conjugate_wavefunction ->
+  field.correlation ->
+  resonance
+}
+
+;; Set resonance ρ in field equation
+voice set_resonance / {
+  field_equation + resonance ->
+  update_resonance ->
+  resonated_field_equation
+}
+
+;; ============================================================================
+;; EMIT: {A, Ω, ρ} → Next Morphic Input
+;; ============================================================================
+
+;; Emit outputs usable as next morphic input
+voice field_equation.emit / {
+  field_equation ->
+  extract_actor_state ->
+  extract_stabilizer ->
+  extract_resonance ->
+  construct_emit ->
+  set_emit ->
+  emitted_field_equation
+}
+
+;; Extract stabilizer Ω
+voice extract_stabilizer / {
+  field_equation ->
+  get_stabilizer ->
+  stabilizer
+}
+
+;; Extract resonance ρ
+voice extract_resonance / {
+  field_equation ->
+  get_resonance ->
+  resonance
+}
+
+;; Construct emit structure: {A, Ω, ρ}
+voice construct_emit / {
+  actor_state + stabilizer + resonance ->
+  create_emit_structure ->
+  emit
+}
+
+;; Set emit in field equation
+voice set_emit / {
+  field_equation + emit ->
+  update_emit ->
+  emitted_field_equation
+}
+
+;; ============================================================================
+;; INVARIANTS: Energy Boundedness & Termination
+;; ============================================================================
+
+;; Energy boundedness: E[A] ≤ E_max
+;; Ensures field energy remains bounded
+def energy_invariant {
+  max_energy,         ;; E_max: maximum allowed energy
+  current_energy,     ;; E[A]: current field energy
+  bounded,            ;; Boolean: E[A] ≤ E_max
+  mass: 1,            ;; Ionic mass (invariant weight)
+  charge: 0           ;; Ionic charge (neutral - invariant is constraint)
+}
+
+;; Check energy boundedness
+voice field_equation.check_energy_bounded / {
+  field_equation + max_energy ->
+  extract_energy_functional ->
+  evaluate_energy ->
+  compare_to_max ->
+  energy_invariant
+}
+
+;; Termination: field reaches stable attractor
+;; Ensures evolution terminates when stabilizer is reached
+def termination_invariant {
+  stable,             ;; Boolean: |A - Ω| < ε
+  epsilon,            ;; Convergence threshold
+  converged,          ;; Boolean: field has converged
+  mass: 1,            ;; Ionic mass (invariant weight)
+  charge: 0           ;; Ionic charge (neutral - invariant is constraint)
+}
+
+;; Check termination
+voice field_equation.check_termination / {
+  field_equation + epsilon ->
+  extract_actor_state ->
+  extract_stabilizer ->
+  compute_distance ->
+  compare_to_epsilon ->
+  termination_invariant
+}
+
+;; ============================================================================
+;; TYPE-KINDS: Semantic, Syntactic, Symbolic, Embodied
+;; ============================================================================
+
+;; Type-kind: semantic (meaning-based)
+def semantic_kind {
+  meaning,            ;; Semantic content
+  interpretation,     ;; How to interpret
+  mass: 2,            ;; Ionic mass (semantic weight)
+  charge: +1          ;; Ionic charge (positive - emits meaning)
+}
+
+;; Type-kind: syntactic (structure-based)
+def syntactic_kind {
+  structure,          ;; Syntactic structure
+  grammar,            ;; Grammar rules
+  mass: 2,            ;; Ionic mass (syntactic weight)
+  charge: 0           ;; Ionic charge (neutral - structure is form)
+}
+
+;; Type-kind: symbolic (symbol-based)
+def symbolic_kind {
+  symbols,            ;; Symbol set
+  algebra,            ;; Algebraic operations
+  mass: 2,            ;; Ionic mass (symbolic weight)
+  charge: -1          ;; Ionic charge (negative - absorbs symbols)
+}
+
+;; Type-kind: embodied (physical/material)
+def embodied_kind {
+  material,           ;; Physical substrate
+  dynamics,           ;; Physical dynamics
+  mass: 5,            ;; Ionic mass (embodied weight - higher)
+  charge: 0           ;; Ionic charge (neutral - material is substrate)
+}
+
+;; Classify field equation by type-kind
+voice field_equation.classify_kind / {
+  field_equation ->
+  analyze_domain ->
+  analyze_metric ->
+  analyze_actor_state ->
+  determine_kind ->
+  type_kind
+}
+
+;; ============================================================================
+;; COMPOSITION: FEG-Seed = <FieldEquation> ⊕ <OpicOperators> ∴
+;; ============================================================================
+
+;; Minimal combined handoff nucleus
+;; FEG-Seed = <FieldEquation> ⊕ <OpicOperators> ∴
+voice feg.seed / {
+  field_equation ->
+  opic.constructive_merge ->
+  opic.witness_emit ->
+  feg_seed
+}
+
+;; Compose field equations
+voice field_equation.compose / {
+  feg1 + feg2 ->
+  merge_domains ->
+  combine_metrics ->
+  compose_actor_states ->
+  merge_evolutions ->
+  composed_field_equation
+}
+
+;; ============================================================================
+;; VERSIONING: FEG-0.1 → FEG-0.2 → ...
+;; ============================================================================
+
+;; Version evolution
+voice feg.evolve_version / {
+  current_version ->
+  extract_version_number ->
+  increment_version ->
+  update_checksum ->
+  new_version
+}
+
+;; Extract version number from FEG version string
+voice extract_version_number / {
+  version_string ->
+  parse_version ->
+  version_number
+}
+
+;; Increment version: 0.1 → 0.2
+voice increment_version / {
+  version_number ->
+  add_minor_version ->
+  new_version_number
+}
+
+;; Update checksum for new version
+voice update_checksum / {
+  new_version_number + field_equation ->
+  compute_checksum ->
+  new_checksum
+}
+
+;; ============================================================================
+;; INTEGRATION: Actor Coupled Modeling
+;; ============================================================================
+
+;; Convert field equation to actor coupled model
+voice field_equation.to_actor_coupled_model / {
+  field_equation ->
+  extract_actor_state ->
+  extract_evolution ->
+  create_actor ->
+  create_state ->
+  create_morphism ->
+  create_actor_coupled_model
+}
+
+;; Create actor from field equation
+voice create_actor / {
+  evolution ->
+  actor.from_morphism ->
+  actor
+}
+
+;; Create state from actor state
+voice create_state / {
+  actor_state ->
+  state.from_hilbert ->
+  state
+}
+
+;; Create morphism from evolution
+voice create_morphism / {
+  evolution ->
+  morphism.from_evolution ->
+  morphism
+}
+
+;; ============================================================================
+;; MAIN: Field Equation Gem Entry Point
+;; ============================================================================
+
+target field_equation_gem / "field_equation_gem_core"
+
+voice main / {
+  field_equation.evolve +
+  field_equation.stabilize +
+  field_equation.resonate +
+  field_equation.emit +
+  field_equation.check_energy_bounded +
+  field_equation.check_termination +
+  field_equation.classify_kind +
+  field_equation.compose +
+  feg.seed +
+  feg.evolve_version +
+  field_equation.to_actor_coupled_model ->
+  field_equation_gem
+}
+
