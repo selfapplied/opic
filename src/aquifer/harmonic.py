@@ -55,13 +55,15 @@ def compute_zeta_approx(s: complex, num_terms: int = 1000) -> complex:
         Approximate value of ζ(s)
     """
     if s.real <= 1:
-        # For Re(s) ≤ 1, use functional equation approximation
-        # ζ(s) ≈ 2^s · π^(s-1) · sin(πs/2) · Γ(1-s) · ζ(1-s)
-        # Simplified version for demonstration
+        # For Re(s) ≤ 1, proper implementation would use the functional equation:
+        # ζ(s) = 2^s · π^(s-1) · sin(πs/2) · Γ(1-s) · ζ(1-s)
+        # This requires computing the gamma function and is beyond the scope
+        # of this demonstration. Instead, we use rough approximations:
         if abs(s - 1) < 0.1:
-            # Near pole at s=1
-            return complex(10.0, 0.0)  # Large value near pole
-        # Rough approximation for other values
+            # Near pole at s=1, zeta has a simple pole
+            return complex(10.0, 0.0)  # Large value approximating pole behavior
+        # Very rough approximation for demonstration purposes only
+        # Real implementation should use Riemann-Siegel formula or similar
         return complex(1.0 / (1.0 - s.real), 0.0)
     
     # Dirichlet series for Re(s) > 1
@@ -110,13 +112,16 @@ class HarmonicOperator:
         """
         # Handle edge cases
         if abs(x) < 1e-10:
-            return complex(float('inf'), 0)  # Singularity at x=0
+            # Singularity at x=0 due to ln(x)
+            # Return a large finite value to avoid numerical issues
+            return complex(1e10, 0.0)
         
         # Collapse component: ln(x)
         try:
             collapse = cmath.log(x) * self.collapse_weight
         except (ValueError, ZeroDivisionError):
-            collapse = complex(float('inf'), 0)
+            # Use large finite value instead of infinity for numerical stability
+            collapse = complex(1e10, 0.0)
         
         # Accumulation component: ζ(x)
         try:
@@ -173,10 +178,14 @@ class HarmonicRootFinder:
     where the harmonic operator vanishes.
     """
     
-    def __init__(self, operator: HarmonicOperator):
+    def __init__(self, operator: HarmonicOperator, 
+                 max_iterations: int = 100,
+                 tolerance: float = 1e-6,
+                 critical_line_tolerance: float = 0.1):
         self.operator = operator
-        self.max_iterations = 100
-        self.tolerance = 1e-6
+        self.max_iterations = max_iterations
+        self.tolerance = tolerance
+        self.critical_line_tolerance = critical_line_tolerance  # Tolerance for Re(s) = 1/2 projection
     
     def find_root(self, initial_guess: complex = 0.5 + 14.0j) -> Tuple[complex, bool, int]:
         """
@@ -223,7 +232,7 @@ class HarmonicRootFinder:
             x = x - fx / dfx
             
             # Keep on critical line Re(s) = 1/2 (for zeta-related roots)
-            if abs(x.real - 0.5) > 0.1:
+            if abs(x.real - 0.5) > self.critical_line_tolerance:
                 x = complex(0.5, x.imag)
         
         return x, False, self.max_iterations

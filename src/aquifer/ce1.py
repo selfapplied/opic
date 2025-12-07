@@ -61,6 +61,11 @@ class CE1Parser:
         """
         Parse a CE1 expression string into a CE1Expression tree.
         
+        **Note:** This is a simplified parser that handles basic single-level
+        bracket expressions. It does not fully support arbitrary nesting of
+        brackets. For production use, a more sophisticated parser with proper
+        bracket matching and nesting support should be implemented.
+        
         Args:
             expr_str: String representation of CE1 expression
             
@@ -70,6 +75,10 @@ class CE1Parser:
         Example:
             >>> parse("< (H c) >")
             CE1Expression with witness bracket containing morphism
+            
+        Limitations:
+            - Does not handle deeply nested bracket expressions
+            - May incorrectly parse complex expressions with multiple bracket types
         """
         # Simplified parser - full implementation would handle nested brackets
         expr_str = expr_str.strip()

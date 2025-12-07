@@ -106,8 +106,9 @@ def demo_harmonic_operator():
             magnitude = abs(value)
             print(f"  ℋ({point}) = {value:.6f}")
             print(f"    |ℋ| = {magnitude:.6f} — {description}")
-        except Exception as e:
-            print(f"  ℋ({point}) — Error: {e}")
+        except (ValueError, ZeroDivisionError, OverflowError) as e:
+            # Catch expected numerical errors from harmonic operator evaluation
+            print(f"  ℋ({point}) — Numerical error: {e}")
         print()
 
 
