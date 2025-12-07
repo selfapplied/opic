@@ -61,8 +61,6 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Status**: ✓ Experiment ran successfully" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "See [experiment plan](docs/riemann_hypothesis_experiment.md) for details." >> $GITHUB_STEP_SUMMARY
         else
           echo "**Status**: ⚠ Results file not found" >> $GITHUB_STEP_SUMMARY
         fi

@@ -22,7 +22,7 @@ The Aquifer framework provides primitives that encode deep mathematical structur
 
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
-[![Zeta Lab](https://img.shields.io/badge/Zeta%20Lab-Research%20Frontier-blue)](docs/riemann_hypothesis_experiment.md)
+[![Zeta Lab](https://img.shields.io/badge/Zeta%20Lab-Research%20Frontier-blue)](docs/ce1_harmonic_fusion.md)
 
 ---
 
@@ -34,7 +34,7 @@ Software today is brittle and centralized. Opic reimagines code as a living, dis
 
 **Opic's Answer:** Code becomes *voices* that compose into *chains*, each step cryptographically signed and verified. Programs are self-hosting, self-compiling, and self-verifying — enabling distributed computation with built-in trust.
 
-📖 **[Read the Theory](docs/theory.md)** — Mathematical foundations connecting opic to category theory, type theory, field dynamics, and cryptography.
+📖 **[Read the Theory](docs/axiom.md)** — Mathematical foundations connecting opic to category theory, type theory, field dynamics, and cryptography.
 
 ---
 
@@ -210,7 +210,7 @@ make riemann-visualize     # Generate coherence field heatmap (requires matplotl
 
 *The experiment runs in opic itself — demonstrating opic's self-hosting capability. Phase 1 complete: identified 2,656 prime voices from 3,160 total voices. See `examples/phase1_prime_voices.ops` for the opic-native implementation.*
 
-See [`docs/ce1_harmonic_fusion.md`](docs/ce1_harmonic_fusion.md) for CE1-ℋ fusion details, [`docs/theory.md`](docs/theory.md) for mathematical foundations, [`docs/riemann_whitepaper.md`](docs/riemann_whitepaper.md) for academic framing, and [`docs/riemann_hypothesis_experiment.md`](docs/riemann_hypothesis_experiment.md) for experiment plans.
+See [`docs/ce1_harmonic_fusion.md`](docs/ce1_harmonic_fusion.md) for CE1-ℋ fusion details and [`docs/axiom.md`](docs/axiom.md) for mathematical foundations.
 
 ---
 
