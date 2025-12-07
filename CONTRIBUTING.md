@@ -16,10 +16,15 @@ opic is a self-hosting language — contribute by extending `.ops` files!
 
 ### 1. Fork and Clone
 
+1. Fork the repository on GitHub
+2. Clone your fork:
+
 ```bash
-git clone https://github.com/yourusername/opic.git
+git clone https://github.com/YOUR_USERNAME/opic.git
 cd opic
 ```
+
+Replace `YOUR_USERNAME` with your GitHub username.
 
 ### 2. Create a Feature Branch
 
