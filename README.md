@@ -174,6 +174,7 @@ You are free to share and adapt this work for any purpose, including commercial 
 
 **Phase 2: Implementation**
 - [ ] Implement Feigenbaum bifurcation constraints
+- [x] **CE1-ℋ Fusion**: Compositional Expression Language with harmonic operator integration
 - [ ] Implement Zeta spectral filtering for voice composition
 - [ ] Complete RG flow convergence analysis
 - [ ] Build ZetaCore interactive UI prototype
@@ -190,12 +191,18 @@ You are free to share and adapt this work for any purpose, including commercial 
 
 opic's dual structure opens several research frontiers:
 
+- **CE1-ℋ Fusion**: Universal operator algebra where ℋ(x)=0 becomes a CE1 fixed-point expression
 - **Spectral Verification**: numerical experiments testing opic's categorical zeta symmetry
 - **Field Coherence Dynamics**: simulate Φ(t) to locate the critical line (balanced oscillation)
 - **Cross-Disciplinary Exploration**: connects category theory, physics, and analytic number theory
 
 **Quick Start Research**:
 ```bash
+# CE1-ℋ Fusion
+python3 examples/ce1_harmonic_demo.py      # Interactive demo of CE1 and harmonic operator
+python3 examples/test_ce1_harmonic.py      # Test suite for CE1-ℋ implementation
+
+# Riemann Hypothesis Experiments
 make phase1                # Phase 1: Identify prime voices (opic-native!)
 make riemann-experiment    # Run baseline simulation (uses Phase 1 results)
 make riemann-visualize     # Generate coherence field heatmap (requires matplotlib)
@@ -203,7 +210,7 @@ make riemann-visualize     # Generate coherence field heatmap (requires matplotl
 
 *The experiment runs in opic itself — demonstrating opic's self-hosting capability. Phase 1 complete: identified 2,656 prime voices from 3,160 total voices. See `examples/phase1_prime_voices.ops` for the opic-native implementation.*
 
-See [`docs/theory.md`](docs/theory.md) for mathematical foundations, [`docs/riemann_whitepaper.md`](docs/riemann_whitepaper.md) for academic framing, and [`docs/riemann_hypothesis_experiment.md`](docs/riemann_hypothesis_experiment.md) for experiment plans.
+See [`docs/ce1_harmonic_fusion.md`](docs/ce1_harmonic_fusion.md) for CE1-ℋ fusion details, [`docs/theory.md`](docs/theory.md) for mathematical foundations, [`docs/riemann_whitepaper.md`](docs/riemann_whitepaper.md) for academic framing, and [`docs/riemann_hypothesis_experiment.md`](docs/riemann_hypothesis_experiment.md) for experiment plans.
 
 ---
 

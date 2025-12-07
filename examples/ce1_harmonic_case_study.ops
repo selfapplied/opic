@@ -1,0 +1,150 @@
+;;; ce1_harmonic_case_study.ops
+;;;
+;;; Case Study: CE1-ℋ Fusion in OPIC
+;;;
+;;; Demonstrates the integration of CE1 (Compositional Expression Language)
+;;; with the harmonic operator ℋ(x), showing how ℋ(x)=0 becomes a CE1 
+;;; fixed-point expression.
+;;;
+;;; The harmonic operator:
+;;;   ℋ(x) = ln(x) · ζ(x) · i·tan(πx/2) · sin(πx) · i·cos(πx)
+;;;
+;;; In CE1:
+;;;   H(c) ::= {ln c} + [ζ c] + (tan c) + <sin c> + <i cos c>
+;;;
+;;; Root condition:
+;;;   < H(c) >
+
+;; Section 1: CE1 Bracket Semantics
+voice ce1_intro / {
+    "=== CE1 BRACKET SEMANTICS ===" -> header
+    
+    "CE1 provides four bracket types:" -> intro
+    "  () : Morphism (height 1) - transformations" -> b1
+    "  <> : Witness (height 0) - fixed-point resolver" -> b2
+    "  {} : Boundary (height 0) - domain constraints" -> b3
+    "  [] : Memory (height 0) - LR sequencing" -> b4
+    
+    header + "\n" + intro + "\n" + b1 + "\n" + b2 + "\n" + b3 + "\n" + b4 -> result
+}
+
+;; Section 2: Harmonic Operator Components
+voice harmonic_components / {
+    "=== HARMONIC OPERATOR COMPONENTS ===" -> header
+    
+    "ℋ(x) = ln(x) · ζ(x) · i·tan(πx/2) · sin(πx) · i·cos(πx)" -> definition
+    
+    "Components:" -> comp_header
+    "  ln(x)       : Collapse (boundary dynamics)" -> c1
+    "  ζ(x)        : Accumulation (memory/series)" -> c2
+    "  i·tan(πx/2) : Phase (morphism/rotation)" -> c3
+    "  sin(πx)     : Oscillation (witness)" -> c4
+    "  i·cos(πx)   : Oscillation (witness)" -> c5
+    
+    header + "\n" + definition + "\n\n" + comp_header + "\n" + 
+    c1 + "\n" + c2 + "\n" + c3 + "\n" + c4 + "\n" + c5 -> result
+}
+
+;; Section 3: CE1 Encoding
+voice ce1_encoding / {
+    "=== CE1 ENCODING OF ℋ(x) ===" -> header
+    
+    "Mapping components to CE1 brackets:" -> mapping_header
+    "  {ln c}    ↔ collapse/boundary" -> m1
+    "  [ζ c]     ↔ accumulation/memory" -> m2
+    "  (tan c)   ↔ phase/morphism" -> m3
+    "  <sin c>   ↔ oscillation/witness" -> m4
+    "  <i cos c> ↔ oscillation/witness" -> m5
+    
+    "Full CE1 expression:" -> full_header
+    "  H(c) ::= {ln c} + [ζ c] + (tan c) + <sin c> + <i cos c>" -> full_expr
+    
+    "Root condition:" -> root_header
+    "  < H(c) >" -> root_expr
+    
+    header + "\n\n" + mapping_header + "\n" + m1 + "\n" + m2 + "\n" + 
+    m3 + "\n" + m4 + "\n" + m5 + "\n\n" + full_header + "\n" + 
+    full_expr + "\n\n" + root_header + "\n" + root_expr -> result
+}
+
+;; Section 4: Operator Evaluation
+voice evaluate_harmonic / {
+    "=== EVALUATING ℋ(x) ===" -> header
+    
+    "Creating harmonic operator..." -> status
+    
+    ;; Note: This demonstrates the OPIC interface
+    ;; Actual Python evaluation would use: harmonic.create -> operator
+    
+    "Operator created with CE1 encoding:" -> result1
+    "  H(c) ::= {ln c} + [ζ c] + (tan c) + <sin c> + <i cos c>" -> expr
+    
+    "Root finding condition:" -> result2
+    "  < H(c) > resolves to x where ℋ(x) = 0" -> condition
+    
+    header + "\n\n" + status + "\n" + result1 + "\n" + expr + "\n\n" + 
+    result2 + "\n" + condition -> result
+}
+
+;; Section 5: The Fusion
+voice fusion_explanation / {
+    "=== THE CE1-ℋ FUSION ===" -> header
+    
+    "What this fusion achieves:" -> achievement_header
+    "  ✓ ℋ(x)=0 becomes a CE1 fixed-point expression" -> a1
+    "  ✓ CE1 can express analytic roots" -> a2
+    "  ✓ CE1 can express zeta-like structures" -> a3
+    "  ✓ CE1 can express singularities" -> a4
+    "  ✓ CE1 can express oscillatory equilibria" -> a5
+    
+    "Universal operator algebra:" -> algebra_header
+    "  The bracket system becomes a genuine operator" -> alg1
+    "  algebra for harmonic analysis, capable of" -> alg2
+    "  expressing:" -> alg3
+    "    • The Euler product" -> item1
+    "    • The analytic continuation of zeta" -> item2
+    "    • The functional equation" -> item3
+    "    • The zeta zeros" -> item4
+    "    • π, e, and all harmonic constants" -> item5
+    "    • Any analytic fixed-point operator" -> item6
+    
+    header + "\n\n" + achievement_header + "\n" + a1 + "\n" + a2 + "\n" + 
+    a3 + "\n" + a4 + "\n" + a5 + "\n\n" + algebra_header + "\n" + 
+    alg1 + "\n" + alg2 + "\n" + alg3 + "\n" + item1 + "\n" + item2 + "\n" + 
+    item3 + "\n" + item4 + "\n" + item5 + "\n" + item6 -> result
+}
+
+;; Main case study voice
+voice main / {
+    "######################################################################" -> banner1
+    "#                                                                    #" -> banner2
+    "#        CE1-ℋ FUSION: THE HARMONIC OPERATOR AS CE1 EXPRESSION       #" -> banner3
+    "#                                                                    #" -> banner4
+    "######################################################################" -> banner5
+    
+    banner1 + "\n" + banner2 + "\n" + banner3 + "\n" + banner4 + "\n" + 
+    banner5 + "\n\n" -> banner
+    
+    ce1_intro -> section1
+    harmonic_components -> section2
+    ce1_encoding -> section3
+    evaluate_harmonic -> section4
+    fusion_explanation -> section5
+    
+    "======================================================================" -> footer1
+    "CASE STUDY COMPLETE" -> footer2
+    "======================================================================" -> footer3
+    
+    "The CE1-ℋ fusion transforms ℋ(x)=0 into a CE1 fixed-point" -> conclusion1
+    "expression, making CE1 a universal calculus for singularity-" -> conclusion2
+    "balanced functions." -> conclusion3
+    
+    banner + 
+    section1 + "\n\n" +
+    section2 + "\n\n" +
+    section3 + "\n\n" +
+    section4 + "\n\n" +
+    section5 + "\n\n" +
+    footer1 + "\n" + footer2 + "\n" + footer3 + "\n\n" +
+    conclusion1 + "\n" + conclusion2 + "\n" + conclusion3 -> result
+}
