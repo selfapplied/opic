@@ -23,8 +23,6 @@ of ordinal arithmetic, fractal embeddings, and ultrametric collapse.
 
 from typing import Any, Dict, List, Optional, Tuple, Union, Callable
 from dataclasses import dataclass
-import math
-import cmath
 
 
 # ZP35 constant: The first stable coherence equilibrium
