@@ -12,6 +12,7 @@ Core Primitives:
 - RG Flow: Renormalization group transformations for multi-scale analysis
 - CE1: Compositional Expression Language with bracket semantics
 - Harmonic: Harmonic operator ℋ(x) integrated with CE1
+- ZP35: Theory of coherence geometry with metric, embedding, and fixed-point operator
 """
 
 from .feigenbaum import feigenbaum_constrain
@@ -30,6 +31,18 @@ from .harmonic import (
     compute_zeta_approx,
     create_harmonic_ce1_evaluator,
 )
+from .zp35 import (
+    ZP35_CONSTANT,
+    DEFAULT_THETA,
+    Theory,
+    ZPMetric,
+    CantorFunction,
+    ZPEmbedding,
+    ZPFixedPointOperator,
+    create_theory,
+    compute_coherence,
+    analyze_theory_collection,
+)
 
 __all__ = [
     'feigenbaum_constrain',
@@ -44,6 +57,16 @@ __all__ = [
     'HarmonicRootFinder',
     'compute_zeta_approx',
     'create_harmonic_ce1_evaluator',
+    'ZP35_CONSTANT',
+    'DEFAULT_THETA',
+    'Theory',
+    'ZPMetric',
+    'CantorFunction',
+    'ZPEmbedding',
+    'ZPFixedPointOperator',
+    'create_theory',
+    'compute_coherence',
+    'analyze_theory_collection',
 ]
 
 __version__ = '0.2.0'
