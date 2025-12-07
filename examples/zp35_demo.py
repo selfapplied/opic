@@ -220,20 +220,26 @@ def demo_zp_fixed_point_operator():
                 print(f"  ({theory_a.name:7s}, {theory_b.name:9s})    {coherence:.4f}")
     print()
     
-    print("3. FIXED POINT COMPUTATION:")
+    print("3. FIXED POINT & FIELD CURVATURE:")
     print("-" * 70)
     
     fixed_point, converged = operator.find_fixed_point(theories)
+    kappa = operator.compute_kappa_curvature(fixed_point)
     
-    print(f"  Fixed point value: {fixed_point:.4f}")
+    print(f"  Fixed point (φ*): {fixed_point:.4f}")
+    print(f"  ZP35 base (Z):    {ZP35_CONSTANT:.4f}")
+    print(f"  κ-curvature:      {kappa:+.4f}")
+    print()
+    print(f"  Geometric decomposition: φ* = Z + κ")
     print(f"  Converged: {'Yes' if converged else 'No'}")
-    print(f"  ZP35 constant: {ZP35_CONSTANT:.4f}")
-    print(f"  Deviation: {abs(fixed_point - ZP35_CONSTANT):.4f}")
     print()
     
-    if abs(fixed_point - ZP35_CONSTANT) < 0.05:
-        print("  ✓ Fixed point is within 5% of ZP35 constant!")
-        print("    The coherence operator exhibits the expected attractor.")
+    if abs(kappa) < 0.05:
+        print("  ✓ Small field curvature |κ| < 0.05")
+        print("    Theory stack is near the base coherence plane.")
+    else:
+        print(f"  ⚠ Field curvature κ = {kappa:+.4f}")
+        print("    Theory stack has bent the coherence plane.")
     print()
 
 
@@ -284,18 +290,24 @@ def demo_comprehensive_analysis():
             print(f"    - {name}")
     print()
     
-    print("5. COHERENCE FIXED POINT:")
+    print("5. COHERENCE FIXED POINT (AFFINE DECOMPOSITION):")
     print("-" * 70)
-    print(f"  Fixed point: {analysis['fixed_point']:.4f}")
+    print(f"  Fixed point (φ*): {analysis['fixed_point']:.4f}")
+    print(f"  ZP35 base (Z):    {ZP35_CONSTANT:.4f}")
+    print(f"  κ-curvature:      {analysis['kappa_curvature']:+.4f}")
+    print()
+    print(f"  Affine form: φ* = Z + κ")
+    print(f"               {analysis['fixed_point']:.4f} = {ZP35_CONSTANT:.4f} + {analysis['kappa_curvature']:+.4f}")
+    print()
     print(f"  Converged: {'Yes' if analysis['fixed_point_converged'] else 'No'}")
-    print(f"  ZP35 constant: {ZP35_CONSTANT:.4f}")
-    print(f"  Deviation: {analysis['zp35_deviation']:.4f}")
-    print(f"  Near ZP35: {'Yes' if analysis['is_near_zp35'] else 'No'}")
+    print(f"  |κ| < 0.05: {'Yes (near base phase)' if analysis['is_near_zp35'] else 'No (curved phase)'}")
     print()
     
     if analysis['is_near_zp35']:
-        print("  ✓ The collection exhibits ZP35 coherence!")
-        print("    The fixed point attractor aligns with the expected value.")
+        print("  ✓ Small curvature - theory stack is near the base coherence plane.")
+    else:
+        print(f"  ⚠ Field curvature κ = {analysis['kappa_curvature']:+.4f}")
+        print("    Theory stack has bent the coherence plane.")
     print()
 
 
@@ -332,11 +344,13 @@ def main():
     print("  • ZP-Metric provides an ultrametric on theories")
     print("  • Cantor function creates fractal embedding structure")
     print("  • ZP-Embedding maps theories into [0,1] with plateaus")
-    print(f"  • κ-operator fixed point converges to ≈{ZP35_CONSTANT}")
-    print("  • ZP35 emerges as the first coherence equilibrium")
+    print(f"  • Fixed point φ* decomposes as: φ* = Z + κ")
+    print(f"    - Z = {ZP35_CONSTANT} is the base coherence plane (ZP35 constant)")
+    print("    - κ is the field curvature (how much the stack bends the plane)")
+    print("  • ZP35 emerges as the origin of coherence geometry")
     print()
-    print("The ZP35 constant is not mystical - it's geometric structure")
-    print("arising from the interaction of ordinals, fractals, and ultrametrics.")
+    print("The ZP35 constant is not mystical - it's the flat coherence plane.")
+    print("Field curvature κ measures how theory stacks bend that plane.")
     print()
 
 

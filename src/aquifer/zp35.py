@@ -531,6 +531,24 @@ class ZPFixedPointOperator:
             Absolute deviation from ZP35_CONSTANT
         """
         return abs(fixed_point - ZP35_CONSTANT)
+    
+    def compute_kappa_curvature(self, fixed_point: float) -> float:
+        """
+        Compute κ-curvature: the field curvature of the theory stack.
+        
+        The fixed point decomposes as φ* = Z + κ, where:
+        - Z = 0.35 is the base coherence plane (ZP35 constant)
+        - κ is the field curvature (how much the stack bends the plane)
+        
+        This gives the affine form: fixed_point = ZP35_CONSTANT + κ
+        
+        Args:
+            fixed_point: Computed fixed point value
+        
+        Returns:
+            Field curvature κ = φ* - Z (signed, not absolute)
+        """
+        return fixed_point - ZP35_CONSTANT
 
 
 # Convenience functions for common use cases
@@ -583,8 +601,9 @@ def analyze_theory_collection(theories: List[Theory],
         - metric_distances: Pairwise ZP-metric distances
         - embeddings: Theory embeddings in [0,1]
         - plateaus: Grouping of theories by embedding plateau
-        - fixed_point: Coherence fixed point
-        - zp35_deviation: Deviation from ZP35 constant
+        - fixed_point: Coherence fixed point (φ*)
+        - kappa_curvature: Field curvature κ = φ* - Z (affine decomposition)
+        - zp35_deviation: Absolute deviation from ZP35 constant
     """
     metric = ZPMetric(theta=theta)
     embedding = ZPEmbedding(theta=theta)
@@ -607,7 +626,8 @@ def analyze_theory_collection(theories: List[Theory],
     # Find fixed point
     fixed_point, converged = operator.find_fixed_point(theories)
     
-    # Compute deviation from ZP35
+    # Compute κ-curvature and deviation from ZP35
+    kappa_curvature = operator.compute_kappa_curvature(fixed_point)
     zp35_dev = operator.compute_zp35_deviation(fixed_point)
     
     return {
@@ -616,6 +636,7 @@ def analyze_theory_collection(theories: List[Theory],
         'plateaus': {k: [t.name for t in v] for k, v in plateaus.items()},
         'fixed_point': fixed_point,
         'fixed_point_converged': converged,
+        'kappa_curvature': kappa_curvature,  # Field curvature κ = φ* - Z
         'zp35_deviation': zp35_dev,
         'is_near_zp35': zp35_dev < 0.05,  # Within 5% of ZP35 constant
     }
