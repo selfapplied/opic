@@ -1,0 +1,102 @@
+;;; harmonic.ops — Harmonic Operator ℋ(x) CE1 Integration
+;;;
+;;; The harmonic operator ℋ(x) is defined as:
+;;;
+;;;     ℋ(x) = ln(x) · ζ(x) · i·tan(πx/2) · sin(πx) · i·cos(πx)
+;;;
+;;; It encodes:
+;;; - Collapse dynamics (ln)
+;;; - Accumulation dynamics (ζ) 
+;;; - Phase dynamics (tan)
+;;; - Oscillation dynamics (sin/cos)
+;;;
+;;; In CE1, expressed as:
+;;;
+;;;     H(c) ::= {ln c} + [ζ c] + (tan c) + <sin c> + <i cos c>
+;;;
+;;; Root condition ℋ(x) = 0 expressed as: < H(c) >
+
+;; Create harmonic operator with default weights
+voice harmonic.create / {$src.aquifer.harmonic.HarmonicOperator$}
+
+;; Create harmonic operator with custom weights
+voice harmonic.create_weighted / {
+    input -> collapse_weight
+    input -> accumulation_weight
+    input -> phase_weight
+    input -> osc_sin_weight
+    input -> osc_cos_weight
+    $src.aquifer.harmonic.HarmonicOperator$ 
+        collapse_weight 
+        accumulation_weight 
+        phase_weight 
+        osc_sin_weight 
+        osc_cos_weight -> operator
+}
+
+;; Evaluate harmonic operator at a point
+voice harmonic.evaluate / {
+    input -> operator
+    input -> x
+    operator.evaluate x -> result
+}
+
+;; Convert harmonic operator to CE1 expression string
+voice harmonic.to_ce1 / {
+    input -> operator
+    operator.to_ce1_expression -> ce1_expr
+}
+
+;; Get CE1 root expression: < H(c) >
+voice harmonic.to_ce1_root / {
+    input -> operator
+    operator.to_ce1_root_expression -> ce1_root_expr
+}
+
+;; Approximate Riemann zeta function
+voice harmonic.zeta / {$src.aquifer.harmonic.compute_zeta_approx$}
+
+;; Create root finder for harmonic operator
+voice harmonic.create_root_finder / {
+    input -> operator
+    $src.aquifer.harmonic.HarmonicRootFinder$ operator -> finder
+}
+
+;; Find single root starting from initial guess
+voice harmonic.find_root / {
+    input -> finder
+    input -> initial_guess
+    finder.find_root initial_guess -> root_tuple
+    root_tuple -> root
+    root -> "Root found: " + root
+}
+
+;; Find roots on critical line Re(s) = 1/2
+voice harmonic.find_critical_roots / {
+    input -> finder
+    input -> t_min
+    input -> t_max
+    input -> num_guesses
+    finder.find_roots_on_critical_line t_min t_max num_guesses -> roots
+}
+
+;; Create CE1 evaluator configured with harmonic operator
+voice harmonic.create_ce1_evaluator / {
+    $src.aquifer.harmonic.create_harmonic_ce1_evaluator$ -> evaluator
+}
+
+;; Complete workflow: create operator, find roots, express in CE1
+voice harmonic.analyze / {
+    harmonic.create -> operator
+    operator -> "Created harmonic operator ℋ(x)"
+    
+    harmonic.to_ce1 operator -> ce1_expr
+    ce1_expr -> "CE1 expression: " + ce1_expr
+    
+    harmonic.to_ce1_root operator -> ce1_root
+    ce1_root -> "CE1 root condition: " + ce1_root
+    
+    harmonic.create_root_finder operator -> finder
+    
+    "Analysis complete" -> result
+}
