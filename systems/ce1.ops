@@ -1,0 +1,43 @@
+;;; ce1.ops — CE1 Compositional Expression Language
+;;; 
+;;; CE1 provides a bracket-based expression language for singularity-balanced
+;;; functions. Four bracket types encode semantic layers:
+;;;
+;;; () : Morphism (height 1) - transformations
+;;; <> : Fixed-point witness (height 0) - resolve equilibria  
+;;; {} : Boundary (height 0) - domain constraints
+;;; [] : Memory (height 0) - LR sequencing
+;;;
+;;; The CE1 system integrates with the harmonic operator ℋ(x) to express
+;;; analytic roots and zeta-like structures.
+
+;; Parse CE1 expression string into structured representation
+voice ce1.parse / {$src.aquifer.ce1.CE1Parser.parse$}
+
+;; Create CE1 evaluator instance
+voice ce1.create_evaluator / {$src.aquifer.ce1.CE1Evaluator$}
+
+;; Create standard CE1 context with math operators
+voice ce1.create_context / {$src.aquifer.ce1.create_ce1_context$}
+
+;; Evaluate CE1 expression with given context
+voice ce1.evaluate / {
+    input -> evaluator
+    input -> expression
+    input -> context
+    evaluator.evaluate expression context -> result
+}
+
+;; Create CE1 expression with bracket type
+voice ce1.expression / {
+    input -> bracket_type
+    input -> content
+    input -> height
+    $src.aquifer.ce1.CE1Expression$ bracket_type content height -> expr
+}
+
+;; Get bracket type enum values
+voice ce1.bracket.morphism / {$src.aquifer.ce1.BracketType.MORPHISM$}
+voice ce1.bracket.witness / {$src.aquifer.ce1.BracketType.WITNESS$}
+voice ce1.bracket.boundary / {$src.aquifer.ce1.BracketType.BOUNDARY$}
+voice ce1.bracket.memory / {$src.aquifer.ce1.BracketType.MEMORY$}
